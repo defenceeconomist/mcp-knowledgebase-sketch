@@ -1,0 +1,4 @@
+.venv
+weather/.venv
+mcp-doc-server/.venv
+mcp-doc-server/.env

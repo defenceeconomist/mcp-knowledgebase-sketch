@@ -1,0 +1,17 @@
+services:
+  mcp:
+    build: .
+    environment:
+      - PORT=8000
+      - DOCS_DIR=/docs
+      - PUBLIC_BASE_URL=https://mcp.heley.uk
+    volumes:
+      - ./docs:/docs:ro
+    restart: unless-stopped
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}
+    depends_on:
+      - mcp
+    restart: unless-stopped
+ 
