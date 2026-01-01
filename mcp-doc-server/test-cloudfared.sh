@@ -53,3 +53,4 @@ curl -sS -X POST "$ENDPOINT" \
       "arguments":{"query":"biogas"}
     }
   }' | cat
+    
