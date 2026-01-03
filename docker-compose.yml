@@ -1,0 +1,17 @@
+services:
+  mcp:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - FASTMCP_SERVER_AUTH=${FASTMCP_SERVER_AUTH}
+      - FASTMCP_SERVER_AUTH_GITHUB_CLIENT_ID=${FASTMCP_SERVER_AUTH_GITHUB_CLIENT_ID}
+      - FASTMCP_SERVER_AUTH_GITHUB_CLIENT_SECRET=${FASTMCP_SERVER_AUTH_GITHUB_CLIENT_SECRET}
+      - FASTMCP_SERVER_AUTH_GITHUB_BASE_URL=${FASTMCP_SERVER_AUTH_GITHUB_BASE_URL}
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}
+    depends_on: [mcp]
+    restart: unless-stopped
+ 
