@@ -16,6 +16,16 @@ services:
       - FASTMCP_SERVER_AUTH_GITHUB_CLIENT_ID=${FASTMCP_SERVER_AUTH_GITHUB_CLIENT_ID}
       - FASTMCP_SERVER_AUTH_GITHUB_CLIENT_SECRET=${FASTMCP_SERVER_AUTH_GITHUB_CLIENT_SECRET}
       - FASTMCP_SERVER_AUTH_GITHUB_BASE_URL=${FASTMCP_SERVER_AUTH_GITHUB_BASE_URL}
+      - DATA_DIR=/app/data
+      - PDF_PATH=${PDF_PATH:-}
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+      - QDRANT_COLLECTION=${QDRANT_COLLECTION:-pdf_chunks}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-all-MiniLM-L6-v2}
+      - CHUNK_SIZE=${CHUNK_SIZE:-1200}
+      - CHUNK_OVERLAP=${CHUNK_OVERLAP:-200}
+    volumes:
+      - ./data:/app/data:ro
   cloudflared:
     image: cloudflare/cloudflared:latest
     command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}

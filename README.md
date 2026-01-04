@@ -37,3 +37,26 @@ docker compose up --build
 ## Notes
 - Configure your GitHub OAuth app callback to `<base_url>/auth/callback`, where `<base_url>` is `FASTMCP_SERVER_AUTH_GITHUB_BASE_URL`.
 - Do not commit real OAuth secrets or tunnel tokens. Use a local `.env` only for development.
+
+## PDF -> Qdrant ingestion
+Use `ingest_pdfs.py` to extract text from PDFs with PyMuPDF, chunk it, embed with SentenceTransformers, and push vectors to the local Qdrant instance.
+
+Environment (examples):
+- `DATA_DIR` – directory containing PDFs when `PDF_PATH` is not set (default `data`).
+- `PDF_PATH` – optional path to a single PDF or a directory to ingest.
+- `QDRANT_HOST` / `QDRANT_PORT` / `QDRANT_COLLECTION` – defaults to the local compose stack (`qdrant`, `6333`, `pdf_chunks`).
+- `EMBEDDING_MODEL` – SentenceTransformers model name (default `all-MiniLM-L6-v2`).
+- `CHUNK_SIZE` / `CHUNK_OVERLAP` – chunking controls (defaults `1200` / `200` characters).
+
+Run locally:
+```bash
+python ingest_pdfs.py              # ingests PDFs in ./data
+PDF_PATH=./data/my.pdf python ingest_pdfs.py  # ingest a single file
+```
+
+Run inside Docker (uses mounted `./data`):
+```bash
+docker compose run --rm mcp python ingest_pdfs.py
+```
+
+The script will create the `pdf_chunks` collection (if missing) and upsert chunk payloads with page hints and text for retrieval.

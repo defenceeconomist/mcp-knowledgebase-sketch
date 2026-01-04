@@ -1,7 +1,6 @@
 # Dockerfile
 FROM python:3.12-slim
 
-
 WORKDIR /app
 
 # (Optional but handy) system certs + curl for debugging/healthchecks
@@ -12,7 +11,7 @@ RUN apt-get update \
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
-COPY mcp_app.py /app/mcp_app.py
+COPY . /app
 
 EXPOSE 8000
 
