@@ -1,8 +1,6 @@
 # Dockerfile
 FROM python:3.12-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
@@ -14,8 +12,8 @@ RUN apt-get update \
 COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
-COPY . /app
+COPY mcp_app.py /app/mcp_app.py
 
 EXPOSE 8000
 
-CMD ["python", "app.py"]
+CMD ["python", "mcp_app.py"]
