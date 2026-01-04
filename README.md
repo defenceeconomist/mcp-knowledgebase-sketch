@@ -60,3 +60,39 @@ docker compose run --rm mcp python ingest_pdfs.py
 ```
 
 The script will create the `pdf_chunks` collection (if missing) and upsert chunk payloads with page hints and text for retrieval.
+
+### Using the Unstructured API for partitioning + chunking
+Use `ingest_unstructured.py` when you want Unstructured to handle PDF parsing and chunking before embedding and upserting into Qdrant.
+
+Additional environment:
+- `UNSTRUCTURED_API_KEY` (required) – API key for the Unstructured API.
+- `UNSTRUCTURED_API_URL` – base URL (default `https://api.unstructured.io`).
+- `UNSTRUCTURED_STRATEGY` – partition strategy (default `hi_res`).
+- `UNSTRUCTURED_CHUNKING_STRATEGY` – chunking mode (`basic` by default, set to `none` to disable).
+- `CHUNK_SIZE` / `CHUNK_OVERLAP` – forwarded to the Unstructured chunker as `max_characters` / `overlap`.
+- `UNSTRUCTURED_LANGUAGES` – optional comma-separated language codes (e.g., `eng,spa`).
+
+Run locally:
+```bash
+UNSTRUCTURED_API_KEY=your-key python ingest_unstructured.py
+```
+This uses the same Qdrant and SentenceTransformers defaults as `ingest_pdfs.py` but calls the Unstructured API to partition and chunk PDFs before embedding and upserting.
+
+Run inside Docker (uses mounted `./data`):
+```bash
+UNSTRUCTURED_API_KEY=your-key docker compose run --rm mcp ingest_unstructured.py
+```
+The Dockerfile now uses a Python entrypoint so you can swap the command to run any script (server stays `python mcp_app.py` by default).
+
+If you prefer to rely on `.env`, add `UNSTRUCTURED_API_KEY=...` there, rebuild, and run:
+```bash
+docker compose build
+docker compose run --rm mcp ingest_unstructured.py
+```
+
+Try
+
+```bash
+# note the python is not strictly required in this instance as the python is the default entry point
+docker compose exec mcp python ingest_unstructured.py
+```

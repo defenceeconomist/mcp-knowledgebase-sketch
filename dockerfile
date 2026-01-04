@@ -15,4 +15,7 @@ COPY . /app
 
 EXPOSE 8000
 
-CMD ["python", "mcp_app.py"]
+# Default to running the MCP app, but keep a Python entrypoint so other scripts
+# (e.g., ingest_unstructured.py) can be invoked by overriding the command.
+ENTRYPOINT ["python"]
+CMD ["mcp_app.py"]
