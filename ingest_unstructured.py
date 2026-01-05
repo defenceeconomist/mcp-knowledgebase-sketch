@@ -5,9 +5,9 @@ import uuid
 from pathlib import Path
 from typing import List, Sequence, Tuple
 
+from fastembed import SparseTextEmbedding, TextEmbedding
 from qdrant_client import QdrantClient
-from qdrant_client.models import Distance, PointStruct, VectorParams
-from sentence_transformers import SentenceTransformer
+from qdrant_client import models
 from unstructured_client import UnstructuredClient
 from unstructured_client.models import operations, shared
 from unstructured_client.models.errors import SDKError
@@ -42,28 +42,52 @@ def collect_pdfs(target: Path) -> List[Path]:
     raise FileNotFoundError(f"PDF path not found: {target}")
 
 
-def embed_chunks(model: SentenceTransformer, chunks: List[str]) -> List[List[float]]:
-    """Generate vector embeddings for text chunks."""
+def _to_list(x) -> List[float]:
+    return x.tolist() if hasattr(x, "tolist") else list(x)
+
+
+def embed_chunks(
+    dense_model: TextEmbedding, sparse_model: SparseTextEmbedding, chunks: List[str]
+) -> Tuple[List[List[float]], List[models.SparseVector]]:
+    """Generate dense + sparse embeddings for text chunks."""
     if not chunks:
-        return []
-    embeddings = model.encode(
-        chunks,
-        normalize_embeddings=True,
-        convert_to_numpy=True,
-    )
-    return embeddings.tolist()
+        return [], []
+
+    dense_embs = list(dense_model.embed(chunks))
+    sparse_embs = list(sparse_model.embed(chunks))
+
+    dense_vectors: List[List[float]] = []
+    sparse_vectors: List[models.SparseVector] = []
+
+    for dense_vec, sparse_vec in zip(dense_embs, sparse_embs):
+        dense_vectors.append(_to_list(dense_vec))
+        sparse_vectors.append(
+            models.SparseVector(
+                indices=list(sparse_vec.indices),
+                values=list(sparse_vec.values),
+            )
+        )
+
+    return dense_vectors, sparse_vectors
 
 
-def ensure_collection(client: QdrantClient, name: str, vector_size: int) -> None:
-    """Create the collection if it does not exist."""
+def ensure_collection(client: QdrantClient, name: str, dense_dim: int) -> None:
+    """Create the collection with named dense + sparse vectors if it does not exist."""
     if client.collection_exists(name):
         return
     client.create_collection(
         collection_name=name,
-        vectors_config=VectorParams(
-            size=vector_size,
-            distance=Distance.COSINE,
-        ),
+        vectors_config={
+            "dense": models.VectorParams(
+                size=dense_dim,
+                distance=models.Distance.COSINE,
+            )
+        },
+        sparse_vectors_config={
+            "sparse": models.SparseVectorParams(
+                modifier=models.Modifier.IDF,
+            )
+        },
     )
 
 
@@ -72,16 +96,22 @@ def upsert_chunks(
     collection: str,
     pdf_name: str,
     chunks: List[str],
-    vectors: List[List[float]],
+    dense_vectors: List[List[float]],
+    sparse_vectors: List[models.SparseVector],
     pages: List[List[int]],
 ) -> None:
     """Write chunk payloads + vectors to Qdrant."""
     points = []
-    for idx, (chunk, vector, page_list) in enumerate(zip(chunks, vectors, pages)):
+    for idx, (chunk, dense_vector, sparse_vector, page_list) in enumerate(
+        zip(chunks, dense_vectors, sparse_vectors, pages)
+    ):
         points.append(
-            PointStruct(
+            models.PointStruct(
                 id=str(uuid.uuid4()),
-                vector=vector,
+                vector={
+                    "dense": dense_vector,
+                    "sparse": sparse_vector,
+                },
                 payload={
                     "source": pdf_name,
                     "chunk_index": idx,
@@ -185,7 +215,8 @@ def ingest_pdfs(
     pdfs: Sequence[Path],
     client: QdrantClient,
     collection: str,
-    model: SentenceTransformer,
+    dense_model: TextEmbedding,
+    sparse_model: SparseTextEmbedding,
     unstructured_client: UnstructuredClient,
     strategy: str,
     chunking_strategy: str | None,
@@ -198,7 +229,8 @@ def ingest_pdfs(
         logger.warning("No PDFs to ingest")
         return []
 
-    ensure_collection(client, collection, model.get_sentence_embedding_dimension())
+    dense_dim_probe = len(_to_list(next(iter(dense_model.embed(["dimension probe"])))))
+    ensure_collection(client, collection, dense_dim_probe)
     results: List[dict] = []
 
     for pdf_path in pdfs:
@@ -223,13 +255,14 @@ def ingest_pdfs(
             logger.warning("No text extracted from %s", pdf_path.name)
             continue
 
-        vectors = embed_chunks(model, chunk_payloads)
+        dense_vectors, sparse_vectors = embed_chunks(dense_model, sparse_model, chunk_payloads)
         upsert_chunks(
             client,
             collection=collection,
             pdf_name=pdf_path.name,
             chunks=chunk_payloads,
-            vectors=vectors,
+            dense_vectors=dense_vectors,
+            sparse_vectors=sparse_vectors,
             pages=page_ranges,
         )
         logger.info(
@@ -264,7 +297,8 @@ def run_from_env() -> List[dict]:
     qdrant_host = os.getenv("QDRANT_HOST", "localhost")
     qdrant_port = load_env_int("QDRANT_PORT", 6333)
     qdrant_collection = os.getenv("QDRANT_COLLECTION", "pdf_chunks")
-    embedding_model_name = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
+    dense_model_name = os.getenv("DENSE_MODEL", "BAAI/bge-small-en-v1.5")
+    sparse_model_name = os.getenv("SPARSE_MODEL", "Qdrant/bm25")
 
     chunk_size = load_env_int("CHUNK_SIZE", 1200)
     chunk_overlap = load_env_int("CHUNK_OVERLAP", 200)
@@ -286,8 +320,9 @@ def run_from_env() -> List[dict]:
         logger.warning("No PDFs found at %s", target)
         return []
 
-    model = SentenceTransformer(embedding_model_name)
     qdrant = QdrantClient(host=qdrant_host, port=qdrant_port, prefer_grpc=False)
+    dense_model = TextEmbedding(model_name=dense_model_name)
+    sparse_model = SparseTextEmbedding(model_name=sparse_model_name)
     unstructured_client = UnstructuredClient(
         api_key_auth=unstructured_api_key,
         server_url=unstructured_api_url,
@@ -297,7 +332,8 @@ def run_from_env() -> List[dict]:
         pdfs=pdfs,
         client=qdrant,
         collection=qdrant_collection,
-        model=model,
+        dense_model=dense_model,
+        sparse_model=sparse_model,
         unstructured_client=unstructured_client,
         strategy=strategy,
         chunking_strategy=chunking_strategy,

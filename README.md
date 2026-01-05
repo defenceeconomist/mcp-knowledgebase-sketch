@@ -61,10 +61,14 @@ docker compose run --rm mcp python ingest_pdfs.py
 
 The script will create the `pdf_chunks` collection (if missing) and upsert chunk payloads with page hints and text for retrieval.
 
-### Using the Unstructured API for partitioning + chunking
-Use `ingest_unstructured.py` when you want Unstructured to handle PDF parsing and chunking before embedding and upserting into Qdrant.
+### Using the Unstructured API (hybrid dense + sparse vectors with FastEmbed)
+Use `ingest_unstructured.py` when you want Unstructured to handle PDF parsing/chunking and store both dense (`dense`) and sparse (`sparse`, BM25-style) vectors in Qdrant. FastEmbed powers both vector types; Qdrant stores them as named vectors for hybrid search.
 
-Additional environment:
+Key environment:
+- `DATA_DIR` – directory of PDFs when `PDF_PATH` is not set (default `data`).
+- `PDF_PATH` – path to a single PDF **or** a directory (both accepted).
+- `QDRANT_HOST` / `QDRANT_PORT` / `QDRANT_COLLECTION` – customize the target collection (default `pdf_chunks`).
+- `DENSE_MODEL` / `SPARSE_MODEL` – FastEmbed model names (defaults: `BAAI/bge-small-en-v1.5` and `Qdrant/bm25`).
 - `UNSTRUCTURED_API_KEY` (required) – API key for the Unstructured API.
 - `UNSTRUCTURED_API_URL` – base URL (default `https://api.unstructured.io`).
 - `UNSTRUCTURED_STRATEGY` – partition strategy (default `hi_res`).
@@ -72,27 +76,24 @@ Additional environment:
 - `CHUNK_SIZE` / `CHUNK_OVERLAP` – forwarded to the Unstructured chunker as `max_characters` / `overlap`.
 - `UNSTRUCTURED_LANGUAGES` – optional comma-separated language codes (e.g., `eng,spa`).
 
-Run locally:
+Run locally (directory ingest, default collection):
 ```bash
 UNSTRUCTURED_API_KEY=your-key python ingest_unstructured.py
 ```
-This uses the same Qdrant and SentenceTransformers defaults as `ingest_pdfs.py` but calls the Unstructured API to partition and chunk PDFs before embedding and upserting.
 
-Run inside Docker (uses mounted `./data`):
+Single-file ingest:
 ```bash
-UNSTRUCTURED_API_KEY=your-key docker compose run --rm mcp ingest_unstructured.py
-```
-The Dockerfile now uses a Python entrypoint so you can swap the command to run any script (server stays `python mcp_app.py` by default).
-
-If you prefer to rely on `.env`, add `UNSTRUCTURED_API_KEY=...` there, rebuild, and run:
-```bash
-docker compose build
-docker compose run --rm mcp ingest_unstructured.py
+UNSTRUCTURED_API_KEY=your-key PDF_PATH=./data/my.pdf python ingest_unstructured.py
 ```
 
-Try
-
+Custom collection name:
 ```bash
-# note the python is not strictly required in this instance as the python is the default entry point
-docker compose exec mcp python ingest_unstructured.py
+UNSTRUCTURED_API_KEY=your-key QDRANT_COLLECTION=my_hybrid_chunks python ingest_unstructured.py
 ```
+
+Run inside Docker (uses mounted `./data`; swap envs as needed):
+```bash
+UNSTRUCTURED_API_KEY=your-key docker compose run --rm mcp python ingest_unstructured.py
+```
+
+The Dockerfile uses a Python entrypoint, so you can swap commands as needed (server default remains `python mcp_app.py`).
