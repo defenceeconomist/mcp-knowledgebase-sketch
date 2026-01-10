@@ -289,10 +289,14 @@ def parse_languages(raw: str | None) -> List[str] | None:
     return [lang for lang in langs if lang]
 
 
-def run_from_env() -> List[dict]:
-    data_dir = Path(os.getenv("DATA_DIR", "data"))
-    pdf_path_override = os.getenv("PDF_PATH")
-    target = Path(pdf_path_override).expanduser() if pdf_path_override else data_dir
+def run_from_env(
+    pdf_path_override: str | None = None,
+    data_dir_override: str | None = None,
+) -> List[dict]:
+    data_dir = Path(data_dir_override or os.getenv("DATA_DIR", "data")).expanduser()
+    pdf_path_env = os.getenv("PDF_PATH")
+    target_raw = pdf_path_override or pdf_path_env
+    target = Path(target_raw).expanduser() if target_raw else data_dir
 
     qdrant_host = os.getenv("QDRANT_HOST", "localhost")
     qdrant_port = load_env_int("QDRANT_PORT", 6333)

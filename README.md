@@ -97,3 +97,45 @@ UNSTRUCTURED_API_KEY=your-key docker compose run --rm mcp python ingest_unstruct
 ```
 
 The Dockerfile uses a Python entrypoint, so you can swap commands as needed (server default remains `python mcp_app.py`).
+
+## Hybrid search demo (local)
+Use `hybrid_search.py` to run a small hybrid (dense + sparse) search against a local Qdrant instance. The script can create a demo collection, index sample docs, and then query with reciprocal rank fusion.
+
+Prereqs:
+- Qdrant running locally (e.g. `docker compose up qdrant`)
+- Python deps installed: `pip install -r requirements.txt`
+
+Environment (optional):
+- `QDRANT_URL` – Qdrant URL (default `http://localhost:6333`)
+- `QDRANT_COLLECTION` – collection name (default `hybrid_demo`)
+- `DENSE_MODEL` – FastEmbed dense model name (default `BAAI/bge-small-en-v1.5`)
+- `SPARSE_MODEL` – FastEmbed sparse model name (default `Qdrant/bm25`)
+
+Run locally:
+```bash
+python hybrid_search.py "hybrid search in qdrant" --recreate
+```
+
+Custom URL/collection:
+```bash
+QDRANT_URL=http://localhost:6333 QDRANT_COLLECTION=my_hybrid_demo \
+  python hybrid_search.py "vector search" --top-k 5 --prefetch-k 40
+```
+
+## Hybrid search examples
+Two runnable scripts live in `examples/`:
+
+Query an existing collection:
+```bash
+python examples/search_existing.py "your query" my_collection
+```
+
+Seed demo docs (if empty) and query:
+```bash
+python examples/search_demo.py "your query" demo_collection
+```
+
+Recreate the demo collection before indexing:
+```bash
+python examples/search_demo.py "your query" demo_collection --recreate
+```

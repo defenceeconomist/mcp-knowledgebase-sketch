@@ -1,6 +1,5 @@
 fastmcp<3
 qdrant-client[fastembed]>=1.9.2
 fastembed>=0.3.5
-sentence-transformers>=3.0.1
-pymupdf>=1.24.9
 unstructured-client>=0.23.0
+python-dotenv>=1.0.0
