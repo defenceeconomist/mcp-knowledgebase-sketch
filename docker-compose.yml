@@ -6,6 +6,18 @@ services:
       - "6334:6334"   # gRPC
     volumes:
       - qdrant_storage:/qdrant/storage
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+  redisinsight:
+    image: redis/redisinsight:latest
+    ports:
+      - "8001:5540"
+    depends_on:
+      - redis
   mcp:
     build: .
     restart: unless-stopped
@@ -21,6 +33,11 @@ services:
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
       - QDRANT_COLLECTION=${QDRANT_COLLECTION:-pdf_chunks}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - REDIS_PREFIX=${REDIS_PREFIX:-unstructured}
+      - REDIS_SKIP_PROCESSED=${REDIS_SKIP_PROCESSED:-1}
+      - STORE_PARTITIONS_DISK=${STORE_PARTITIONS_DISK:-1}
+      - STORE_CHUNKS_DISK=${STORE_CHUNKS_DISK:-1}
       - EMBEDDING_MODEL=${EMBEDDING_MODEL:-all-MiniLM-L6-v2}
       - DENSE_MODEL=${DENSE_MODEL:-BAAI/bge-small-en-v1.5}
       - SPARSE_MODEL=${SPARSE_MODEL:-Qdrant/bm25}
@@ -41,3 +58,4 @@ services:
 
 volumes:
   qdrant_storage:
+  redis_data:

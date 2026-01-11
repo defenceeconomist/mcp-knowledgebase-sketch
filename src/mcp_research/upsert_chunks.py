@@ -9,6 +9,11 @@ from typing import Iterable, List
 from fastembed import SparseTextEmbedding, TextEmbedding
 from qdrant_client import QdrantClient, models
 
+try:
+    import redis
+except ImportError:  # pragma: no cover - optional dependency
+    redis = None
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -59,12 +64,61 @@ def batched(items: List[dict], batch_size: int) -> Iterable[List[dict]]:
         yield items[idx : idx + batch_size]
 
 
+def _get_redis_client(redis_url: str):
+    if not redis_url:
+        return None
+    if redis is None:
+        raise RuntimeError("redis package is required for Redis upserts")
+    return redis.from_url(redis_url)
+
+
+def _decode_redis_value(value):
+    if value is None:
+        return None
+    return value.decode("utf-8") if isinstance(value, (bytes, bytearray)) else value
+
+
 def load_chunk_items(chunks_dir: Path) -> List[dict]:
     items: List[dict] = []
     for chunk_file in sorted(chunks_dir.glob("*.json")):
         payload = json.loads(chunk_file.read_text(encoding="utf-8"))
         if not isinstance(payload, list):
             logger.warning("Skipping %s (expected list payload)", chunk_file)
+            continue
+        for entry in payload:
+            if not isinstance(entry, dict):
+                continue
+            text = (entry.get("text") or "").strip()
+            if not text:
+                continue
+            items.append(entry)
+    return items
+
+
+def load_chunk_items_from_redis(
+    redis_client,
+    prefix: str,
+    doc_ids: List[str] | None,
+) -> List[dict]:
+    items: List[dict] = []
+    if doc_ids:
+        ids = doc_ids
+    else:
+        raw_ids = redis_client.smembers(f"{prefix}:pdf:hashes")
+        ids = [_decode_redis_value(val) for val in raw_ids]
+
+    for doc_id in ids:
+        if not doc_id:
+            continue
+        chunks_key = f"{prefix}:pdf:{doc_id}:chunks"
+        raw = redis_client.get(chunks_key)
+        raw = _decode_redis_value(raw)
+        if not raw:
+            logger.warning("Missing Redis key %s", chunks_key)
+            continue
+        payload = json.loads(raw)
+        if not isinstance(payload, list):
+            logger.warning("Skipping %s (expected list payload)", chunks_key)
             continue
         for entry in payload:
             if not isinstance(entry, dict):
@@ -124,12 +178,34 @@ def main() -> None:
     load_dotenv(Path(".env"))
 
     parser = argparse.ArgumentParser(
-        description="Upsert chunk JSON files into Qdrant for hybrid search.",
+        description="Upsert chunk payloads into Qdrant for hybrid search.",
+    )
+    parser.add_argument(
+        "--source",
+        choices=["disk", "redis"],
+        default=os.getenv("CHUNKS_SOURCE", "disk"),
+        help="Load chunks from disk or Redis",
     )
     parser.add_argument(
         "--chunks-dir",
         default=os.getenv("CHUNKS_DIR", "data/chunks"),
         help="Directory containing chunk JSON files",
+    )
+    parser.add_argument(
+        "--redis-url",
+        default=os.getenv("REDIS_URL", ""),
+        help="Redis URL (required for --source redis)",
+    )
+    parser.add_argument(
+        "--redis-prefix",
+        default=os.getenv("REDIS_PREFIX", "unstructured"),
+        help="Redis key prefix for chunk payloads",
+    )
+    parser.add_argument(
+        "--redis-doc-id",
+        action="append",
+        default=[],
+        help="Only upsert specific document_id values (repeatable)",
     )
     parser.add_argument(
         "--url",
@@ -164,10 +240,6 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    chunks_dir = Path(args.chunks_dir).expanduser()
-    if not chunks_dir.exists():
-        raise FileNotFoundError(f"Chunks directory not found: {chunks_dir}")
-
     client = QdrantClient(url=args.url)
     dense_model = TextEmbedding(model_name=args.dense_model)
     sparse_model = SparseTextEmbedding(model_name=args.sparse_model)
@@ -177,7 +249,20 @@ def main() -> None:
         client.delete_collection(args.collection)
     ensure_collection(client, args.collection, dense_dim)
 
-    items = load_chunk_items(chunks_dir)
+    if args.source == "disk":
+        chunks_dir = Path(args.chunks_dir).expanduser()
+        if not chunks_dir.exists():
+            raise FileNotFoundError(f"Chunks directory not found: {chunks_dir}")
+        items = load_chunk_items(chunks_dir)
+    else:
+        redis_client = _get_redis_client(args.redis_url)
+        if redis_client is None:
+            raise RuntimeError("REDIS_URL is required when --source redis")
+        items = load_chunk_items_from_redis(
+            redis_client=redis_client,
+            prefix=args.redis_prefix,
+            doc_ids=args.redis_doc_id or None,
+        )
     total = upsert_items(
         client=client,
         collection=args.collection,

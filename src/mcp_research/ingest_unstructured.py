@@ -1,3 +1,4 @@
+import hashlib
 import json
 import logging
 import os
@@ -7,6 +8,11 @@ from typing import List, Sequence, Tuple
 from unstructured_client import UnstructuredClient
 from unstructured_client.models import operations, shared
 from unstructured_client.models.errors import SDKError
+
+try:
+    import redis
+except ImportError:  # pragma: no cover - optional dependency
+    redis = None
 
 
 logging.basicConfig(
@@ -42,6 +48,13 @@ def load_env_int(key: str, default: int) -> int:
         return default
 
 
+def load_env_bool(key: str, default: bool = False) -> bool:
+    raw = os.getenv(key)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
 def collect_pdfs(target: Path) -> List[Path]:
     """Resolve a single PDF or all PDFs in a directory."""
     if target.is_file():
@@ -58,9 +71,103 @@ def _write_json(path: Path, payload) -> None:
     path.write_text(json.dumps(payload, indent=2, ensure_ascii=True), encoding="utf-8")
 
 
+def _hash_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _get_redis_client(redis_url: str):
+    if not redis_url:
+        return None
+    if redis is None:
+        logger.warning("REDIS_URL set but redis package is missing; skipping Redis storage")
+        return None
+    return redis.from_url(redis_url)
+
+
+def _redis_key(prefix: str, doc_id: str, suffix: str) -> str:
+    return f"{prefix}:pdf:{doc_id}:{suffix}"
+
+
+def upload_to_redis(
+    redis_client,
+    doc_id: str,
+    source: str,
+    partitions_payload: list,
+    chunks_payload: list,
+    prefix: str = "unstructured",
+) -> dict:
+    """Store partition + chunk payloads and metadata for a PDF in Redis."""
+    meta_key = _redis_key(prefix, doc_id, "meta")
+    partitions_key = _redis_key(prefix, doc_id, "partitions")
+    chunks_key = _redis_key(prefix, doc_id, "chunks")
+    if not redis_client:
+        raise ValueError("redis_client is required to upload data to Redis")
+
+    redis_client.set(partitions_key, json.dumps(partitions_payload, ensure_ascii=True))
+    redis_client.set(chunks_key, json.dumps(chunks_payload, ensure_ascii=True))
+    redis_client.hset(
+        meta_key,
+        mapping={
+            "document_id": doc_id,
+            "source": source,
+            "chunks": str(len(chunks_payload)),
+            "partitions_key": partitions_key,
+            "chunks_key": chunks_key,
+        },
+    )
+    redis_client.sadd(f"{prefix}:pdf:hashes", doc_id)
+    return {
+        "meta_key": meta_key,
+        "partitions_key": partitions_key,
+        "chunks_key": chunks_key,
+    }
+
+
+def upload_json_files_to_redis(
+    redis_client,
+    partitions_path: Path,
+    chunks_path: Path,
+    doc_id: str | None = None,
+    source: str | None = None,
+    prefix: str = "unstructured",
+) -> dict:
+    """Upload partition + chunk JSON files into Redis (doc_id required or inferred)."""
+    if not partitions_path.is_file():
+        raise FileNotFoundError(f"Partition JSON not found: {partitions_path}")
+    if not chunks_path.is_file():
+        raise FileNotFoundError(f"Chunks JSON not found: {chunks_path}")
+
+    partitions_payload = json.loads(partitions_path.read_text(encoding="utf-8"))
+    chunks_payload = json.loads(chunks_path.read_text(encoding="utf-8"))
+    if not isinstance(chunks_payload, list):
+        raise ValueError(f"Chunks JSON must be a list: {chunks_path}")
+
+    if doc_id is None:
+        if chunks_payload:
+            doc_id = chunks_payload[0].get("document_id")
+        if not doc_id:
+            raise ValueError("doc_id is required or must exist in chunks JSON")
+
+    if source is None:
+        if chunks_payload:
+            source = chunks_payload[0].get("source")
+        if not source:
+            source = chunks_path.stem
+
+    return upload_to_redis(
+        redis_client=redis_client,
+        doc_id=doc_id,
+        source=source,
+        partitions_payload=partitions_payload,
+        chunks_payload=chunks_payload,
+        prefix=prefix,
+    )
+
+
 def partition_pdf(
     client: UnstructuredClient,
     pdf_path: Path,
+    file_bytes: bytes | None,
     strategy: str,
     chunking_strategy: str | None,
     max_characters: int | None,
@@ -68,10 +175,11 @@ def partition_pdf(
     languages: List[str] | None,
 ):
     """Call the Unstructured API to partition (and optionally chunk) a PDF."""
-    try:
-        file_bytes = pdf_path.read_bytes()
-    except OSError as exc:
-        raise RuntimeError(f"Failed to read {pdf_path}: {exc}") from exc
+    if file_bytes is None:
+        try:
+            file_bytes = pdf_path.read_bytes()
+        except OSError as exc:
+            raise RuntimeError(f"Failed to read {pdf_path}: {exc}") from exc
 
     files = shared.Files(content=file_bytes, file_name=pdf_path.name)
     params = shared.PartitionParameters(
@@ -154,6 +262,11 @@ def ingest_pdfs(
     languages: List[str] | None,
     partitions_dir: Path,
     chunks_dir: Path,
+    redis_client,
+    redis_prefix: str,
+    redis_skip_processed: bool,
+    store_partitions_disk: bool,
+    store_chunks_disk: bool,
 ) -> List[dict]:
     """Partition PDFs with Unstructured and dump partitions/chunks to disk."""
     if not pdfs:
@@ -166,9 +279,36 @@ def ingest_pdfs(
         logger.info("Processing %s via Unstructured API", pdf_path.name)
 
         try:
+            file_bytes = pdf_path.read_bytes()
+        except OSError as exc:
+            logger.exception("Failed to read %s: %s", pdf_path.name, exc)
+            continue
+
+        doc_id = _hash_bytes(file_bytes)
+        meta_key = _redis_key(redis_prefix, doc_id, "meta")
+        chunks_key = _redis_key(redis_prefix, doc_id, "chunks")
+        partitions_key = _redis_key(redis_prefix, doc_id, "partitions")
+
+        if redis_client and redis_skip_processed:
+            try:
+                if redis_client.exists(meta_key):
+                    logger.info("Skipping %s (already processed: %s)", pdf_path.name, doc_id)
+                    results.append(
+                        {
+                            "file": pdf_path.name,
+                            "document_id": doc_id,
+                            "skipped": True,
+                        }
+                    )
+                    continue
+            except Exception as exc:
+                logger.warning("Redis check failed for %s: %s", pdf_path.name, exc)
+
+        try:
             elements = partition_pdf(
                 unstructured_client,
                 pdf_path=pdf_path,
+                file_bytes=file_bytes,
                 strategy=strategy,
                 chunking_strategy=chunking_strategy,
                 max_characters=max_characters,
@@ -184,7 +324,9 @@ def ingest_pdfs(
             for element in elements
         ]
         partition_path = partitions_dir / f"{pdf_path.stem}.json"
-        _write_json(partition_path, elements_payload)
+        partition_path_value = str(partition_path) if store_partitions_disk else None
+        if store_partitions_disk:
+            _write_json(partition_path, elements_payload)
 
         chunk_payloads, page_ranges = elements_to_chunks(elements_payload)
         if not chunk_payloads:
@@ -195,6 +337,7 @@ def ingest_pdfs(
         for idx, (chunk, page_list) in enumerate(zip(chunk_payloads, page_ranges)):
             chunk_items.append(
                 {
+                    "document_id": doc_id,
                     "source": pdf_path.name,
                     "chunk_index": idx,
                     "pages": page_list,
@@ -203,7 +346,23 @@ def ingest_pdfs(
             )
 
         chunk_path = chunks_dir / f"{pdf_path.stem}.json"
-        _write_json(chunk_path, chunk_items)
+        chunk_path_value = str(chunk_path) if store_chunks_disk else None
+        if store_chunks_disk:
+            _write_json(chunk_path, chunk_items)
+
+        if redis_client:
+            try:
+                upload_to_redis(
+                    redis_client=redis_client,
+                    doc_id=doc_id,
+                    source=pdf_path.name,
+                    partitions_payload=elements_payload,
+                    chunks_payload=chunk_items,
+                    prefix=redis_prefix,
+                )
+            except Exception as exc:
+                logger.warning("Failed to write Redis data for %s: %s", pdf_path.name, exc)
+
         logger.info(
             "Wrote %d chunks for %s",
             len(chunk_payloads),
@@ -212,9 +371,10 @@ def ingest_pdfs(
         results.append(
             {
                 "file": pdf_path.name,
+                "document_id": doc_id,
                 "chunks": len(chunk_payloads),
-                "partition_path": str(partition_path),
-                "chunk_path": str(chunk_path),
+                "partition_path": partition_path_value,
+                "chunk_path": chunk_path_value,
             }
         )
 
@@ -253,6 +413,13 @@ def run_from_env(
     unstructured_api_key = os.getenv("UNSTRUCTURED_API_KEY")
     unstructured_api_url = os.getenv("UNSTRUCTURED_API_URL", "https://api.unstructured.io")
 
+    redis_url = os.getenv("REDIS_URL", "")
+    redis_prefix = os.getenv("REDIS_PREFIX", "unstructured")
+    redis_skip_processed = load_env_bool("REDIS_SKIP_PROCESSED", True)
+    store_partitions_disk = load_env_bool("STORE_PARTITIONS_DISK", False)
+    store_chunks_disk = load_env_bool("STORE_CHUNKS_DISK", False)
+    redis_client = _get_redis_client(redis_url)
+
     if not unstructured_api_key:
         raise RuntimeError("UNSTRUCTURED_API_KEY is required to call the Unstructured API")
 
@@ -276,6 +443,11 @@ def run_from_env(
         languages=languages,
         partitions_dir=partitions_dir,
         chunks_dir=chunks_dir,
+        redis_client=redis_client,
+        redis_prefix=redis_prefix,
+        redis_skip_processed=redis_skip_processed,
+        store_partitions_disk=store_partitions_disk,
+        store_chunks_disk=store_chunks_disk,
     )
 
 

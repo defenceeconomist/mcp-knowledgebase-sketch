@@ -86,7 +86,7 @@ docker compose run --rm mcp python ingest_pdfs.py
 The script will create the `pdf_chunks` collection (if missing) and upsert chunk payloads with page hints and text for retrieval.
 
 ### Using the Unstructured API (partition + chunk)
-Use `ingest_unstructured.py` when you want Unstructured to handle PDF parsing/chunking and write partitioned + chunked output to disk. The next step is to upsert chunks into Qdrant for hybrid search.
+Use `ingest_unstructured.py` when you want Unstructured to handle PDF parsing/chunking. It stores partition + chunk JSON in Redis by default (and can optionally write to disk) for inspection and deduping. The next step is to upsert chunks into Qdrant for hybrid search.
 
 Key environment:
 - `DATA_DIR` – directory of PDFs when `PDF_PATH` is not set (default `data-raw`).
@@ -99,6 +99,10 @@ Key environment:
 - `UNSTRUCTURED_LANGUAGES` – optional comma-separated language codes (e.g., `eng,spa`).
 - `PARTITIONS_DIR` – directory for partitioned element JSON (default `data/partitions`).
 - `CHUNKS_DIR` – directory for chunk JSON (default `data/chunks`).
+- `REDIS_URL` – Redis connection string (e.g. `redis://localhost:6379/0`).
+- `REDIS_PREFIX` – key prefix for Redis entries (default `unstructured`).
+- `REDIS_SKIP_PROCESSED` – skip PDFs already in Redis (`1`/`0`, default `1`).
+- `STORE_PARTITIONS_DISK` / `STORE_CHUNKS_DISK` – also write JSON to disk (`1`/`0`, default `0`).
 
 Run locally (directory ingest, default output paths):
 ```bash
@@ -110,13 +114,33 @@ Run inside Docker (uses mounted `./data`; swap envs as needed):
 UNSTRUCTURED_API_KEY=your-key docker compose run --rm mcp python ingest_unstructured.py
 ```
 
+If Redis is enabled, a content hash (`document_id`) is stored per PDF to avoid reprocessing the same file bytes. The JSON payloads are stored under keys like `unstructured:pdf:<document_id>:partitions` and `unstructured:pdf:<document_id>:chunks`.
+You can inspect those keys with RedisInsight (default `http://localhost:8001` when using the compose stack).
+
 The Dockerfile uses a Python entrypoint, so you can swap commands as needed (server default remains `python mcp_app.py`).
 
-### Upsert chunk JSON into Qdrant
-After generating chunk JSON files, use `upsert_chunks.py` to embed and upsert them into a hybrid-search-compatible collection (named vectors `dense` + `sparse`).
+### Upload existing JSON to Redis (same schema as Unstructured ingest)
+If you already have partition/chunk JSON files in `data/partitions` + `data/chunks`, use `upload_data_to_redis.py` to populate Redis in the exact layout used by `ingest_unstructured.py`.
+
+Upload all pairs in the default directories:
+```bash
+REDIS_URL=redis://localhost:6379/0 python upload_data_to_redis.py
+```
+
+Upload a single pair:
+```bash
+REDIS_URL=redis://localhost:6379/0 python upload_data_to_redis.py \
+  --partitions-file data/partitions/example.json \
+  --chunks-file data/chunks/example.json
+```
+
+### Upsert chunks into Qdrant (disk or Redis)
+Use `upsert_chunks.py` to embed and upsert chunk payloads into a hybrid-search-compatible collection (named vectors `dense` + `sparse`). The chunks can come from disk or Redis.
 
 Key environment:
-- `CHUNKS_DIR` – directory containing chunk JSON files (default `data/chunks`).
+- `CHUNKS_DIR` – directory containing chunk JSON files (default `data/chunks`, used with `--source disk`).
+- `CHUNKS_SOURCE` – `disk` or `redis` (default `disk`).
+- `REDIS_URL` / `REDIS_PREFIX` – Redis connection and key prefix (used with `--source redis`).
 - `QDRANT_URL` – Qdrant URL (default `http://localhost:6333`).
 - `QDRANT_COLLECTION` – target collection name (default `pdf_chunks`).
 - `DENSE_MODEL` / `SPARSE_MODEL` – FastEmbed model names.
@@ -124,6 +148,25 @@ Key environment:
 Run locally:
 ```bash
 python upsert_chunks.py --chunks-dir ./data/chunks --collection pdf_chunks
+```
+
+From Redis:
+```bash
+REDIS_URL=redis://localhost:6379/0 python upsert_chunks.py --source redis --collection pdf_chunks
+```
+
+Mermaid overview (ingest -> Redis -> Qdrant):
+
+```mermaid
+flowchart LR
+    A[PDFs in DATA_DIR or PDF_PATH] --> B[ingest_unstructured.py]
+    B --> C[Unstructured API partition + chunk]
+    C --> D[(Redis: partitions + chunks)]
+    D --> E[upsert_chunks.py --source redis]
+    E --> F[(Qdrant collection)]
+    B -. optional .-> G[Disk JSON in data/partitions + data/chunks]
+    G --> H[upsert_chunks.py --source disk]
+    H --> F
 ```
 
 ## Hybrid search demo (local)
@@ -148,6 +191,23 @@ Custom URL/collection:
 ```bash
 QDRANT_URL=http://localhost:6333 QDRANT_COLLECTION=my_hybrid_demo \
   python hybrid_search.py "vector search" --top-k 5 --prefetch-k 40
+```
+
+Mermaid overview (MCP search + fetch tools):
+
+```mermaid
+flowchart LR
+    A[ChatGPT UI] --> B[FastMCP server /mcp]
+    B --> C[search tool]
+    C --> D[FastEmbed dense + sparse]
+    C --> E[Qdrant hybrid search]
+    E --> F[ids + scores]
+    F --> B
+    B --> G[fetch tool]
+    G --> H[Qdrant retrieve by id]
+    H --> I[chunk payloads]
+    I --> B
+    B --> A
 ```
 
 ## Hybrid search examples

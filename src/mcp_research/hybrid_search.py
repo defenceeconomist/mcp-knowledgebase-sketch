@@ -2,20 +2,25 @@ from __future__ import annotations
 
 import argparse
 import os
+from pathlib import Path
 from typing import Iterable, List, Tuple
 
 from fastembed import SparseTextEmbedding, TextEmbedding
 from qdrant_client import QdrantClient, models
 
 
-DEFAULT_QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
-DEFAULT_COLLECTION = os.getenv("QDRANT_COLLECTION", "hybrid_demo")
-
-# Good CPU-friendly default dense model (FastEmbed downloads it on first use).
-DEFAULT_DENSE_MODEL = os.getenv("DENSE_MODEL", "BAAI/bge-small-en-v1.5")
-
-# Sparse model: BM25-as-sparse-vectors (recommended to enable IDF modifier in Qdrant).
-DEFAULT_SPARSE_MODEL = os.getenv("SPARSE_MODEL", "Qdrant/bm25")
+def load_dotenv(path: Path) -> None:
+    if not path.is_file():
+        return
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip().strip('"').strip("'")
+        if key and key not in os.environ:
+            os.environ[key] = value
 
 
 def _to_list(x) -> List[float]:
@@ -129,12 +134,30 @@ def hybrid_search(
 
 
 def main():
+    load_dotenv(Path(".env"))
+
     parser = argparse.ArgumentParser(description="Hybrid (dense+sparse) search with Qdrant (local).")
     parser.add_argument("query", help="Query text to search for")
-    parser.add_argument("--url", default=DEFAULT_QDRANT_URL, help="Qdrant URL (default: http://localhost:6333)")
-    parser.add_argument("--collection", default=DEFAULT_COLLECTION, help="Collection name")
-    parser.add_argument("--dense-model", default=DEFAULT_DENSE_MODEL, help="FastEmbed dense model name")
-    parser.add_argument("--sparse-model", default=DEFAULT_SPARSE_MODEL, help="FastEmbed sparse model name")
+    parser.add_argument(
+        "--url",
+        default=os.getenv("QDRANT_URL", "http://localhost:6333"),
+        help="Qdrant URL (default: http://localhost:6333)",
+    )
+    parser.add_argument(
+        "--collection",
+        default=os.getenv("QDRANT_COLLECTION", "hybrid_demo"),
+        help="Collection name",
+    )
+    parser.add_argument(
+        "--dense-model",
+        default=os.getenv("DENSE_MODEL", "BAAI/bge-small-en-v1.5"),
+        help="FastEmbed dense model name",
+    )
+    parser.add_argument(
+        "--sparse-model",
+        default=os.getenv("SPARSE_MODEL", "Qdrant/bm25"),
+        help="FastEmbed sparse model name",
+    )
     parser.add_argument("--top-k", type=int, default=5, help="Results to return")
     parser.add_argument("--prefetch-k", type=int, default=40, help="Candidates per retriever before fusion")
     parser.add_argument("--recreate", action="store_true", help="Drop + recreate collection and reindex demo docs")
