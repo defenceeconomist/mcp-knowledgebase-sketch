@@ -43,11 +43,26 @@ docker compose up --build
 ```
 - `mcp` service: serves HTTP MCP on port 8000.
 - `cloudflared` service: starts a tunnel using `CF_TUNNEL_TOKEN` so the OAuth callback is reachable from GitHub.
+- `minio` service: S3-compatible object storage with a web console on port 9001.
 
 Test the running server from your terminal (requires OAuth login in a browser). Use the public tunnel URL when auth is enabled:
 ```bash
 python examples/ping_mcp.py --url https://mcp.heley.uk/mcp
 ```
+
+## MinIO buckets and uploads (UI)
+The compose stack includes MinIO with a web console so you can create multiple buckets and upload files through a UI.
+
+Start MinIO:
+```bash
+docker compose up minio
+```
+
+Open the console at `http://localhost:9001` and sign in with:
+- `MINIO_ROOT_USER` (default `minioadmin`)
+- `MINIO_ROOT_PASSWORD` (default `minioadmin`)
+
+Storage is persisted in a Docker volume (`minio_data`) so buckets and objects survive container restarts.
 
 ## Project Layout
 - `src/mcp_research/` – core Python modules.

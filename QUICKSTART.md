@@ -38,12 +38,18 @@ python examples/ping_mcp.py --url https://mcp.heley.uk/mcp
 docker compose up qdrant
 ```
 
-## 5) Hybrid search demo
+## 5) Run MinIO (optional UI for bucket uploads)
+```bash
+docker compose up minio
+```
+Open `http://localhost:9001` and sign in with `MINIO_ROOT_USER`/`MINIO_ROOT_PASSWORD` (defaults to `minioadmin`/`minioadmin`).
+
+## 6) Hybrid search demo
 ```bash
 python hybrid_search.py "hybrid search in qdrant" --recreate
 ```
 
-## 6) Unstructured ingest + upsert (optional)
+## 7) Unstructured ingest + upsert (optional)
 Ingest PDFs via Unstructured (stores partitions + chunks in Redis by default):
 ```bash
 UNSTRUCTURED_API_KEY=your-key python ingest_unstructured.py
