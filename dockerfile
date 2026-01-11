@@ -16,6 +16,7 @@ COPY mcp_app.py /app/mcp_app.py
 COPY ingest_unstructured.py /app/ingest_unstructured.py
 COPY hybrid_search.py /app/hybrid_search.py
 COPY upsert_chunks.py /app/upsert_chunks.py
+COPY minio_ingest.py /app/minio_ingest.py
 ENV PYTHONPATH=/app/src
 
 EXPOSE 8000

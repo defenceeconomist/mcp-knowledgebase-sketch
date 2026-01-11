@@ -11,6 +11,10 @@ from qdrant_client import QdrantClient
 
 from mcp_research import hybrid_search
 
+try:
+    import redis
+except ImportError:  # pragma: no cover - optional dependency
+    redis = None
 
 # --------------------------------------------------------------------
 # Logging
@@ -41,12 +45,15 @@ QDRANT_HOST = os.getenv("QDRANT_HOST", "localhost")
 QDRANT_PORT = os.getenv("QDRANT_PORT", "6333")
 QDRANT_URL = os.getenv("QDRANT_URL") or f"http://{QDRANT_HOST}:{QDRANT_PORT}"
 QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "pdf_chunks")
+REDIS_URL = os.getenv("REDIS_URL", "")
+REDIS_PREFIX = os.getenv("REDIS_PREFIX", "unstructured")
 DENSE_MODEL = os.getenv("DENSE_MODEL", "BAAI/bge-small-en-v1.5")
 SPARSE_MODEL = os.getenv("SPARSE_MODEL", "Qdrant/bm25")
 
 _qdrant_client: QdrantClient | None = None
 _dense_model: TextEmbedding | None = None
 _sparse_model: SparseTextEmbedding | None = None
+_redis_client = None
 
 
 def _get_qdrant_client() -> QdrantClient:
@@ -63,6 +70,35 @@ def _get_models() -> tuple[TextEmbedding, SparseTextEmbedding]:
     if _sparse_model is None:
         _sparse_model = SparseTextEmbedding(model_name=SPARSE_MODEL)
     return _dense_model, _sparse_model
+
+
+def _get_redis_client():
+    global _redis_client
+    if not REDIS_URL:
+        return None
+    if redis is None:
+        logger.warning("REDIS_URL set but redis package is missing; skipping Redis")
+        return None
+    if _redis_client is None:
+        _redis_client = redis.from_url(REDIS_URL)
+    return _redis_client
+
+
+def _default_collection_key() -> str:
+    return f"{REDIS_PREFIX}:qdrant:default_collection"
+
+
+def _decode_redis_value(value):
+    if value is None:
+        return None
+    return value.decode("utf-8") if isinstance(value, (bytes, bytearray)) else value
+
+
+def _get_default_collection() -> str | None:
+    client = _get_redis_client()
+    if not client:
+        return None
+    return _decode_redis_value(client.get(_default_collection_key()))
 
 # --------------------------------------------------------------------
 # Auth (GitHub OAuth for ChatGPT UI)
@@ -93,9 +129,35 @@ def ping() -> str:
     """Simple health-check."""
     return "pong"
 
+@mcp.tool
+def list_collections() -> Dict[str, List[str]]:
+    """List Qdrant collections."""
+    client = _get_qdrant_client()
+    collections = client.get_collections()
+    names = [entry.name for entry in collections.collections]
+    return {"collections": names}
+
 
 @mcp.tool
-def search(query: str, top_k: int = 5, prefetch_k: int = 40) -> Dict[str, List[Dict[str, Any]]]:
+def set_default_collection(name: str) -> Dict[str, str]:
+    """Set the default Qdrant collection name in Redis."""
+    client = _get_qdrant_client()
+    if not client.collection_exists(name):
+        raise ValueError(f"Collection not found: {name}")
+    redis_client = _get_redis_client()
+    if not redis_client:
+        raise RuntimeError("REDIS_URL is required to store the default collection")
+    redis_client.set(_default_collection_key(), name)
+    return {"default_collection": name}
+
+
+@mcp.tool
+def search(
+    query: str,
+    top_k: int = 5,
+    prefetch_k: int = 40,
+    collection: str | None = None,
+) -> Dict[str, List[Dict[str, Any]]]:
     """
     Search indexed chunks via hybrid (dense+sparse) retrieval.
     Returns results with ids that can be passed to fetch().
@@ -103,9 +165,10 @@ def search(query: str, top_k: int = 5, prefetch_k: int = 40) -> Dict[str, List[D
     client = _get_qdrant_client()
     dense_model, sparse_model = _get_models()
 
+    collection_name = collection or _get_default_collection() or QDRANT_COLLECTION
     response = hybrid_search.hybrid_search(
         client=client,
-        collection_name=QDRANT_COLLECTION,
+        collection_name=collection_name,
         dense_model=dense_model,
         sparse_model=sparse_model,
         query_text=query,
@@ -130,13 +193,14 @@ def search(query: str, top_k: int = 5, prefetch_k: int = 40) -> Dict[str, List[D
 
 
 @mcp.tool
-def fetch(id: str) -> Dict[str, Any]:
+def fetch(id: str, collection: str | None = None) -> Dict[str, Any]:
     """
     Fetch a single chunk by id for deep retrieval.
     """
     client = _get_qdrant_client()
+    collection_name = collection or _get_default_collection() or QDRANT_COLLECTION
     points = client.retrieve(
-        collection_name=QDRANT_COLLECTION,
+        collection_name=collection_name,
         ids=[id],
         with_payload=True,
     )

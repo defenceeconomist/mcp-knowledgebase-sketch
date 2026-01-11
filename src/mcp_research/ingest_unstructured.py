@@ -88,6 +88,27 @@ def _redis_key(prefix: str, doc_id: str, suffix: str) -> str:
     return f"{prefix}:pdf:{doc_id}:{suffix}"
 
 
+def _collections_key(prefix: str, doc_id: str) -> str:
+    return f"{prefix}:pdf:{doc_id}:collections"
+
+
+def record_collection_mapping(
+    redis_client,
+    doc_id: str,
+    collection: str,
+    prefix: str = "unstructured",
+) -> str | None:
+    if not redis_client or not collection:
+        return None
+    collections_key = _collections_key(prefix, doc_id)
+    redis_client.sadd(collections_key, collection)
+    redis_client.hset(
+        _redis_key(prefix, doc_id, "meta"),
+        mapping={"collections_key": collections_key},
+    )
+    return collections_key
+
+
 def upload_to_redis(
     redis_client,
     doc_id: str,
@@ -95,11 +116,13 @@ def upload_to_redis(
     partitions_payload: list,
     chunks_payload: list,
     prefix: str = "unstructured",
+    collection: str | None = None,
 ) -> dict:
     """Store partition + chunk payloads and metadata for a PDF in Redis."""
     meta_key = _redis_key(prefix, doc_id, "meta")
     partitions_key = _redis_key(prefix, doc_id, "partitions")
     chunks_key = _redis_key(prefix, doc_id, "chunks")
+    collections_key = _collections_key(prefix, doc_id)
     if not redis_client:
         raise ValueError("redis_client is required to upload data to Redis")
 
@@ -113,13 +136,17 @@ def upload_to_redis(
             "chunks": str(len(chunks_payload)),
             "partitions_key": partitions_key,
             "chunks_key": chunks_key,
+            "collections_key": collections_key,
         },
     )
     redis_client.sadd(f"{prefix}:pdf:hashes", doc_id)
+    if collection:
+        redis_client.sadd(collections_key, collection)
     return {
         "meta_key": meta_key,
         "partitions_key": partitions_key,
         "chunks_key": chunks_key,
+        "collections_key": collections_key,
     }
 
 
@@ -130,6 +157,7 @@ def upload_json_files_to_redis(
     doc_id: str | None = None,
     source: str | None = None,
     prefix: str = "unstructured",
+    collection: str | None = None,
 ) -> dict:
     """Upload partition + chunk JSON files into Redis (doc_id required or inferred)."""
     if not partitions_path.is_file():
@@ -161,6 +189,7 @@ def upload_json_files_to_redis(
         partitions_payload=partitions_payload,
         chunks_payload=chunks_payload,
         prefix=prefix,
+        collection=collection,
     )
 
 

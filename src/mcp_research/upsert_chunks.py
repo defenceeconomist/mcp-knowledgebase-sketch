@@ -9,6 +9,8 @@ from typing import Iterable, List
 from fastembed import SparseTextEmbedding, TextEmbedding
 from qdrant_client import QdrantClient, models
 
+from mcp_research.ingest_unstructured import record_collection_mapping
+
 try:
     import redis
 except ImportError:  # pragma: no cover - optional dependency
@@ -160,6 +162,7 @@ def upsert_items(
                         ),
                     },
                     payload={
+                        "document_id": item.get("document_id"),
                         "source": item.get("source"),
                         "chunk_index": item.get("chunk_index"),
                         "pages": item.get("pages") or [],
@@ -249,20 +252,24 @@ def main() -> None:
         client.delete_collection(args.collection)
     ensure_collection(client, args.collection, dense_dim)
 
+    redis_client_for_load = None
     if args.source == "disk":
         chunks_dir = Path(args.chunks_dir).expanduser()
         if not chunks_dir.exists():
             raise FileNotFoundError(f"Chunks directory not found: {chunks_dir}")
         items = load_chunk_items(chunks_dir)
     else:
-        redis_client = _get_redis_client(args.redis_url)
-        if redis_client is None:
+        redis_client_for_load = _get_redis_client(args.redis_url)
+        if redis_client_for_load is None:
             raise RuntimeError("REDIS_URL is required when --source redis")
         items = load_chunk_items_from_redis(
-            redis_client=redis_client,
+            redis_client=redis_client_for_load,
             prefix=args.redis_prefix,
             doc_ids=args.redis_doc_id or None,
         )
+    redis_client = redis_client_for_load
+    if redis_client is None and args.redis_url:
+        redis_client = _get_redis_client(args.redis_url)
     total = upsert_items(
         client=client,
         collection=args.collection,
@@ -271,6 +278,15 @@ def main() -> None:
         sparse_model=sparse_model,
         batch_size=args.batch_size,
     )
+    if redis_client:
+        doc_ids = {item.get("document_id") for item in items if item.get("document_id")}
+        for doc_id in doc_ids:
+            record_collection_mapping(
+                redis_client=redis_client,
+                doc_id=doc_id,
+                collection=args.collection,
+                prefix=args.redis_prefix,
+            )
     logger.info("Upserted %d chunks into '%s'", total, args.collection)
 
 

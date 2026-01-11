@@ -64,6 +64,25 @@ Open the console at `http://localhost:9001` and sign in with:
 
 Storage is persisted in a Docker volume (`minio_data`) so buckets and objects survive container restarts.
 
+## MinIO upload -> Unstructured -> Qdrant (auto-ingest)
+Use `minio_ingest.py` (or the `minio_ingest` compose service) to listen for new uploads and run the Unstructured ingest process automatically. Each upload is upserted into a Qdrant collection named after the bucket, while partitions and chunks are still stored in Redis. A Redis set tracks which collections each document belongs to so a single file can map to multiple collections.
+
+Example (Docker Compose):
+```bash
+# Listen to all buckets at startup
+MINIO_ALL_BUCKETS=1 UNSTRUCTURED_API_KEY=your-key docker compose up minio_ingest
+```
+
+Key env vars:
+- `MINIO_ENDPOINT` (default `minio:9000`)
+- `MINIO_BUCKETS` (comma-separated bucket list) or `MINIO_ALL_BUCKETS=1`
+- `MINIO_SUFFIX` (default `.pdf`)
+- `MINIO_SKIP_EXISTING` (default `1`, skip if document already mapped to the bucket)
+- `UNSTRUCTURED_API_KEY` (required when new files need parsing)
+
+Redis mapping keys:
+- Document -> collections set: `unstructured:pdf:<document_id>:collections`
+
 ## Project Layout
 - `src/mcp_research/` – core Python modules.
 - Top-level scripts (`mcp_app.py`, `hybrid_search.py`, `ingest_unstructured.py`, `upsert_chunks.py`) are thin wrappers for local CLI use.
