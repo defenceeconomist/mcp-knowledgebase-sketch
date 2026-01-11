@@ -1,0 +1,730 @@
+[
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 0,
+    "pages": [
+      1
+    ],
+    "text": "THE\n\nQUARTERLY JOURNAL OF ECONOMICS\n\nVol. CVI\n\nNovember 1991\n\nIssue 4\n\nDOES COMPULSORY SCHOOL ATTENDANCE AFFECT SCHOOLING AND EARNINGS?*\n\nJoSHUA D. ANGRIST AND ALAN B. KRUEGER\n\n\u2018We establish that season of birth is related to educational attainment because of school start age policy and compulsory school attendance laws. Individuals born in the beginning of the year start school at an older age, and can therefore drop out after completing less schooling than individuals born near the end of the year. Roughly 25 percent of potential dropouts remain in school because of compulsory schooling laws. We estimate the impact of compulsory schooling on earnings by using quarter of birth as an instrument for education. The instrumental variables estimate of the return to education is close to the ordinary least squares estimate, suggesting that there is little bias in conventional estimates."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 1,
+    "pages": [
+      1
+    ],
+    "text": "Every developed country in the world has a compulsory schooling requirement, yet little is known about the effect these laws have on educational attainment and earnings. This paper exploits an unusual natural experiment to estimate the impact of compulsory schooling laws in the United States. The experiment stems from the fact that children born in different months of the year start school at different ages, while compulsory schooling laws generally require students to remain in school until their sixteenth or seventeenth birthday. In effect, the interaction of school-entry requirements and compulsory schooling laws compel students born"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 2,
+    "pages": [
+      1
+    ],
+    "text": "*We thank Michael Boozer and Lisa Krueger for outstanding research assis- tance. Financial support was provided by the Princeton Industrial Relations Section, an NBER Olin Fellowship in Economics, and the National Science Foundation (SES-9012149). We are also grateful to Lawrence Katz, John Pencavel, an anonymous referee, and many seminar participants for helpful comments. The data and computer programs used in the preparation of this paper are available on request. 1. See OECD [1983] for a comparison of compulsory schooling laws in different countries.\n\n\u00a9 1991 by the President and Fellows of Harvard College and the Massachusetts Institute of Technology. The Quarterly Journal of Economics, ovember 1991\n\n980\n\nQUARTERLY JOURNAL OF ECONOMICS\n\nin certain months to attend school longer than students born in other months. Because one\u2019s birthday is unlikely to be correlated with personal attributes other than age at school entry, season of birth generates exogenous variation in education that can be used to estimate the impact of compulsory schooling on education and earnings."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 3,
+    "pages": [
+      2
+    ],
+    "text": "In the next section we present an analysis of data from three decennial Censuses that establishes that season of birth is indeed related to educational attainment. Remarkably, in virtually all of the birth cohorts that we have examined, children born in the first quarter of the year have a slightly lower average level of education than children born later in the year. School districts typically require a student to have turned age six by January 1 of the year in which he or she enters school (see HEW [1959]). Therefore, students born earlier in the year enter school at an older age and attain the legal dropout age at an earlier point in their educational careers than students born later in the year. If the fraction of students who want to drop out prior to the legal dropout age is independent of season of birth, then the observed seasonal pattern in education is consistent with the view that compulsory schooling constrains some students born later in the year to stay in school longer."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 4,
+    "pages": [
+      2
+    ],
+    "text": "Two additional pieces of evidence link the seasonal pattern in education to the combined effect of age at school entry and compulsory schooling laws. First, the seasonal pattern in education is not evident in college graduation rates, nor is it evident in graduate school completion rates. Because compulsory schooling laws do not compel individuals to attend school beyond high school, this evidence supports our hypothesis that the relationship be- tween years of schooling and date of birth is entirely due to compulsory schooling laws. Second, in comparing enrollment rates of fifteen- and sixteen-year olds in states that have an age sixteen schooling requirement with enrollment rates in states that have an age seventeen schooling requirement, we find a greater decline in the enrollment of sixteen-year olds in states that permit sixteen- year olds to leave school than in states that compel sixteen-year olds to attend school."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 5,
+    "pages": [
+      2
+    ],
+    "text": "The variety of evidence presented in Section I establishes that compulsory schooling laws increase educational attainment for those covered by the laws. In Section II we consider whether students who attend school longer because of compulsory schooling receive higher earnings as a result of their increased schooling.\n\nTHE EFFECTS OF COMPULSORY SCHOOL ATTENDANCE\n\n981\n\nTwo-stage least squares (TSLS) estimates are used in which the source of identification is variation in education that results solely from differences in season of birth\u2014which, in turn, results from the effect of compulsory schooling laws. The results suggest that men who are forced to attend school by compulsory schooling laws earn higher wages as a result of their increased schooling. The estimated monetary return to an additional year of schooling for those who are compelled to attend school by compulsory schooling laws is about 7.5 percent, which is hardly different from the ordinary-least-squares (OLS) estimate of the return to education for all male workers."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 6,
+    "pages": [
+      3
+    ],
+    "text": "To check further whether the estimated schooling-earnings relationship is truly a result of compulsory schooling, we explore the relationship between earnings and season of birth for the subsample of college graduates. Because these individuals were not constrained by compulsory schooling requirements, they form a natural control group to test whether season of birth affects earnings for reasons other than compulsory schooling. The results of this exploration suggest that there is no relationship between earnings and season of birth for men who are not constrained by compulsory schooling. This strengthens our interpretation that the TSLS estimate of the return to education reflects the effect of compulsory school attendance."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 7,
+    "pages": [
+      3
+    ],
+    "text": "Our findings have important implications for the literature on omitted variables bias in estimates of the return to education (see Griliches [1977] and Willis [1986] for surveys). Economists have devoted a great deal of attention to correcting for bias in the return to education due to omitted ability and other factors that are positively correlated with both education and earnings. This type of a bias would occur, for example, in Spence\u2019s [1973] signaling model, where workers with high innate ability are assumed to find school less difficult and to obtain more schooling to signal their high ability. In contrast to this prediction, estimates based on season of birth indicate that, if anything, conventional OLS estimates are biased slightly downward.\n\n1. SEASON OF BIRTH, COMPULSORY SCHOOLING, AND YEARS OF EDUCATION\n\nIf the fraction of students who desire to leave school before they reach the legal dropout age is constant across birthdays, a student\u2019s birthday should be expected to influence his or her\n\n982\n\nQUARTERLY JOURNAL OF ECONOMICS"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 8,
+    "pages": [
+      4
+    ],
+    "text": "ultimate educational attainment.? This relationship would be expected because, in the absence of rolling admissions to school, students born in different months of the year start school at different ages. This fact, in conjunction with compulsory schooling laws, which require students to attend school until they reach a specified birthday, produces a correlation between date of birth and years of schooling.?"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 9,
+    "pages": [
+      4
+    ],
+    "text": "Students who are born early in the calendar year are typically older when they enter school than children born late in the year. For example, our tabulation of the 1960 Census (the earliest census that contains quarter of birth), shows that, on average, boys born in the first quarter of the year enter first grade when they are 6.45 years old, whereas boys born in the fourth quarter of the year enter first grade when they are 6.07 years old.\u201d This pattern arises because most school districts do not admit students to first grade unless they will attain age six by January 1 of the academic year in which they enter school. Consequently, students who were born in the beginning of the year are older when they start school than students who were born near the end of the year. Because children born in the first quarter of the year enter school at an older age, they attain the legal dropout age after having attended school for a shorter period of time than those born near the end of the year. Hence, if a fixed fraction of students is constrained by the compulsory attendance law, those born in the beginning of the year will have less schooling, on average, than those born near the end of the"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 10,
+    "pages": [
+      4
+    ],
+    "text": "nce, if a fixed fraction of students is constrained by the compulsory attendance law, those born in the beginning of the year will have less schooling, on average, than those born near the end of the year."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 11,
+    "pages": [
+      4
+    ],
+    "text": "Figures I, II, and III document the relationship between education and season of birth for men born 1930-1959. Each figure depicts the average years of completed schooling by quarter and\n\n2. Beginning with Huntington [1938], researchers in many fields have investi- gated the effect of season of birth on a variety of biological and behavioral variables, ranging from fertility to schizophrenia. We consider the impact of other possible season of birth effects below.\n\n. Angrist and Krueger [1990] formally model the link between age at school entry and compulsory schooling. A testable implication of this model is that age at school entry should be linearly related to years of education. Data on men born 1946 to 1952 are generally consistent with this prediction."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 12,
+    "pages": [
+      4
+    ],
+    "text": "4. Figures in the text are for boys born in 1952. The average entry age to first grade for those born in the second quarter is 6.28, and the average age of first graders born in the third quarter is 6.08. Other years show a similar pattern (see Angrist and Krueger [1990] ). These averages are ected by holding back or advancing students beyond the normal start age, and by differences in start eginning of the year tend to enter school at an older age than those born near the licy across schools. Nonetheless, the results show that students born in the end of the year.\n\n13.2 13.0 12 12.8 12.6 12 N Years of Completed Education 12.2 30 32 34 36 38 40 Year of Birth\n\nFIGURE I Years of Education and Season of Birth 1980 Census Note. Quarter of birth is listed below each observation.\n\n13.9 341 234 23 l 13.5 12 Years of Completed Education 13.0 40 42 44 46 48 50 Year of Birth\n\nFicure I1 Years of Education and Season of Birth 1980 Census Note. Quarter of birth is listed below each observation.\n\n984\n\nQUARTERLY JOURNAL OF ECONOMICS"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 13,
+    "pages": [
+      6
+    ],
+    "text": "13.6%73 41 A 13.4 12 34 13.2 34 13.0 12.8 12.6 Years of Completed Education 12,4 12 12.2 50 51 52 53 54 55 56 57 58 59 Year of Birth Fiuge I1I Years of Education and Season of Birth 1980 Census Note. Quarter of birth is listed below each observation.\n\nyear of birth, based on the sample of men in the 1980 Census, 5 percent Public Use Sample. (The data set used in the figures is described in greater detail in Appendix 1.) The graphs show a generally increasing trend in average education for cohorts born in the 1930s and 1940s. For men born in the late 1950s, average education is trending down, in part because by 1980 the younger men in the cohort had not completed all of their schooling, and in part because college attendance fell in the aftermath of the Vietnam War."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 14,
+    "pages": [
+      6
+    ],
+    "text": "A close examination of the plots indicates that there is a small but persistent pattern in the average number of years of completed education by quarter of birth. Average education is generally higher for individuals born near the end of the year than for individuals born early in the year. Furthermore, men born in the fourth quarter of the year tend to have even more education than men born in the beginning of the following year. The third quarter births also often have a higher average number of years of education than the following year\u2019s first quarter births. Moreover,\n\nTHE EFFECTS OF COMPULSORY SCHOOL ATTENDANCE\n\n985\n\nthis seasonal pattern in years of education is exhibited by the cohorts of men that experienced a secular decline in educational levels, as well as by the cohorts that experienced a secular increase in educational levels."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 15,
+    "pages": [
+      7
+    ],
+    "text": "To further examine the seasonal pattern in education, it is useful to remove the trend in years of education across cohorts. A flexible way to detrend the series is by subtracting off a moving average of the surrounding birth cohort\u2019s average education. For each quarter we define a two-period, two-sided moving average, MA(+2,-2), as the average education of men born in the two preceding and two succeeding quarters.\u00ae Specifically, for the cohort e 18 men born in year \u00a2 and quarter j, the MA(+2,\u20142), denoted MA,\n\nMA,=E ,+E +E +E)/4\n\nwhere E is the average years of education attained by the cohort born \u00a2 quarters before or after cohort c,j. The \u201cdetrended\u201d education series is simply E,, \u2014 MA, ;.\n\nThe relationship between season of birth and years of educa- tion for the detrended education series is depicted in Figure IV for each ten-year-age group. The figures clearly show that season of birth is related to years of completed education. For example, in 27 of the 29 birth years, the average education of men born in the first quarter of the year (January\u2014March) is less than that predicted by the surrounding quarters based on the MA(+2,\u20142)."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 16,
+    "pages": [
+      7
+    ],
+    "text": "To quantify the effect of season of birth on a variety of educational outcome variables, we estimated regressions of the form,\n\n- _ =a+ + \u20ac fori=1,...,N,; c=1, , 10 J=123,\n\nwhere E, is the educational outcome variable for individual i in cohort \u00a2 (i.e., years of education, graduated high school, graduated college, or years of post-high school education), MA, is the MA(+2,\u20142) trend for the education variable, and @, 0 is a dummy\n\n5. We note that none of our conclusions is qualitatively changed when we use a linear age trend (with age measured to the quarter of the year), a quadratic age trend, or unrestricted year-of-birth dummies.\n\n986\n\nQUARTERLY JOURNAL OF ECONOMICS\n\nES b = [ = < [0 [, ] o~ o <TE 38 T 48 58 2] | ] ro \u00a9 ] TESN & Y o Y] 56 ] 36 mm A 46 ] ~ ol < S DM <+ K n g 8 34 < 5] 44 < 1] 54 oY o o B Year of Birth <+ [ ol o [ ] o\u2014 1 - 2 g < EXY ] 52 1Y) T EY] Y N .. : Q 50 S 3 -0.1 o O O o O S S -0.2 Djud44 bujooys\n\nFiGURe IV Deviations from MA (+2,-2) Season of Birth and Years of Schooling"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 17,
+    "pages": [
+      9
+    ],
+    "text": "THE EFFECTS OF COMPULSORY SCHOOL ATTENDANCE\n\nTABLE 1 THE EFFECT OF QUARTER OF BIRTH ON VARIOUS EDUCATIONAL OUTCOME VARIABLES"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 18,
+    "pages": [
+      9
+    ],
+    "text": "Outcome variable Birth cohort Mean Quarter-of-birth effect* F-test\u201d [P-value 1 iit Total years of education 1930-1939 12.79 \u20140.124 \u20140.086 -0.015 24 1940-1949 13.56 \u20140.085 \u20140.035 -0.017 18.6 (0.012) (0.012) {0.011) [0.0001 High school graduate 1930-1939 0.77 0.019 \u20140.020 \u20140.004 46.4 (0.002) (0.002) {0.002) [0.0001 1940-1949 0.86 0.015 0.012 \u2014-0.002 54.4 (0.001) (0.001) {0.001) [0.0001 Years of educ. for high school graduates 1930-1939 13.99 \u20140.004 0.051 0.012 59 (0.014) (0.014) {0.014) [0.0006 1940-1949 14.28 0.005 (0.011) 0.043 (0.011) \u20140.003 (0.010} 7.8 [0.0017 College graduate 1930-1939 1940-1949 0.24 0.005 0.003 0.002 5.0 0.30 (0.002) \u20140.003 (0.002) 0.004 0.002} 0.000 [0.0021 5.0 Completed master\u2019s degree 1930-1939 0.09 (0.002) \u20140.001 (0.002) 0.002 .002) 0.001 [0.0018 17 1940-1949 (0.001) (0.001) (0.001) [0.1599 0.11 0.000 0.004 0.001 3.9 (0.001) (0.001) 0.001) [0.0091 Completed doctoral degree 1930-1939 1940-1949 0.03 0.04 0.002 (0.001) \u20140.002 0.003 (0.001) 0.001 0.000 (0.001) 0.001 29 [0.0332 4.3 (0.001) (0.001) (0.001) [0.0050"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 19,
+    "pages": [
+      9
+    ],
+    "text": "a. Standard errors are in parentheses. An MA(+2, ~2) trend term was subtracted from each dependent variable. The data set contains men from the 1980 Census, 5 percent Public Use Sample. Sample size is 312,718 for 1930-1939 cohort and is 457,181 for 1940949 cohort.\n\nb. F-statistic is for a test of the hypothesis that the quarter-of-birth dummies jointly have no effect.\n\nb. F-statistic is for a test of the hypothesis that the quarter-of-birth dummies jointly have no effect.\n\n987\n\nvariable indicating whether person i was born in the jth quarter of the year. Because the dependent variable in these regressions is purged of MA(+2,\u20142) effects, it is necessary to delete observations born in the first two quarters and last two quarters of the sample.\n\nTable I reports estimates of each quarter of birth (main) effect (B,) relative to the fourth quarter, for men in the 1980 Census who were born in the 1930s and 1940s.\u00b0 The F-tests reported in the last\n\n6. We focus on men born in the 1930s and 1940s because many individuals in the 1950s birth cohorts had not yet completed their education by 1980.\n\n988\n\nQUARTERLY JOURNAL OF ECONOMICS"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 20,
+    "pages": [
+      10
+    ],
+    "text": "column of the table indicate that, after removing trend, the small within-year-of-birth differences in average years of education are highly statistically significant. For both cohorts the average num- ber of completed years of schooling is about one tenth of a year lower for men born in the first quarter of the year than for men born in the last quarter of the year. Similarly, the table shows that, for the 1930s cohort, men born in the first quarter of the year are 1.9 percentage points less likely to graduate from high school than men born in the last quarter of the year.\u201d For the 1940s cohort the gap in the high school graduation rate between first and fourth quarter births is 1.5 percentage points. Because the high school dropout rate is 23 percent for men born in the 1930s and 14 percent for men born in the 1940s, first quarter births are roughly 10 percent more likely to drop out of high school than fourth quarter births."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 21,
+    "pages": [
+      10
+    ],
+    "text": "The seasonal differences in years of education and in high school graduation rates are smaller for men born in the 1940s than for men born in the 1930s, but the quarter-of-birth effects are still statistically significant. As discussed below, one explanation for the attenuation of the seasonal pattern in education over time is that compulsory attendance laws are less likely to be a binding con- straint on more recent cohorts.\n\nThe evidence that children born in the first quarter of the year tend to enter school at a slightly older age than other children, and that children born in the first quarter of the year also tend to obtain less education, is at least superficially consistent with the simple age at entry/compulsory schooling model."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 22,
+    "pages": [
+      10
+    ],
+    "text": "To further explore whether the differences in education by season of birth are caused by compulsory schooling laws, the bottom part of Table I estimates the same set of equations for measures of post-secondary educational achievement. This sample provides a test of whether season of birth influences education even for those who are not constrained by compulsory schooling laws (because compulsory schooling laws exempt students who have graduated from high school). Consequently, if compulsory school- ing is responsible for the seasonal pattern in education, one would not expect to find such a pattern for individuals who have some post-secondary education.\n\nThe seasonal pattern in years of education is much less\n\n7. Notice that because the quarter-of-birth dummies are mutually exclusive, the linear probability model is appropriate in this situation.\n\nTHE EFFECTS OF COMPULSORY SCHOOL ATTENDANCE\n\n989"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 23,
+    "pages": [
+      11
+    ],
+    "text": "pronounced and quite different for the subsample of individuals who have at least a high school education. In this sample, second quarter births tend to have higher average education, while those born in other quarters have about equal levels of education. The difference in average years of education between first and fourth quarter births is statistically insignificant for high school gradu- ates. On the other hand, first quarter births are slightly less likely to graduate from college, and the gap is statistically significant. In view of the enormous sample sizes (in excess of 300,000 observa- tions), however, the F-tests are close to classical critical values for the null hypothesis that season of birth is unrelated to post-high school educational outcomes."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 24,
+    "pages": [
+      11
+    ],
+    "text": "Table I also shows the effect of quarter of birth on the proportion of men who have a master\u2019s degree and on the proportion of men who have a doctoral degree.\u00ae These results show no discernible pattern in educational achievement by season of birth. Because individuals with higher degrees did not discontinue their education as soon as they were legally permitted, these findings provide further support for the view that compulsory schooling is responsible for the seasonal pattern in education. Moreover, because season of birth is correlated with age at school entry, the lack of a seasonal pattern in postsecondary education suggests that differences in school entry age alone do not have a significant effect on educational attainment. In the absence of compulsory schooling, therefore, we would not expect to find differences in education by season of birth.\n\nA. Direct Evidence on the Effect of Compulsory Schooling Laws"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 25,
+    "pages": [
+      11
+    ],
+    "text": "For the combined effects of compulsory schooling and school start age to adequately explain the seasonal pattern in education, it must be the case that compulsory attendance laws effectively force some students to stay in school longer than they desire. Table IT provides evidence that compulsory schooling laws are effective in compelling a small proportion of students to remain in school until they attain the legal dropout age. This evidence makes use of the fact that some states allow students to drop out of school upon attaining their sixteenth birthday, while others compel students to\n\n8. For purposes of Table I we assumed that individuals with a college degree completed sixteen or more years of education, individuals with a master\u2019s degree completed eighteen or more years of education, and individuals with a doctoral degree completed twenty or more years of education.\n\n990\n\nQUARTERLY JOURNAL OF ECONOMICS\n\nTABLE II PERCENTAGE OF AGE GROUP ENROLLED IN SCHOOL BY BIRTHDAY AND LEGAL DrOPOUT AGE\u00ae"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 26,
+    "pages": [
+      12
+    ],
+    "text": "Type of state law School-leaving School-leaving age: 16 age: 17 or 18 Column Date of birth 1) 2) @1 =@ Percent enrolled April 1, 1960 Jan 1-Mar 31, 1944 87.6 91.0 -34 (age 16) 0.6) 0.9 (11) 92.1 91.6 0.5 Apr 1-Dec 31, 1944 (age 15) 0.3) 0.5) \u00a9.6) Within-state diff. -4.5 -0.6 -4.0 (row 1 \u2014 row 2) 0.7 1.0 (1.2) Percent enrolled April 1, 1970 Jan 1-Mar 31, 1954 94.2 95.8 -1.6 0.3) 0.5 (0) {age 16) Apr 1-Dec 31, 1954 96.1 95.7 0.4 (age 15) (0.1} 0.3) \u00a9.3) Within-state diff. -1.9 0.1 -2.0 {row 1 ~ row 2) (0.3} 0.6) \u00a90.6) Percent enrolled April 1, 1980 Jan 1-Mar 31, 1964 95.0 96.2 1.2 (age 16) 0.1 0.2) 0.2) Apr 1-Dec 31, 1964 97.0 97.7 -0.7 (age 15) 0.1) 0.1) (0.1) Within-state diff. -2.0 -15 0.5 (row 1 \u2014 row 2) (0.1) 0.2) (0.3}\n\na. Standard errors are in parentheses."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 27,
+    "pages": [
+      12
+    ],
+    "text": "b. Data set used to compute rows 1-3 is the 1960 Census, 1 percent Public Use Sample; data set used to compute rows 4-6 is 1970 Census, 1 percent State Public Use Sample (15 percent form); data set used to compute rows 7-9 s the 1980 Census, 5 percent Public Use Sample. Each sample contains both boys and girls. Sample sizes are 4,153 for row 1; 12,512 for row 2; 7,758 for row 4; 24,636 for row 5; 42,740 for row 7; and 131,020 for row 8.\n\nattend school until their seventeenth or eighteenth birthday.\u00ae A summary of the compulsory schooling requirement in effect in each state in 1960, 1970, and 1980 is provided in Appendix 2.\n\nThe first three rows of Table II focus on individuals who were\n\n9. There are three exceptions: Mississippi and South Carolina eliminated their compulsory schooling laws in response to Brown v. Board of Education in 1954. South Carolina reenacted compulsory schooling in 1967, and Mississippi in 1983. In 1960 Maine had an age fifteen compulsory ooling law. Ehrenberg and Marcus [1982] and Edwards [1978] also provide evidence on the impact of compulsory schooling legislation on school enrollment.\n\nTHE EFFECTS OF COMPULSORY SCHOOL ATTENDANCE\n\n991"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 28,
+    "pages": [
+      13
+    ],
+    "text": "born in 1944 using data from the 1960 Census.\u00ae Students who were born between January and March of 1944 were age sixteen when the 1960 Census was conducted (Census Day is April 1), while those who were born between April and December of 1944 were not yet age sixteen. Consequently, students born in January\u2014 March were able to drop out of school in the states that had an age sixteen compulsory attendance law, but were not able to legally drop out of school in states that had an age seventeen or age eighteen compulsory attendance law. On the other hand, students born in April-December of 1944 were not able to legally withdraw from school under either regime."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 29,
+    "pages": [
+      13
+    ],
+    "text": "This institutional framework allows for a difference-in- differences analysis. The figures in columns (1) and (2) of Table IT are the percentage of students enrolled in school on April 1, broken down by the compulsory schooling age in the state and by the age of the student. The results for 1960 are striking. In states where sixteen-year olds are permitted to drop out of school, the percent of students enrolled is 4.5 points lower for students who have turned age sixteen than for those who are almost age sixteen (see row 3). In contrast, there is only a statistically insignificant 0.6 percentage point decline in the enrollment rate between age fifteen and sixteen in states where students must wait until age seventeen or eighteen to drop out."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 30,
+    "pages": [
+      13
+    ],
+    "text": "Column 3 of Table II reports the difference in the enroliment rate for children of a given age between states with different compulsory schooling laws. For example, sixteen year olds are 3.4 percent less likely to be enrolled in states with a school-leaving age of sixteen, whereas fifteen year olds have a similar enrollment rate in both sets of states. The contrast between the within-state and within-age-group comparisons is a difference-in-differences estima- tor of the effect of compulsory school attendance that controls for both additive age and state effects. For the 1944 cohort the difference-in-differences estimate indicates that compulsory school attendance laws increased the enrollment rate by four percentage points in states with an age seventeen or age eighteen minimum schooling requirement.\n\nRows 4-6 of Table II report the corresponding statistics for individuals born in 1954 using data from the 1970 Census, and"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 31,
+    "pages": [
+      13
+    ],
+    "text": "and Texas require students to complete the school term in which they reach the 10. The sample underlying this table includes both boys and girls. Wisconsin legal dropout age, and therefore were dropped from the sample. In addition, school districts in metro litan sections of New York were excluded from the sample because they are lowed to alter the compulsory schooling requirement.\n\n992\n\nQUARTERLY JOURNAL OF ECONOMICS\n\nrows 7-9 report the corresponding statistics for individuals born in 1964 using data from the 1980 Census. These resuits lead to a similar conclusion: the dropout rate is increased for students when they become legally eligible to leave school. The difference-in- differences estimates of the enrollment effect of compulsory school- ing for the 1954 and 1964 cohorts are 2 and 0.5 percentage points. A significant number of students leave school around the time of their birthday, although the effect of compulsory attendance laws is smaller in 1970 than in 1960, and smalier still in 1980 than in 1970."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 32,
+    "pages": [
+      14
+    ],
+    "text": "Although the fraction of students kept in school by compulsory education laws may seem small relative to the total population of students, the estimate represents a nontrivial fraction of the pool of students who eventually drop out of high school. In 1960 about 12 percent of sixteen-year-old students had dropped out of school in states where they were permitted to do so. Therefore, our estimates imply that in 1960 compulsory attendance laws kept approximately one third of potential dropouts in school. By 1980 only 5 percent of sixteen-year olds had dropped out of school, so our estimates imply that compulsory schooling laws kept roughly 10 percent of potential dropouts in school in that year.\n\nThe waning effect of compulsory schooling may result from an increase in desired levels of education for more recent cohorts, which makes compulsory schooling less of a constraint, or from increasingly lax enforcement of compulsory schooling laws. In either case the declining effect of compulsory schooling laws is consistent with the smaller seasonal pattern in education for recent cohorts.\n\nB. Why Do Compulsory Schooling Laws Work?"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 33,
+    "pages": [
+      14
+    ],
+    "text": "The evidence presented so far suggests that compulsory schooling laws are effective at increasing the enrollment and education of at least some students. What explains the efficacy of this legislation? Although we do not have any direct evidence on why compulsory schooling laws are effective, in principle, there are two main enforcement mechanisms for the laws. First, the Fair Labor Standards Act prohibits the employment of children under age fourteen, and every state in the United States has a child labor\n\n11. This subsection draws heavily from information presented in Kotin and Aikman [1980], to which the reader is referred for further information on the enforcement and requirements of state compulsory schooling laws.\n\nTHE EFFECTS OF COMPULSORY SCHOOL ATTENDANCE\n\n993"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 34,
+    "pages": [
+      15
+    ],
+    "text": "law that further restricts employment of youths. In most states children are prohibited from working during school hours unless they have reached the compulsory schooling age in that state. Moreover, in all states young workers must obtain a work certifi- cate (or work permit) to be eligible for employment. These work certificates are often administered and granted by the schools themselves, which provides an opportunity to monitor whether students below the compulsory school age are seeking employment. Consequently, child labor laws restrict or prohibit children of compulsory school age from participating in the work force, the principal alternative to attending school."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 35,
+    "pages": [
+      15
+    ],
+    "text": "Second, compulsory school attendance laws provide for direct enforcement and policing of school attendance. Every state compul- sory schooling law provides for truant officers to administer the law, and for other enforcement mechanisms. Truant officers typically have broad powers, such as the right to take children into custody without a warrant. However, the principal responsibility for school attendance rests with the child\u2019s parents. A parent who fails to send his or her child to school could face criminal penalties, such as misdemeanor-level fines or imprisonment."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 36,
+    "pages": [
+      15
+    ],
+    "text": "Although we have outlined the ways in which compulsory schooling laws are enforced, it should also be noted that there are several exemptions to compulsory schooling laws in many states. As mentioned previously, students are exempt from compulsory school attendance if they have a high school or equivalent degree. Furthermore, in many states children are exempt from the school- ing requirement if they suffer from certain physical, mental, or emotional disabilities; if they live far from a school; or if they are disruptive to other students. Additionally, all states are constitu- tionally bound to allow students to attend private schools in lieu of public schools, and 26 states permit \u2018\u201chome schooling\u201d as an alternative to public schools."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 37,
+    "pages": [
+      15
+    ],
+    "text": "Finally, we note that compulsory schooling laws are believed to effectively increase schooling in other countries as well (see OECD [1983] ). Moreover, the fact that age at school entry is correlated with educational attainment because of compulsory schooling is well-known in countries where the impact of compulsory schooling laws is more prominent. For example, a federal government document from Australia contains the following caution: \u2018\u201cThere are differences between states in the ages of students at similar levels of schooling. This is largely due to the time students may commence school [which differs by as much as one year across\n\n994\n\nQUARTERLY JOURNAL OF ECONOMICS\n\nstates]. Such factors should be borne in mind when utilizing school leaver data\u201d [Department of Employment, Education, and Train- ing, 1987]\n\nII. ESTIMATING THE RETURN TO EDUCATION"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 38,
+    "pages": [
+      16
+    ],
+    "text": "Do the small differences in education for men born in different months of the year translate into differences in earnings? This question is first addressed in Figure V, which presents a graph of the mean log weekly wage of men age 30\u201449 (born 1930-1949), by quarter of birth. The data used to create the figure are drawn from the 1980 Census, and are described in detail in Appendix 1\n\nTwo important features of the data can be observed in Figure V. First, men born in the first quarter of the year\u2014who, on average, have lower education\u2014also tend to earn slightly less per week than men born in surrounding months. Second, the age- earnings profile is positively sloped for men between ages 30 and 39 (born 1940-1949), but fairly flat for men between ages 40 and 49\n\ni 30434 3 5.9 f , 41 12 21 21 2 19 23 5.8 Log Weekly Earnings 5.7 l o4 5.64 30 35 40 45 50 Year of Birth\n\nFIGURE V Mean Log Weekly Wage, by Quarter of Birth Men Born 1\u2014 1980 Census"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 39,
+    "pages": [
+      17
+    ],
+    "text": "THE EFFECTS OF COMPULSORY SCHOOL ATTENDANCE\n\n995\n\n(born 1930-1939).\u201d The latter observation is important because quarter of birth is naturally correlated with age: men born in the beginning of the year are older than those born at the end of the year, and will have higher earnings if they are on the upward sloping portion of the age-earnings profile. Therefore, we mainly focus on 40-49 year-old men, whose wages are hardly related to age. Analyzing this sample enables us to avoid the effects of life-cycle changes in earnings that are correlated with quarter of birth."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 40,
+    "pages": [
+      17
+    ],
+    "text": "In Table III we use the seasonal pattern in education to calculate the rate of return to a year of education based on an application of Wald\u2019s [1940] method of fitting straight lines. This estimator simply computes the return to education as the ratio of the difference in earnings by quarter of birth to the difference in years of education by quarter of birth. We present estimates that compare earnings and education between men born in the first quarter of the year and men born in the last three quarters of the year.\u00ae This comparison is selected because the first quarter showed the largest blip in education in Figure IV. Panel A of Table IIT provides estimates for the sample of 40-49 year-old men (born 1920-1929) in the 1970 Census, and Panel 4B provides estimates for 40\u201449 year-old men (born 1930-1939) in the 1980 Census.\u2122"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 41,
+    "pages": [
+      17
+    ],
+    "text": "The results of the Wald estimates are very similar to typical OLS estimates of the return to education for this population. In 1970, for example, men born in the first quarter of the year earned a 0.7 percent lower weekly wage and had completed 0.126 fewer years of education than men born in the last three quarters of the year. The ratio of these two numbers, 0.072, is a consistent estimate of the return to education provided that season of birth is uncorrelated with earnings determinants other than education. Intuitively, the Wald estimator is likely to provide a consistent\n\n12. Longitudinal estimates of the age-earnings profile, which follow the same cohorts over time, also typically show a relatively flat relationship between age and earnings for 40-49 year-old men.\n\n13. The Wald estimate is a special case of instrumental variables [Durbin, 1954]. In this case the Wald estimate is equivalent to instrumental variables where adummy variable indicating whether an individual is born in the first quarter of the year is used as an instrument for education, and there are no covariates."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 42,
+    "pages": [
+      17
+    ],
+    "text": "14. Elsewhere, we have shown that World War II veteran status is related to quarter of birth for men born between 1925 and 1928. This is not an issue for men born after 1930, however, because they were not covered by the World War I draft. Furthermore, the veterans\u2019 earnings premium for men born 1925-1928 is negative but very close to zero (see Angrist and Krueger [1989)).\n\n996\n\nQUARTERLY JOURNAL OF ECONOMICS\n\nTABLE III PANEL A: WALD ESTIMATES FOR 1970 CENSUS\u2014MEN BORN 1920-1929\n\n1) 2) 3) Born in Born in 2nd, Difference 1st quarter 3rd, or 4th (std. error) 1) - (2 of year quarter of year In (wkly. wage) 5.1484 5.1574 \u20140.00898 (0.00301) Education 11.3996 11.5252 \u2014-0.1256 (0.0155) Wald est. of return to education 0.0715 (0.0219) OLS return to education\u00ae 0.0801 (0.0004)\n\nPanel B: Wald Estimates for 1980 Census\u2014Men Born 1930-1939 1) @ 3 Born in Born in 2nd, Difference (std. error) 1st quarter 3rd, or 4th of year quarter of year -\u00a9@ In (wkly. wage) 5.8916 5.9027 \u20140.01110 (0.00274) Education 12.6881 12.7969 \u20140.1088 (0.0132) \u2018Wald est. of return to education 0.1020 (0.0239) OLS return to education 0.0709 (0.0003)"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 43,
+    "pages": [
+      18
+    ],
+    "text": "a. The sample size is 247,199 in Panel A, and 327,509 in Panel B, Each sample consists of males born in the United States who had positive earnings in the year preceding the survey. The 1980 Census sample is drawn from the 5 percent sample, and the 1970 Census sample is from the State, County, and Neighborhoods 1 percent samples.\n\neducation. . The OLS return to education was estimated from a bivariate regression of log weekly earnings on years of\n\nestimate in this case because unobserved earnings determinants (e.g., ability) are likely to be uniformly distributed across people born on different dates of the year.'\n\nThe last row of each panel in Table III provides the OLS"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 44,
+    "pages": [
+      18
+    ],
+    "text": "15. We note that our procedure will slightly understate the return to education because first-quarter births, whose birthdays occur midterm, are more likely to attend some schooling beyond their last ar completed. Consequent the differ- ence in years of school attended between i st and later uarters of birt| 4 s less than the difference in years of school completed. Since t h e difference in completed education rather than the difference in years of school attended aj ears in the denominator of the Wald estimator, our estimate is biased downwa In practice, however, this is a small bias because the difference in completion rates is small.\n\nTHE EFFECTS OF COMPULSORY SCHOOL ATTENDANCE\n\n997\n\nestimate of the return to education. The OLS estimate is the coefficient on education from a bivariate regression of the log weekly wage on years of education. The Wald estimate of the return to education (0.072) is slightly less than the OLS estimate (0.080) for middle-aged men in the 1970 Census, but the difference between the two estimates is not statistically significant."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 45,
+    "pages": [
+      19
+    ],
+    "text": "Panel B of Table III presents the corresponding set of esti- mates for 40\u201449 year-old men (born 1930-1939) using the 1980 Census. For this sample the Wald estimate of the return to education, 0.102, is greater than the estimate from an OLS regression. But again, the difference between the Wald and OLS estimates of the return to education is not statistically significant.\n\nWe have also computed Wald estimates of the return to education for 30-39 year-old men using the 1970 and 1980 Censuses. In contrast to the estimates for 409 year-old men, estimates for younger men yield a trivial and statistically insignifi- cant return to education. However, unless the effect of age on earnings is taken into account, simple Wald estimates for men this age will be biased downward because they are on the upward sloping portion of the age-earnings profile.\n\nA. TSLS Estimates\n\nTo improve efficiency of the estimates and control for age- related trends in earnings, we estimated the following TSLS model:\n\n@D E=X+3 e Y, 3 + 2, 3., / Q ye ) + \u20ac\n\n2) InW, =XB+3IYE+pE + ,"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 46,
+    "pages": [
+      19
+    ],
+    "text": "where E, is the education of the ith individual, X, is a vector of covariates, @, is a dummy variable indicating whether the individ- ual was born in quarter j (j = 1,2,3), and . is a dummy vari- able indicating whether the individual was born in year \u00a2 (\u00a2 = = 1,...,10), and W, is the weekly wage. The coefficient p is the return to education. If the residual in the wage equation, p., is correlated with years of education due to, say, omitted variables, OLS estimates of the return to education will be biased.\n\nThe excluded instruments from the wage equation in the TSLS estimates are three quarter-of-birth dummies interacted with nine year-of-birth dummies. Because year-of-birth dummies are also included in the wage equations, the effect of education is identified by variation in education across quarters of birth within\n\n998\n\nQUARTERLY JOURNAL OF ECONOMICS\n\neach birth year.'\u00ae Quarter of birth (@) is a legitimate instrument if it is uncorrelated with p and correlated with education."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 47,
+    "pages": [
+      20
+    ],
+    "text": "Tables IV, V, and VI present a series of TSLS estimates of equation (2) for the 1920-1929 cohort, 1930-1939 cohort, and 1940-1949 cohort, respectively. For comparison, the OLS and TSLS estimates of each specification are presented. For example, column (1) of Table IV shows that the OLS estimate of the return to education for 40\u201449 year-old men in the 1970 Census is 0.080 (with a t-ratio of 200.5), holding year-of-birth effects constant. Column (2) shows that when the same model is estimated by TSLS using quarter-of-birth dummies as instruments for years of educa- tion, the return to education is 0.077 (with a \u00a2-ratio of 5.1). In columns (3) and (4) we add a quadratic age term to the OLS and TSLS equations. This variable, which is measured up to the quarter of a year, is included to control for within-year-of-birth age effects on earnings."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 48,
+    "pages": [
+      20
+    ],
+    "text": "The remaining columns repeat the first four columns, but also include race dummies, a dummy for residence in an SMSA, a marital status dummy, and eight region-of-residence dummies. Regardless of the set of included regressors, the TSLS and OLS estimates of the return to education for this sample are close in magnitude, and the difference between them is never statistically significant.\n\nIn Table V we present estimates of the same set of models using 40\u201449 year-old men from the 1980 Census. Again, the similarity between the various OLS and TSLS estimates of the return to education is striking. For example, comparing the OLS and TSLS models in columns (7) and (8)\u2014which include quadratic age and several covariates\u2014the OLS estimate of the return to education is 0.063 (with a \u00a2-ratio of 210.7), and the TSLS estimate of the return to education is 0.060 (with a -ratio of 2).\n\nTable VI presents estimates for 30-39-year-old men (born 1940-1949) using data from the 1980 Census. This sample has a"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 49,
+    "pages": [
+      20
+    ],
+    "text": "16. The TSLS estimates differ from the Wald estimates in two important respects. First, the TSLS estimates include covariates. Second, the TSLS models are identified by the variation in education across each quarter of birth in each year, between the first quarter and the rest of the year. whereas the Wald estimate is identified by the overall difference in education\n\n17. Because the OLS estimates of the return to education are extremely precise with these large samples, the standard error of the T'SLS estimates is approximately equal to the standard error of the difference between the OLS and TSLS estimates. The TSLS standard error can thus be used to perform an approximate Hausman [1978] specification test.\n\nTHE EFFECTS OF COMPULSORY SCHOOL ATTENDANCE\n\nTABLE IV\n\nOLS anDp TSLS ESTIMATES OF THE RETURN TO EDUCATION FOR MEN BORN 1920-1929: 1970 CENsUS*"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 50,
+    "pages": [
+      21
+    ],
+    "text": "(6) [ 8) @ 2) 3) ) Independent variable oLS TSLS OLS TSLS OLS TSLS OLS TSLS Years of education 0.0802 0.0769 0.0802 0.1310 0.0701 0.0669 0.0701 0.1007 (0.0004) (0.0150) (0.0004) (0.0334) (0.0004) (0.0151) (0.0004) (0.0334) Race (1 = black) 0.2980 \u2014-0.3055 ~0.2980 ~0.2271 (0.0043) (0.0353) (0.0043) (0.0776) SMSA (1 = center city) 0.1343 0.1362 0.1343 0.1163 (0.0026) (0.0092) 0.0026) (0.0198) Married (1 = married) 0.2928 0.2941 0.2928 0.2804 (0.0037) (0.0141) (0.0037) (0.0072) 9 Year-of-birth dummies Yes Yes Yes Yes Yes Yes Yes Yes 8 Region of residence dummies No No No No Yes Yes Yes Yes \u2014 \u2014 Age 0.1446 0.1409 0.1162 0.1170 (0.0676) (0.0704) (0.0652) (0.0662) Age-squared 0.0015 -0.0014 ~0.0013 ~0.0012 (0.0007) (0.0008) (0.0007) (0.0007) \u2014_\u2014 \u2014_ x* [dof] 36.0 [29] 25.6 [27) 34.2[29] 28.8 [27]"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 51,
+    "pages": [
+      21
+    ],
+    "text": "a. Standard errors are in parentheses. Sample size is 247,199. Instruments are a full set of quarter-of-birth times year-of-birth interactions. The sample consists of males born in the United States. The sample is drawn from the State, County, and Neighborhoods 1 percent samples of the 1970 Census (15 percent form). The dependent variable is the log of weekly earnings. Age and age-squared are measured in quarters of years. Each equation also includes an intercept.\n\n999\n\n1000\n\nTABLE V\n\nOLS aND TSLS ESTIMATES OF THE RETURN TO EDUCATION FOR MEN BORN 1930-1939: 1980 CENSUS*\n\nQUARTERLY JOURNAL OF ECONOMICS"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 52,
+    "pages": [
+      22
+    ],
+    "text": "(1) 2) 3) 4) [6)] () [ \u00ae) Independent variable OLS TSLS OLS TSLS OLS TSLS OLS TSLS Years of education 0.0711 0.0891 0.0711 0.0760 0.0632 0.0806 0.0632 0.0600 (0.0003) 0.0161) (0.0003) (0.0290) (0.0003) (0.0164) (0.0003) (0.0299) ~0.2575 0.2302 \u2014-0.2575 \u20140.2626 Race (1 = black) (0.0040) (0.0261) (0.0040) (0.0458) SMSA (1 = center city) 0.1763 0.1581 0.1763 0.1797 (0.0029) (0.0174) (0.0029) (0.0305) 0.2479 0.2440 0.2479 0.2486 Married (1 = married) (0.0032) (0.0049) (0.0032) (0.0073) 9 Year-of-birth dummies Yes Yes Yes Yes Yes Yes Yes Yes 8 Region-of-residence dummies No No No No Yes Yes Yes Yes \u2014-0.0772 \u20140.0801 \u2014 \u2014 \u2014-0.0760 0.0741 Age (0.0621) (0.0645) (0.0604) (0.0626) Age-squared 0.0008 0.0008 0.0008 0.0007 (0.0007) (0.0007) (0.0007) (0.0007) 25.4 [29] \u2014 23.1[27] \u2014 22.5 [29] 19.6 [27] X [dof]"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 53,
+    "pages": [
+      22
+    ],
+    "text": "a. Standard errors are in parentheses. Sample size is 329,509. Instruments are a full set of quarter-of-birth times year-of-birth interactions. The sample consists of males born in the United States. The sample is drawn from the 5 percent sample of the 1980 Census. The dependent variable is the log of weekly earnings. Age and age-squared are measured in quarters of years. Each equation also includes an intercept.\n\nTHE ) . N X FE CTS OF COMPULSORY SCHOOL ATTENDAN S E\n\nTABLE VI\n\n- 01 AND It SE ) IMA R E N 1940 1949: 1980 C ENSUS R Bo"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 54,
+    "pages": [
+      23
+    ],
+    "text": "th 2 [E 5] ( 1 Independent v bie OLS TSLS OL S TSLS OLS TSLS OLS 0 53 0.0: 0.0948 0.0520 0.0: 0.0521 0.0779 Years of edu 0.0573 I 0.00031 .0223) 0.0003) 10.0145 10.0003 10.02391 (0.6003 . \u20140.2107 -0.2266 -0.2108 -0.1786 Race (1 = black 0.0032) 10.0183) 0.00321 0.02961 0.1418 0.1 0.1419 0.1182 SMSA (1 = center city) 10.002 10.0135) (0.0023 0.0220) 0.2445 0.2442 0.2444 0.2450 Married t1 = married 0.0022) 10.0022) (0.0022) 0.0023) 9 Year-of-birth dummie Yes Yes Yes Yes Yes Yes Yes Yes No No No No Yes Yes Yes Yes 8 Region-of-residence dummi 0.1800 0.1325 \u2014 0.15 0.1215 Age (0.0389) 10.0486) 0.0379) 0.0474) .00z 3 0.0016 0.0019 0.0015 Age-squared (0.0006) 10.0007) 0.0005) (0.0007) 101.6 129} 49.1127] 9. 3.6 50.6 127\u00a7 X dof |\n\nte\n\nbe\n\ni\n\nA\n\ngz\n\n& weekly e\n\nTnstr R\n\n8\n\n!\n\n1001\n\n1002\n\nQUARTERLY JOURNAL OF ECONOMICS"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 55,
+    "pages": [
+      24
+    ],
+    "text": "slightly negative and insignificant Wald estimate of the return to education. However, the TSLS estimate of the return to education is positive and statistically significant. Furthermore, in each of the four specifications the return to education estimated by TSLS is statistically indistinguishable from the return estimated by OLS. Including age and age-squared to control for within-year-of-birth arnings trends leads to an even higher TSLS estimate of the return to education."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 56,
+    "pages": [
+      24
+    ],
+    "text": "All of the TSLS estimates we have presented so far are overidentified because several estimates of the return to education could be constructed from subsets of the instruments. For exam- ple, one could compare the return to education using variation in education between first and fourth quarter births in 1940, between second and third quarter births in 1940, between second and third quarter births in 1941, etc. The x* statistics presented at the bottom of Tables IV, V, and VI test the hypothesis that the various combinations of instruments yield the same estimate of the return to education. This statistic is calculated as the sample size times the R from a regression of the residuals from the TSLS equation on the exogenous variables and instruments [Newey, 1985]. In spite of the huge sample sizes, the overidentifying restrictions are not rejected in the models in Tables IV and V. The models in Table VI lead to a rejection of the overidentifying restrictions, but the models that include a quadratic age trend are close to not rejecting at the 0.01 level."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 57,
+    "pages": [
+      24
+    ],
+    "text": "In addition to the log weekly wage, we have also examined the impact of compulsory schooling on the log of annual salary and on weeks worked. This exercise suggests that the main impact of compulsory schooling is on the log weekly wage, and not on weeks worked. For example, when the log of weeks worked is used as the dependent variable in column (6) of Table VII instead of the log weekly wage, the TSLS estimate is 0.016 with a standard error of 0.008. This is within sampling variance of the OLS estimate, which is 0.008 with a standard error of 0.0002.\n\nB. Allowing the Seasonal Pattern in Education to Vary by State of Birth\n\nAlthough most schools admit students born in the beginning of the year at an older age, school start age policy varies across states and across school districts within many states. Therefore, because compulsory schooling constrains some students to remain in school until their birthday, the relationship between education"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 58,
+    "pages": [
+      25
+    ],
+    "text": "THE EFFECTS OF COMPULSORY SCHOOL ATTENDANCE 1003\n\nTABLE VII\n\nOLS anD TSLS ESTIMATES OF THE RETURN TO EDUCATION FOR MEN BORN 1930-1939: 1980 CENSUS\n\nOLS anD TSLS ESTIMATES OF THE RETURN TO EDUCATION FOR MEN BORN 1930-1939: 1980 CENSUS\n\n(1) (2) 3) [CY] () 6) @ \u00ae) Independent variable OLS TSLS OLS TSLS OLS TSLS OLS TSLS Years of education 0.0673 0.0928 0.0673 0.0907 0.0628 0.0831 0.0628 0.0811 (0.0003) (0.0093) (0.0003) (0.0107) (0.0003) (0.0095) (0.0003) \u2014 0.0109) Race (1 = black) \u2014_ \u2014 \u2014 \u20140.2547 0.2333 \u20140.2547 0.2354 {0.0043) {0.0109) (0.0043) (0.0122) SMSA (1 = center city) 0.1705 0.1511 0.1705 0.1531 (0.0029) (0.0095) (0.0029) (0.0107) Married (1 = married) 0.2487 0.2435 0.2487 0.2441 (0.0032) (0.0040) (0.0032) (0.0042) 9 Year-of-birth dummies Yes Yes Yes Yes Yes Yes Yes Yes 8 Region-of-residence dummies No No No No Yes Yes Yes Yes 50 State-of-birth dummies Yes Yes Yes Yes Yes Yes Yes Yes Age -0.0757 \u2014 \u2014 \u20140.0880 -0.0778 0.0876 (0.0617) (0.0624) (0.0603) (0.0609) Age-squared 0.0008 0.0009 0.0008 0.0009 (0.0007) 0.0007) (0.0007) (0.0007) x* [dof} 163 [179] \u2014 \u2014 161[177] 164 [179) 162 [177]"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 59,
+    "pages": [
+      25
+    ],
+    "text": "a. Standard errors are in parentheses. Excluded instruments are 30 quarter-of-birth times year-of-birth dummies and 150 quarter-of-birth times state-of-birth interactions. Age and age-squared are measured in quarters of years. Each equation also includes an intercept term. The sample is the same as in Tabie V1. Sample size is 329,509.\n\n1003\n\n1004\n\nQUARTERLY JOURNAL OF ECONOMICS\n\nand season of birth is expected to vary among states that have different start age policies. This additional variability can be used to improve the precision of the TSLS estimates."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 60,
+    "pages": [
+      26
+    ],
+    "text": "To incorporate the cross-state seasonal variation in education, we computed TSLS estimates that use as instruments for educa- tion a set of three quarter-of-birth dummies interacted with fifty state-of-birth dummies, in addition to three quarter-of-birth dum- mies interacted with nine year-of-birth dummies.\u201d\u00ae The estimates also include fifty state-of-birth dummies in the wage equation, so the variability in education used to identify the return to education in the TSLS estimates is solely due to differences by season of birth. Unlike the previous TSLS estimates, the seasonal differences are now allowed to vary by state as well as by birth year."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 61,
+    "pages": [
+      26
+    ],
+    "text": "Table VII presents the TSLS and OLS estimates of the new specification for the sample of 40-49 year-old men in the 1980 Census. This is the same sample used in the estimates in Table V. Freeing up the instruments by state of birth and including 50 state-of-birth dummies in the wage equation results in approxi- mately a 40 percent reduction in the standard errors of the TSLS estimates. Furthermore, in the specifications in each of the col- umns in Table VII, the estimated return to education in the TSLS model is slightly greater than the corresponding TSLS estimate in Table V, whereas in each of the OLS models the return is slightly smaller in Table VII than in Table V. As a consequence, the difference between the TSLS and OLS estimates is of greater significance. For example, the TSLS estimate in column (6) of Table VII is 0.083 with a standard error of 0.010, and the OLS estimate is 0.063 with a standard error of 0.0003: the TSLS estimate is nearly 30 percent greater than the OLS estimate."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 62,
+    "pages": [
+      26
+    ],
+    "text": "One possible explanation for the higher TSLS estimate of the return to education may be that compulsory schooling pushes some students to graduate high school, so that part of the TSLS estimate reflects a high school \u201c\u2018completion\u201d effect. On the other hand, using 1980 Census data, Card and Krueger [1992a] find little evidence of nonlinearity in the return to education for middle-aged men with three to fifteen years of education. If the earnings function is\n\n18. In the context of the model, we added a set of state-of-birth dummy variables interacted with quarter-of-birth dummy variables to equation (1), and a set of 50 state-of-birth dummies to equation (2). Although in principle we could also interact the state-of-birth-by-quarter-of-birth effects with year of birth, to have a total of 1,500 exclusion restrictions, estimation of such a model is computationally burdensome.\n\nTHE EFFECTS OF COMPULSORY SCHOOL ATTENDANCE\n\n1005\n\nlog-linear, then our estimates may be representative of the average return to education in our sample.\""
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 63,
+    "pages": [
+      27
+    ],
+    "text": "To further explore this issue, we computed OLS estimates of the return to education for men with nine to twelve years of schooling, and found little difference between estimates for this subsample and the full sample. For example, the OLS estimate of the return to education for men born 1930-1939 with nine to twelve years of education is 0.059, compared with 0.063 for the full sample in column (5) of Table V. We also note that we obtained similar TSLS estimates of the return to education when our extracts were restricted to men with a high school degree or less.\n\nC. Estimates for Black Men\n\nUsing data on men born in the first half of the twentieth century, many researchers find that OLS estimates of the return to education are lower for black men than for white men (e.g., Welch [1973] ). At least part of the lower return to education for black men appears to be due to the lower quality schools that were provided for black students in these cohorts (see Card and Krueger [1992b] ). If schools attended by black students were of inferior quality, then we would expect to find a lower return to compulsory schooling for black workers than for white workers."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 64,
+    "pages": [
+      27
+    ],
+    "text": "In Table VIII we provide estimates of the return to education for the sample of black men born 1930-1939. As in Table VII the excluded instruments for education are interactions between quar- ter-of-birth and year-of-birth dummies, and interactions between quarter-of-birth and state-of-birth dummies. Both the OLS and TSLS estimates indicate that the return to education is lower for black men than for the entire male population. In view of the lower quality of schools attended by black students, this finding provides some additional support for the plausibility of the TSLS estimates. Moreover, the TSLS estimates for this subsample are within sampling variance of the OLS estimates. Unlike the estimates for the entire sample, however, the TSLS estimates are slightly less than the OLS estimates.\n\nIII. OTHER POSSIBLE EFFECTS OF SEASON OF BIRTH\n\nThe validity of the identification strategy used in Section II rests on the assumption that season of birth is a legitimate\n\n19. Heckman and Polachek [1974] provide some additional evidence that the earnings function is approximately log-linear.\n\n1006\n\nQUARTERLY JOURNAL OF ECONOMICS"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 65,
+    "pages": [
+      28
+    ],
+    "text": "8] (2) @ 4) (5) 6) () \u00ae) Independent variable OLS TSLS OLS TSLS OLS TSLS OLS TSLS Years of education 0.0672 0.0635 0.0671 0.0555 0.0576 0.0461 0.0576 0.0391 (0.0013) (0.0185) (0.0003) (0.0199) \u2014_ (0.0013) (0.0187) (0.0013) (0.0199) SMSA (1 = center city) \u2014 \u2014_ 0.1885 0.2053 0.1884 0.2155 (0.0142) (0.0308) (0.0142) (0.0324) Married (1 = married) 0.2216 0.2272 0.2216 0.2307 (0.0193) (0.0136) (0.0100) (0.0140) 9 Year-of-birth dummies Yes Yes Yes Yes Yes Yes Yes Yes 8 Region-of-residence dummies No No No No Yes Yes Yes Yes 49 State-of-birth dummies Yes Yes Yes Yes Yes Yes Yes Yes Age \u20140.0309 ~0.3274 \u2014_ \u2014_ ~0.2978 0.3237 (0.2538) (0.2560) (0.0032) (0.2497) Age-squared 0.0033 0.0035 0.0032 0.0035 (0.0028) (0.0028) (0.0027) (0.0028) x* [dof] 184 (176] \u2014 181 (173) _ 178 [176] \u2014 175 [173]\n\nOLS aND TSLS ESTIMATES OF THE RETURN T EDUCATION FOR BLACK MEN BORN 1930-1939: 1980 Cesus\u00ae\n\nTABLE VIII"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 66,
+    "pages": [
+      28
+    ],
+    "text": "a. Standard errors are in parentheses. Excluded instruments are 30 no black men in the sample born in Hawaii.) quarter-of-birth times year-of-birth dummies and 147 quarter-of-birth times state-of-birth interactions. (There are Age and age-squared are measured in quarters of years. Each equation also includes an intercept term. The sample is drawn from the 1980 Census. Sample size is 26,91\n\nTHE EFFECTS OF COMPULSORY SCHOOL ATTENDANCE\n\n1007\n\ninstrument for education in an earnings equation. From Section I it would seem that season of birth is related to education because of compulsory schooling requirements. However, for the TSLS esti- mates to be consistent, it must also be the case that season of birth is uncorrelated with the residual in the earnings equation (p). In other words, if season of birth influences earnings for reasons other than compulsory schooling, our approach is called into question. Although we believe the evidence in Section I establishes that season of birth influences education exclusively because of compulsory schooling, it is useful to consider the impact of other possible effects of season of birth."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 67,
+    "pages": [
+      29
+    ],
+    "text": "First, several educational psychologists have examined the effect of age at school entry on educational achievement.\u201d Most of this literature, however, analyzes extremely small samples, focuses on test scores rather than graduation rates, and takes age at entry to school as exogenous. Furthermore, much of the past literature fails to adequately control for the effects of age.\u201d Nevertheless, the previous research indicates that there might be a relationship between age at school entry and academic performance. The consensus in this literature is that, if anything, students who start school at an older age are more mature and perform better in school."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 68,
+    "pages": [
+      29
+    ],
+    "text": "Although we do not find this evidence convincing, it is worth noting what bias the prevailing interpretation of the psychological- season of birth effect might have on our estimates. Assume, for the moment, that children born in the beginning of the year are better students because they are older than their classmates. Men born in the first quarter of the year would therefore have greater unob- served ability for a given level of schooling. However, men born in the first quarter also have less education, probably due to the dominant effect of compulsory education laws. Assuming that this unobserved ability is rewarded in the labor market, any estimator of the return to education that is identified by variations in education due to season of birth would be biased downward.\n\nSecond, we note that if season of birth were related to the socioeconomic status of children\u2019s parents, one might expect to find a connection between season of birth and education. If this were\n\n20. See Halliwell [1966] for a survey of the literature on early school entry and school success; see DiPasquale, Moule, and Flewelling [1980] for a survey of the \u201cbirthday effect\u201d on educational achievement."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 69,
+    "pages": [
+      29
+    ],
+    "text": "21. This point is also made by Lewis and Griffin [1981] in the context of season-of-birth effects in diagnoses of schizophrenia.\n\n1008\n\nQUARTERLY JOURNAL OF ECONOMICS\n\nthe case, season of birth would be an unsatisfactory instrumental variable for our purposes. Lam and Miron [1987], however, present a variety of evidence suggesting that season of birth is unrelated to the socioeconomic status (and other characteristics) of parents. For example, they find that the seasonal pattern in births is virtually identical for illegitimate births and legitimate births. In addition, they find that the seasonal pattern of birth is similar across urban and rural families, across regions of the United States that have diverse economic and cultural conditions, and within countries before and after dramatic economic transitions."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 70,
+    "pages": [
+      30
+    ],
+    "text": "Furthermore, both of these alternative explanations are hard pressed to explain why the effect of season of birth on education is smaller for more recent cohorts, as is clear from Table I. There is no obvious reason why the psychological or socioeconomic explana- tions for the seasonal pattern of education would have less force for the 1940s cohort than for the 1920s cohort. On the other hand, if season of birth influences education because of compulsory school- ing, one would expect to find a smaller effect for individuals in more recent cohorts, who are likely to be less constrained by the compulsory schooling requirement."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 71,
+    "pages": [
+      30
+    ],
+    "text": "Third, assuming that the earnings function is consistently estimated by OLS (e.g., no correlation between education and the error) and that the only impact of quarter of birth on earnings is through education, then quarter-of-birth dummies should be insignificant in an earnings equation that also include education. We tested this proposition by adding three quarter-of-birth dum- mies to the OLS models for the sample of prime-age men in column 5 of Tables IV and V. The prob-value for an F-test of the null hypothesis that the quarter-of-birth dummies jointly equal zero is 0.73 in the 1970 Census and 0.13 in the 1980 Census."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 72,
+    "pages": [
+      30
+    ],
+    "text": "Finally, and perhaps most convincing, we have estimated the effect of season of birth on the earnings of college graduates, a sample whose schooling was not prolonged by compulsory atten- dance. If season of birth affects education for a reason other than compulsory schooling (e.g., psychological effects of school start age), we would expect season of birth to be related to earnings for this sample. On the other hand, if season of birth only affects education and earnings because of compulsory schooling, we would not expect any relationship in this sample. The estimates suggest that quarter of birth has no effect on earnings for college gradu- ates, a finding which supports the estimation framework employed\n\nTHE EFFECTS OF COMPULSORY SCHOOL ATTENDANCE"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 73,
+    "pages": [
+      31
+    ],
+    "text": "throughout the paper. For example, using the sample of 40-49-year- old college graduates in the 1970 Census, an F-test of the joint significance of quarter-of-birth dummies in an earnings regression that includes year-of-birth dummies is not rejected at the 25 percent level. Similar results hold for 40-49-year-old men in 1980. We take this as strong evidence that, in the absence of compulsory schooling, season of birth would have no effect on earnings.\n\n1009\n\nIV. CONCLUSION"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 74,
+    "pages": [
+      31
+    ],
+    "text": "Differences in season of birth create a natural experiment that we use to study the effect of compulsory school attendance on schooling and earnings. Because individuals born in the beginning of the year usually start school at an older age than that of their classmates, they are allowed to drop out of school after attaining less education. Our exploration of the relationship between quarter of birth and educational attainment suggests that season of birth has a small effect on the level of education men ultimately attain. To support the contention that this is a consequence of compulsory schooling laws, we have assembled evidence showing that some students leave school as soon as they attain the legal dropout age, and that season of birth has no effect on postsecondary years of schooling."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 75,
+    "pages": [
+      31
+    ],
+    "text": "Variation in education that is related to season of birth arises because some individuals, by accident of date of birth, are forced to attend school longer than others because of compulsory schooling. Using season of birth as an instrument for education in an earnings equation, we find a remarkable similarity between the OLS and the TSLS estimates of the monetary return to education. Differences between the OLS and the TSLS estimates are typically not statistically significant, and whatever differences that do exist tend to suggest that omitted variables, or measurement error in education, may induce a downward bias in the OLS estimate of the return to education.\u201d This evidence casts doubt on the importance"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 76,
+    "pages": [
+      31
+    ],
+    "text": "22. Siegel and Hodge [1968] find that the correlation between individuals\u2019 education reported in the 1960 Census and in a Post Enumeration Survey is 0.933. This correlation gives an upper bound estimate of the ratio of the variance of true education to the variance of reported education because individuals may consis- tently misreport their education in both surveys. Moreover, the downward bias in the OLS estimate of the return to education due to measurement error will be exacerbated because the included covariates are likely to explain some of the true variation in education, and because of variability in the quality of education.\n\n1010\n\nQUARTERLY JOURNAL OF ECONOMICS\n\nof omitted variables bias in OLS estimates of the return to education, at least for years of schooling around the compulsory schooling level."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 77,
+    "pages": [
+      32
+    ],
+    "text": "Our results provide support for the view that students who are compelled to attend school longer by compulsory schooling laws earn higher wages as a result of their extra schooling. Moreover, we find that compulsory schooling laws are effective in compelling some students to attend school. Do these results mean that compulsory schooling laws are necessarily beneficial? A complete answer to this question would require additional research on the social and private costs of compulsory school attendance. For example, compulsory attendance may have the benefit of reducing crime rates. And they may impose a social cost because students who are compelled to attend school may interfere with the learning of other students.\n\nAPPENDIX 1: DATA"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 78,
+    "pages": [
+      32
+    ],
+    "text": "The empirical analysis draws on a variety of data sets, each constructed from Public Use Census Data. The sample used in Table I to compute quarter-of-birth main effects on educational outcomes consists of all men born 1930-1949 in the 1980 Census 5 percent sample. The sample used to compute the difference-in- differences estimates of the effect of compulsory schooling laws on enrollment in Table IT consists of all sixteen-year olds in each of the following Census samples: the 1960 Census 1 percent sample, the two 1 percent State samples from the 1970 Census, and the 1980 Census 5 percent sample. The two samples used to compute the estimates in Tables III-VI consist of men with positive earnings born between 1920-1929 in the three 1970 Census 1 percent samples drawn from the 15 percent long-form, and the sample of men with positive earnings born between 1930-1949 in the 1980 Census 5 percent sample. Information on date of birth in the Censuses is limited to quarter of birth. A more detailed description of the data sets used in the tables and figures is provided below.\n\nA. Samples used in Table 1, Tables III-VII, and Figures I-V"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 79,
+    "pages": [
+      32
+    ],
+    "text": "1. 1970 Census. The 1970 Census micro data are documented in Public Use Samples of Basic Records from the 1970 Census [Washington, DC: U. S. Department of Commerce, 1972]. Our\n\n1. 1970 Census. The 1970 Census micro data are documented in Public Use Samples of Basic Records from the 1970 Census [Washington, DC: U. S. Department of Commerce, 1972]. Our"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 80,
+    "pages": [
+      33
+    ],
+    "text": "THE EFFECTS OF COMPULSORY SCHOOL ATTENDANCE\n\n1011\n\nextract combines data from three separate public-use files: the State, County group, and Neighborhood files. Each file contains a self-weighting, mutually exclusive sample of 1 percent of the population (as of April 1, 1970), yielding a total sample of 3 percent of the population. The data sets we use are based on the question- naire that was administered to 15 percent of the population.\n\nThe sample consists of white and black men born between 1920-1929 in the United States. Birth year was derived from reported age and quarter of birth. In addition, we excluded any man whose age, sex, race, veteran status, weeks worked, highest grade completed or salary was allocated by the Census Bureau. Finally, the sample is limited to men with positive wage and salary earnings and positive weeks worked in 1969."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 81,
+    "pages": [
+      33
+    ],
+    "text": "Weekly earnings is computed by dividing annual earnings by annual weeks worked. Annual earnings is reported in intervals of $100. This variable was converted to a continuous variable by taking the average of the interval endpoints. Weeks worked is reported as a categorical variable in six intervals, and was also converted to a continuous variable by taking the mean of interval endpoints.\n\nNine region dummies were coded directly from the Census Regions variable in the Neighborhoods 1 percent sample, from state of residence in the State 1 percent sample, and from county locations in the County Group file. If county groups straddled two states, the counties were allocated to the region containing the greatest land-mass of the county group. The education variable is years of schooling completed. The marital status variable equals one if the respondent is currently married with his spouse present. The SMSA variable equals one if the respondent works in an SMSA."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 82,
+    "pages": [
+      33
+    ],
+    "text": "2. 1980 Census. The 1980 Census micro data are documented in Census of Population and Housing, 1980: Public Use Microdata Samples [Washington, DC: U. S. Department of Commerce, 1983]. Our extract is drawn from the 5 percent Public Use Sample (the A Sample). This file contains a self-weighting sample of 5 percent of the population as of April 1, 1980.\n\nThe extract we created consists of white and black men born in the United States between 1930-1959. Birth year was derived from reported age and quarter of birth. We excluded respondents whose age, sex, race, quarter of birth, weeks worked, years of schooling, or salary was allocated by the Census Bureau. For the estimates in\n\n1012\n\nQUARTERLY JOURNAL OF ECONOMICS\n\nTables IV-VII and Figure V, the sample is limited to men with positive wage and salary earnings and positive weeks worked in 1979; for the estimates in Table I, the sample includes all men, regardless of whether they worked in 1979."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 83,
+    "pages": [
+      34
+    ],
+    "text": "Weekly earnings in 1979 is computed by dividing annual earnings by weeks worked. Dummies for nine Census regions are coded from state of residence. The education variable is years of completed schooling. The marital status dummy equals one if the respondent is currently married with his spouse present. The SMSA variable equals one if the respondent lives in an SMSA.,\n\nB. Samples Used to Compute the Enrollment Estimates in Table IT"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 84,
+    "pages": [
+      34
+    ],
+    "text": "Table II uses data from the 1960, 1970, and 1980 Censuses. The 1960 Census data are documented in A Public Use Sample of Basic Records from the 1960 Census [Washington, DC: U. S. Department of Commerce, 1975]. Our extract for 1960 is drawn from the 1 percent Public Use Sample. The sample used consists of boys and girls born in 1944. The extract of the 1970 Census used in Table II is drawn from the two 1 percent State files (the State samples of the 5 percent Form and of the 15 percent Form) because these files identify state of residence. The sample consists of boys and girls born in 1954. Finally, the sample of boys and girls born in 1964 in the 1980 Census, 5 percent sample are used as well. In each of the three samples, individuals with allocated age or enrollment were excluded.\n\nAPPENDIX 2: COMPULSORY SCHOOL ATTENDANCE AGE BY STATE\n\nState 1960 1970 1980 Notes 1 Alabama 16 16 16 2 Alaska 16 16 16 4 Arizona 16 16 16 5 Arkansas 16 16 15 6 California 16 16 16 8 Colorado 16 16 16 9 Connecticut 16 16 16 10 Delaware 16 16 16 11D.C. 16 16 16 12 Florida 16 16 16 13 Georgia 16 16 16 15 Hawaii 16 18 18 Increased to 18 midyear, 1970 16 Idaho 16 16 16 17 Illinois 16 16 16"
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 85,
+    "pages": [
+      35
+    ],
+    "text": "THE EFFECTS OF COMPULSORY SCHOOL ATTENDANCE\n\nAPPENDIX 2: (CONTINUED)\n\nState 1960 1970 1980 Notes 18 Indiana 16 16 16 19 owa 16 16 16 20 Kansas 16 16 16 21 Kentucky 16 16 16 22 Louisiana 16 16 16 23 Maine 15 17 17 24 Maryland 16 16 16 25 Massachusetts 16 16 16 26 Michigan 16 16 16 27 Minnesota 16 16 16 28 Mississippi \u2014 \u2014_ \u2014 Age 14 starting 1983 29 Missouri 16 16 16 30 Montana 16 16 16 31 Nebraska 16 16 16 32 Nevada 17 17 17 33 New Hampshire 16 16 16 34 New Jersey 16 16 16 35 New Mexico 16 17 17 36 New York 16 16 16 May be changed by city districts 37 North Carolina 16 16 16 38 North Dakota 17 16 16 39 Ohio 18 18 18 40 Oklahoma 18 18 18 41 Oregon 18 18 18 42 Pennsylvania 17 17 17 44 Rhode Island 16 16 16 45 South Carolina \u2014 16 16 Reinstated in 1967 46 South Dakota 16 16 16 47 Tennessee 17 17 16 Increased to age 17 in 1983 48 Texas 16 17 17 Must finish school term 49 Utah 18 18 18 50 Vermont 16 16 16 51 Virginia 16 17 17 16 16 18 53 Washington 54 West Virginia 16 16 16 55 Wisconsin 16 16 16 Must finish school term 17 17 16 54 Wyoming\n\nSource: U.S. Office of Education, Digest of Education Statistics (Washington, DC: GPO, various years)."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 86,
+    "pages": [
+      35
+    ],
+    "text": "HaRVARD UNIVERSITY AND NBER PRINCETON UNIVERSITY AND NBER\n\nHaRVARD UNIVERSITY AND NBER\n\nREFERENCES\n\nAngrist, Joshua D., and Alan Krueger, \u201cWhy do World War Two Veterans Earn More than Nonveterans?\u201d\u201d NBER Working Paper No. 2991, May 1989.\n\n1013\n\n1014\n\nQUARTERLY JOURNAL OF ECONOMICS\n\n_,and __, \u201cThe Effect of Age at School Entry on Educational Attainment: An Application of Instrumental Variables with Moments from Two Samples,\u201d NBER Working Paper No. 3571, December 1990.\n\n_,and __, \u201cThe Effect of Age at School Entry on Educational Attainment: An Application of Instrumental Variables with Moments from Two Samples,\u201d NBER Working Paper No. 3571, December 1990.\n\nCard, David, and Alan Krueger, \u201cDoes School Quality Matter? Returns to Educa- tion and the Characteristics of Public Schools in the United States,\u201d Journal of Political Economy (February 1992a), forthcoming.\n\nCard, David, and Alan Krueger, \u201cDoes School Quality Matter? Returns to Educa- tion and the Characteristics of Public Schools in the United States,\u201d Journal of Political Economy (February 1992a), forthcoming."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 87,
+    "pages": [
+      36
+    ],
+    "text": "__,and_, \u201cSchool Quality and Black/White Earnings: A Direct Assessment,\u201d Quarterly Journal of Economics, CVII (February 1992b), forthcoming.\n\nDepartment of Health, Education and Welfare, State Legislation on School Attendance (Washington, DC: Circular No. 573, January 1959).\n\nDepartment of Employment, Education and Training, School Leavers (Canberra, Australia: Edition 8, 1987), p. 35.\n\nDiPasquale, Glenn, Allan Moule, and Robert Flewelling, \u2018\u201cThe Birthdate Effect,\u201d Journal of Learning Disabilities, XIII (May 1980) 234-37.\n\nDurbin, J. \u201cErrors in ariables,\u201d Review of the International Statistical Institute, XXII(1954), 23-32.\n\nEdwards, Linda, \u201cAn Empirical Analysis of Compulsory Schooling Legislation, 1940-1960,\u201d Journal of Law and Economics, XXI (April 1978), 203-22.\n\nEhrenberg, Ronald, and Alan Marcus, \u201cMinimum Wages and Teenagers\u2019 Enrollment-\n\nEhrenberg, Ronald, and Alan Marcus, \u201cMinimum Wages and Teenagers\u2019 Enrollment- Employment Outcomes: A Multinomial Logit Model,\u201d Journal of Human Resources, XXVII (1982), 39-58.\n\nEmployment Outcomes: A Multinomial Logit Model,\u201d Journal of Human Resources, XXVII (1982), 39-58."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 88,
+    "pages": [
+      36
+    ],
+    "text": "Griliches, Zvi, Estimating the Returns to Schooling--Some Econometric Problems,\u201d Econometrica, XLV (January 1977), 1-22.\n\nHalliwell, Joseph, \u2018\u2018Reviewing the Reviews on Entrance Age and School Success,\u201d Journal of Educational Research, LIX (May\u2014June 1966), 395-401.\n\nHausman, Jerry, \u2018\u201c\u2018Specification Tests in Econometrics,\u201d Econometrica, XLVI (November 1978), 1251-71.\n\nHeckman, James, and Solomon Polachek, \u201cEmpirical Evidence on the Functional Form of the Earnings-Schooling Relationship,\u201d Journal of the American Statistical Association, LXIX (1974), 350-54.\n\nHuntington, Ellsworth, Season of Birth: Its Relation to Human Abilities (New York, NY: Wiley, 1938).\n\nKotin, Lawrence, and William F. Aikman, Legal Foundations of Compulsory School Attendance (Port Washington, NY: Kennikat Press, 1980).\n\nLam, David, and Jeffrey Miron, \u201cThe Seasonality of Births in Human Populations,\u201d unpublished Population Studies Center Research Report No. 87-114,\n\nunpublished paper, Population Studies Center Research Report No. 87-114, University of Michigan, 1987.\n\nunpublished paper, Population Studies Center Research Report No. 87-114, University of Michigan, 1987."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 89,
+    "pages": [
+      36
+    ],
+    "text": "Lewis, Marc, and Patricia Griffin, \u2018\u2018An Explanation for the Season of Birth Effect in Schizophrenia and Certain Other Diseases,\u201d Psychological Bulletin, LXXXIX (1981), 589-96.\n\nNewey, Whitney, \u2018\u2018Generalized Method of Moments Specification Testing,\u201d Journal of Econometrics, XXIX (1985), 229-56.\n\nOrganization for Economic Cooperation and Development, Compulsory Schooling in a Changing World (Paris: OECD, 1983).\n\nd: of Measurement Siegel, Paul, and Robert Hodge, \u201cA Causal Approach to the Stux d\n\nd: of Measurement Siegel, Paul, and Robert Hodge, \u201cA Causal Approach to the Stux d Error,\u201d Methodology in Social Research, Hubert Blalock an Ann Blalock, eds. (New York, NY: McGraw Hill Book Co., 1968), Chapter 2, pp. 29-59.\n\nSpence, Michael, \u201cob Market Signaling,\u201d Quarterly Journal of Economics, LXXXVII (1973), 355-75.\n\nWald, Abraham, \u201cThe Fitting of Straight Lines if Both Variables Are Subject to Error,\u201d Annals of Mathematical Statistics, XI (1940), 284-300.\n\nWald, Abraham, \u201cThe Fitting of Straight Lines if Both Variables Are Subject to Error,\u201d Annals of Mathematical Statistics, XI (1940), 284-300."
+  },
+  {
+    "source": "Angrist and Krueger 1991.pdf",
+    "chunk_index": 90,
+    "pages": [
+      36
+    ],
+    "text": "Welch, Finis, \u201cEducation and Racial Discrimination,\u201d in Discrimination in Labor Market, O. Ashenfelter and A. Rees, eds. (Princeton, NJ: Princeton University Press, 1973), pp. 43-81.\n\nWillis, Robert J., \u201cWage Determinants: A Survey and Reinterpretation of Human Capital Earnings Functions,\u201d Handbook of Labor Economics, I, O. Ashenfelter and R. Layard, eds. (Amsterdam: Elsevier Science Publishers BV, 1986), Chapter 10."
+  }
+]

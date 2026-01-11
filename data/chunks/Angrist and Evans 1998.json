@@ -1,0 +1,874 @@
+[
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 0,
+    "pages": [
+      1
+    ],
+    "text": "Children and Their Parents\u2019 Labor Supply: Evidence from Exogenous Variation in Family Size\n\nBy JosHUA D. ANGRIST AND WILLIAM N. EVANS *\n\nResearch on the labor-supply consequences of childbearing is complicated by the endogeneity of fertility. This study uses parental preferences for a mixed sibling-sex composition to construct instrumental variables (1 ) estimates of the effect of childbearing on labor supply. 1V estimates for women are significant but smaller than ordinary least-squares estimates. The IV are also smaller for more educated women and show no impact of family size on husbands\u2019 labor supply. A comparison of estimates using sibling-sex composition and twins instruments implies that the impact of a third child disappears when the child reaches age 13. (JEL J13, J22)"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 1,
+    "pages": [
+      1
+    ],
+    "text": "An understanding of the relationship between fertility and labor supply is important for a num- ber of theoretical and practical reasons. First, economists and demographers have developed a variety of models linking the family and the la- bor market. Empirical studies of childbearing and labor supply are sometimes seen as tests of these models (e.g., Reuben Gronau, 1973; Mark R. Rosenzweig and Kenneth 1. Wolpin, 1980b; T. Paul Schultz, 1990). Second, the link be- tween fertility and labor supply might partly ex- plain the postwar increase in women\u2019s labor-force participation rates if having fewer children causes an increase in labor-force attach- ment (Mary T. Coleman and John Pencavel, 1993). Evidence for this thesis includes Claudia Goldin\u2019s (1995) study, which shows that few women in the 1940\u2019s and 1950\u2019s birth cohorts"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 2,
+    "pages": [
+      1
+    ],
+    "text": "* Angrist: Department of Economics, Massachusetts In- stitute of Technology, 50 Memorial Drive, Cambridge, MA 02139; Bvans: Department of Economics, University of Maryland, College Park, MD 20742. The authors thank sem- inar participants at the Council of Economic Advisors, Brown University, the University of Maryland, MIT, the University of Michigan, Northwestern University, Princeton University, the University of Virginia, and the July 1996 NBER Labor Studies meetings, as well as Susan Athey, Peter Diamond, Jon Gruber, Judy Hellerstein, Jim Poterba, David Weil, and three anonymous referees for helpful discussions or com- ments. John Johnson and Amanda Honeycutt provided ex- cellent research assistance. Special thanks go to Duncan Thomas who stimulated our interest in the subject of parental sex preferences. The authors bear sole responsibility for the content of this paper.\n\n450"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 3,
+    "pages": [
+      1
+    ],
+    "text": "were able to combine childbearing with strong labor-force attachment. Other researchers have also drawn a link between fertility-induced with- drawals from the labor force and lower wages of women (e.g., Gronau, 1988; Sanders Korenman and David Neumark, 1992). So per- haps childbearing keeps women from develop- ing their careers.\n\nAny success in disentangling the causal mechanisms linking fertility and labor supply should shed light on other substantive issues as well. For example, reductions in female labor supply could increase the total time parents de- vote to child care, making at least some children better off (see, e.g., Frank P. Stafford, 1987; Francine Blau and Adam J. Grossberg, 1992). Some theories of family behavior also suggest that changes in wives\u2019 earnings affect marital stability (Becker et al., 1977; Becker, 1985).\n\nNot surprisingly, given the wide and long- standing interest in the connection between childbearing and labor supply, hundreds of empirical studies report estimates of this re- lationship. The vast majority of these studies find a negative correlation between fetility (or family size) and female labor supply.\u2019 As"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 4,
+    "pages": [
+      1
+    ],
+    "text": "! There is less work on the effects of children on hus- bands\u2019 labor supply. See Pencavel (1986 Table 1.17) for a few estimates, which suggest a positive association be- tween fathers labor supply and the number of children. The relationship between husbands\u2019 and wives labor sup-\n\nVOL. 88 NO. 3 ANGRIST AND EVANS: CHILDREN AND THEIR PARENTS\u2019 LABOR SUPPLY\n\n451\n\nnoted in two recent literature surveys, how- ever, the interpretation of these correlations re- mains unclear. In his assessment of the \u201c\u2018economics of the family,\u201d\u201d Robert J. Willis (1987 p. 74) writes, *... it has proven difficult to find enough well-measured exogenous vari- ables to permit cause and effect relationships to be extracted from correlations among fac- tors such as the delay of marriage, decline of childbearing, growth of divorce, and increased female labor force participation ....\"\u201d\" Martin Browning (1992 p. 1435) expresses similar views: ... although we have a number of ro- bust correlations, there are very few credible inferences that can be drawn from them. 252"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 5,
+    "pages": [
+      2
+    ],
+    "text": "Skepticism regarding the causal interpreta- tion of associations between fertility and labor supply arises in part from the fact that there are strong theoretical reasons to believe that fertility and labor supply are jointly deter- mined (see, e.g., Schultz, 1981, or Goldin, 1990). In fact, this endogeneity is reflected in the academic research agenda. On one hand, papers on labor supply often treat child-status variables as regressors in hours of work equa- tions, while on the other hand, economic demographers and others discuss regressions and models that are meant to characterize the impact of wages or measures of labor-force attachment on fertility. Since fertility variables cannot be both dependent and exogenous at the same time, it seems unlikely that either sort of regression has a causal interpretation.\u00ae\n\nThis paper focuses on the causal link run- ning from fertility to the work effort of both\n\nply is discussed by, among others, Orley Ashenfelter and James J. Heckman (1974), Heckman and Thomas E. MaCurdy (1980), and Jonathan Gruber and Julie Berry Cullen (1996)."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 6,
+    "pages": [
+      2
+    ],
+    "text": "ply is discussed by, among others, Orley Ashenfelter and James J. Heckman (1974), Heckman and Thomas E. MaCurdy (1980), and Jonathan Gruber and Julie Berry Cullen (1996).\n\n> The survey by Alice Nakamura and Masao Nakamura (1992) argues that a scarch for exogenous variation is so difficult it is not even fruitful (pp. 60-61).\n\n> The survey by Alice Nakamura and Masao Nakamura (1992) argues that a scarch for exogenous variation is so difficult it is not even fruitful (pp. 60-61).\n\n* In the chapter on models of marital status and child- bearing in the Handbook of Labor Economics, Mark R. Montgomery and James Trussel (1986 p. 205) note:\n\n* In the chapter on models of marital status and child- bearing in the Handbook of Labor Economics, Mark R. Montgomery and James Trussel (1986 p. 205) note:\n\n\u201c\u2018One of the rites of passage for a labor economist involves the estimation of 2 Probit model for fe- male labor force participation. It is standard prac- tice for the Probit equation to include some indicators for a woman\u2019s marital status and the number and age distribution of her children. In es-"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 7,
+    "pages": [
+      2
+    ],
+    "text": "\u201c\u2018One of the rites of passage for a labor economist involves the estimation of 2 Probit model for fe- male labor force participation. It is standard prac- tice for the Probit equation to include some indicators for a woman\u2019s marital status and the number and age distribution of her children. In es-"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 8,
+    "pages": [
+      2
+    ],
+    "text": "men and women. Our main contribution is the use of a new instrumental variables (IV ) strat- egy based on the sibling sex mix in families with two or more children. This instrument ex- ploits the widely observed phenomenon of pa- rental preferences for a mixed sibling-sex composition. In particular, parents of same-sex siblings are significantly and substantially more likely to go on to have an additional child.* Because sex mix is virtually randomly assigned, a dummy for whether the sex of the second child matches the sex of the first child provides a plausible instrument for further childbearing among women with at least two children. Moreover, in spite of the fact that the sibling sex mix is obviously a function of the sex of both children, we present a range of evidence which suggests that there is little pos- sibility that any secular impact of the sex of offspring contaminates the IV estimates.\n\nWe also compare results generated using sex mix as an instrument to results generated using twins to construct instruments. Twinning at first birth has been used in a number of previous studies to estimate the relationship between"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 9,
+    "pages": [
+      2
+    ],
+    "text": "timating such a model, the labor economist veers dangerously close to a theory of householdforma tion, childbearing, and labor supply; namely, that household formation and fertility can be safely taken as exogenous with respect to a woman\u2019s sup- ply of hours.\u201d\u201d\n\nMany of the papers cited in the Handbook chapter on fe- matle labor supply (Mark R. Killingsworth and Heckman, 1986) fit this description. A widely cited paper that dis- cusses regressions of fertility measures on measures of earnings is Jacob Mincer (1963). A more recent example is Heckman and James R. Walker (1990), who use non- linear techniques. See also Schultz (1981 p. 171) who asks: \u201cWhat is cause and what is effect?\u201d\u201d in a discussion of William P. Butz and Michael P. Ward (1979), and other demographic studies of the relationship between fer- tility and labor-force participation,"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 10,
+    "pages": [
+      2
+    ],
+    "text": "* Charles F. Westoff et al. (1963 ) were among the first to report preferences for a mix. In a survey of desired fertility and a follow-up study of actual fertility among couples with two children, they found that parents of two boys or two girls both desired and ultimately had more children than parents of mixed pairs. See Nancy E. Williamson (1976) for an international review. After completing the first draft of this paper in July 1996, we learned of concurrent work using sex-preference instru- ments to estimate the effect of fertility on female labor supply in the United Kingdom (Maria Iacovou, 1996).\n\n452\n\nTHE AMERICAN ECONOMIC REVIEW\n\nJUNE 1998"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 11,
+    "pages": [
+      3
+    ],
+    "text": "childbearing and labor-market outcomes. Ex- amples include Stephen G. Bronars and Jeff Grogger (1994) and Jaisri Gangadharan and Joshua L. Rosenbloom (1996), both of which use large Census samples, and Rozenzweig and Wolpin (1980a, b). Here, our interest is primar- ily in the comparison between twins estimates and results using the same-sex instruments. We therefore focus on multiple second births, so that both twinning and the sex-mix instrument iden- tify the impact of moving from the second to the third child. Because third-born children who are twins are older than other third-born children, the juxtaposition of estimates based on twinning and the sex mix allows us to compare the effects of fertility on labor supply when the children are different ages. By combining the twins and same-sex instruments, we can estimate the time it takes for the labor-supply consequences of childbearing to disappear."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 12,
+    "pages": [
+      3
+    ],
+    "text": "Section I discusses the data and the sex-mix instruments\u2019 first stage, and briefly describes how sex mix can be incorporated into standard economic models of fertility. Section II pre- sents the main set of empirical results on fer- tility and labor supply, including an analysis of effects in subgroups defined by husbands\u2019 earnings and mothers\u2019 schooling. Section IIT compares the estimates using sex-mix instru- ments to estimates based on twins. Section IV discusses the empirical findings in light of re- cent trends in female labor-force participation, and Section V concludes.\n\n1. Data, Descriptive Statistics, and First-Stage Relationships\n\nA. Data and Descriptive Statistics"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 13,
+    "pages": [
+      3
+    ],
+    "text": "The sex-mix estimation strategy is imple- mented using information on labor supply, the sex of mothers\u2019 first two children, and an in- dicator of multiple births in the 1980 and 1990 Census Public Use Micro Samples (PUMS). To motivate the empirical work, Table 1 re- ports labor-force participation rates and the probability of additional childbearing among women aged 21-35 and aged 36-50 in the 1970, 1980, and 1990 PUMS. Data for 1970 are from the 1/100 state file (U.S. Department of Commerce, Bureau of the Census, 1972); data for 1980 and 1990 are from the 5-percent\n\nsamples (U.S. Department of Commerce, Bu- reau of the Census, 1983, 1995). The table shows substantial declines in fertility and in- creases in labor supply in both age-groups. Statistics for women aged 21-35 with at least two children show a similar pattern, as do the statistics for women aged 36-50."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 14,
+    "pages": [
+      3
+    ],
+    "text": "There is no retrospective fertility informa- tion in the PUMS data sets other than the num- ber of children ever born. We therefore matched children to mothers within house- holds in a manner similar to that described in the appendix to Angrist and Evans (1996a). Briefly, we attached people in a household la- beled as \u2018\u2018child\u201d in the primary relationship code to a female houscholder or the spouse of a male householder. In households with mul- tiple families, detailed relationship codes as well as subfamily identifiers were used to pair children with mothers. We deleted any mother for whom the number of children in the house- hold did not match the reported number of children ever born.> Using the sex of the oldest two children, we defined same-sex sibling pairs in both Censuses."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 15,
+    "pages": [
+      3
+    ],
+    "text": "Because the Census does not track children across households, the sample is limited to mothers aged 21-35 whose oldest child was less than 18 years of age at the time of the Census. Few women younger than age 21 have two children, while a child over age 17 is in- creasingly likely to have moved to a different household. Restricting the women\u2019s age-group to less than or equal to 35 means the age 18 cutoff for firstborn children does not generate a highly selected sample. Data from the Fer- tility, Birth Expectations, and Marital History Supplement to the June 1990 Current Popu- lation Survey (CPS) show that among women aged 35 with two or more children, at least 93 percent have an oldest child younger than age 18. This fraction falls to 85 percent at age 36 but is equal to 100 percent for women aged 32 or younger. Although women aged 21-35 with at least two children may appear to con- stitute an unusually young high-fertility group,\n\n3 Note also that the sample is restricted to women for whom the reported values of age and sex of their two oldest children were not allocated by the U.S. Bureau of the Census.\n\nVOL. 88 NO. 3 ANGRIST AND EVANS: CHILDREN AND THEIR PARENTS\u2019 LABOR SUPPLY"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 16,
+    "pages": [
+      4
+    ],
+    "text": "TABLE 1\u2014FERTILITY AND LABOR-SUPPLY MEASURES\n\n1970 1980 1990 Sample PUMS PUMS PUMS Women aged 21-35 Mean children ever born 1.78 1.27 1.18 Percent with 2 or more children 52.10 40.40 37.60 Percent worked last year 60.00 73.40 79.30 Observations 203,918 1,326,631 1,478,546 \u2018Women aged 36-50 Mean children ever born 2.85 2.86 2.15 Percent with 2 or more children 73.40 78.50 68.90 Percent worked last year 57.30 66.70 78.50 Observations 181,502 852,204 1,253,095 Women aged 21-35 with 2 or more children Mean children ever born 3.06 2.61 2.57 Percent with more than 2 children 55.60 39.90 39.10 44.80 58.00 66.60 Percent worked last year Observations 106,239 535,587 71,397 Married women aged 21-35 with 2 or more children Mean children ever born 3.02 2.58 2.53 Percent with more than 2 children 54.90 39.00 37.50 Percent worked last year 41.80 55.80 67.50 Observations 91,286 436,483 439,408\n\nNotes: The 1970 PUMS data are from the 1/100 state file. The 1980 and 1990 data are from the 5-percent PUMS. Calculations from the 1990 PUMS use sample weights. The married samples include women married at the time of the Census.\n\n453"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 17,
+    "pages": [
+      4
+    ],
+    "text": "our tabulations of the June 1990 CPS show that over half of all women aged 28-35 fall into this group. The proportion is lower for women aged 21-27 but still includes at least one-quarter of the entire age cohort.\u00ae\n\nIt is also worth noting that a substantial fraction of the change in completed family size between 1970 and\n\nIt is also worth noting that a substantial fraction of the change in completed family size between 1970 and\n\nThe empirical analysis is conducted on two subsamples from each Census data set. The first includes all women with two or\n\n1990 occurred at parities greater than 2. ur tabulations of 1970 and 1990 Census data show that about 71 percent of women aged 40-55 in both years had two or more children. The proportion having three or more children, however, fell from about 0.47 in 1970 to 0.39 in 1990.\n\n1990 occurred at parities greater than 2. ur tabulations of 1970 and 1990 Census data show that about 71 percent of women aged 40-55 in both years had two or more children. The proportion having three or more children, however, fell from about 0.47 in 1970 to 0.39 in 1990.\n\n454\n\nTHE AMERICAN ECONOMIC REVIEW\n\nJUNE 1998"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 18,
+    "pages": [
+      5
+    ],
+    "text": "more children. The second includes only married women because this is the sample that many economic theories of household production (e.g., Gronau, 1973) are meant to describe. The married sample is also used to explore the impact of children on fathers\u2019 labor supply.\u201d The 1980 married sample is restricted to couples who were married at the time of the Census, married only once, and married at the time of their first birth. There are 394,835 observations in the full 1980 sample and 254,654 observations in the 1980 married sample (64 percent of the total). In- formation on the timing of first marriage and the number of marriages is not available in the 1990 PUMS, so that the 1990 married sample includes all women who were mar- ried at the time of the Census. The full 1990 sample includes 380,007 women and the married 1990 sample includes 301,588 women (79 percent of the total\u2014 higher than for 1980 because the 1990 sample-selection rule is less restrictive)."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 19,
+    "pages": [
+      5
+    ],
+    "text": "Descriptive statistics and variable defini- tions for covariates, instruments, and depen- dent variables are given in Table 2. The covariate of primary interest in our labor- supply models is the indicator More than 2 children. The first instrumental variable for Morve than 2 children is the indicator Same sex. The table also shows averages for the two components of Same sex, the indicators Two boys and Two girls. Among all women with two children in 1980, 40.2 percent had a third child. The corresponding figure for 1990 is 37.5. In both samples, just over 50 percent of all two-child families had children of the same sex and just over 51 percent of first births were boys.\n\nLabor-supply estimates are also computed using multiple second births to generate in- struments. In the 1980 PUMS, multiple births are defined as siblings having the same age and quarter of birth. The mean for this indicator of twin births, which we call Twins-2, is 0.0085 in the 1980 full sample and 0.0083 in the 1980"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 20,
+    "pages": [
+      5
+    ],
+    "text": "married sample.\u00ae For purposes of comparison, we drew a sample of all second births born to women aged 21-35 from the 1976 Vital Sta- tistics Natality Data tapes (National Center for Health Statistics ). This data set contains a 50~ percent sample of all births in the country and should provide an accurate estimate of twin- ning probabilities for the women in our sam- ple. Data from 1976 offer a useful comparison since roughly 40 percent of second children in our Census sample were born 1976-1979. The vital statistics data imply a second-birth twinning probability of 0.0079, just slightly lower than the probability we estimate using 1980 Census data."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 21,
+    "pages": [
+      5
+    ],
+    "text": "Quarter of birth is not reported in the 1990 PUMS, so multiple births in 1990 were de- fined as children reported to be of the same age. Using this procedure, we calculated that 1.2 percent of all second births in 1990 were multiple births. This naturally produces a much higher estimate of the number of twins since two children born in the same 12- month period are classified as twins. We used data from the 1980 PUMS to estimate the error in twin rates calculated using age in years only. Using age in years to define twins in the 1980 data generates an estimated twin rate of 0.01185, which is 35 percent larger than the value we calculate using age in years and quarter of birth. We therefore restricted the analysis using twins to data from the 1980 PUMS."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 22,
+    "pages": [
+      5
+    ],
+    "text": "Demographic and labor-supply variables, described in the lower half of Table 2, include measures of mother\u2019s age, age at first birth, years of education, and indicators for race and ethnic background. We also report values for the husbands of women in the married sample. The labor-supply variables are based on Cen- sus questions concerning work in 1979 or 1989. These variables measure whether re- spondents Worked for pay, their Weeks worked, usual Hours/week, and annual Labor\n\nas well as for the married sample is that conditioning on 7 One reason estimates are presented for the full sample marital status raises the possibility that selection bias af- fects estimates in the selected sample,\n\n3 Of the 3,356 multiple second births in the all-women sample, only 23 were triplets or higher-plurality births. \u2018Therefore, we use the terms multiple births and twins interchangeably.\n\nVOL. 88 NO. 3 ANGRIST AND EVANS: CHILDREN AND THEIR PARENTS\u2019 LABOR SUPPLY\n\nTABLE 2\u2014DESCRIPTIVE STATISTICS, WOMEN AGED 21-35 WITH 2 OR MORE CHILDREN"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 23,
+    "pages": [
+      6
+    ],
+    "text": "Variable Means and (standard deviations) 1980 PUMS All Martied couples 1990 PUMS All women Married couples wornen Wives Husbands Wives Husbands Children ever born 2.55 251 \u2014 2.50 248 (0.81) \u00a977) (0.76) \u00a9.74) More than 2 children (=1 if mother had more than 2 0402 0.381 0.375 0.367 children, =0 otherwise) Boy Ist (s) (=1 if first child boy) (0.490) 0511 0.486) 0.514 (0.484) 0.512 (0.482) 0.514 Boy 2nd (s) (=1 if second child was a boy) (0.500) 0.511 (0.500) (0.500) 0.513 (0.500) (0.500) 0511 (0.500) (0.500) 0.512 (0.500) Two boys (=1 if first two children were boys) 0.264 (0.441) 0.266 (0.442) 0.264 (0.441) 0.265 (0.441) Two girls (=1 if first two children were girls) 0.242 (0.428) 0.239 0427 0.241 (0.428) 0.239 (0.426) Same sex (=1 if first two children were the same sex) 0.506 0.506 0.505 0.503 (0.500) (0.500) 0.500) (0.500) Twins-2 (=1 if second birth was a twin) 0.0085 (0.0920) 0.0083 (0.0908) 0,012 (0.108) 0.011 (0.105) Age 30.1 304 330 304 30.7 334 3.5 (3.4) @6) 3.5) (3.3) 4.8) Age at first birth (parent\u2019s age in years when first child was born) 20.1 208 24.0 21.8 224 25.1 2.9) 2.9) 4.0) 3.5) 3.5) \u201c@mn"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 24,
+    "pages": [
+      6
+    ],
+    "text": "Worked for pay (=1 if worked for pay in year prior to census) 0.565 0.528 0.977 0.662 0.667 0.968 (0.496) (0.499) (0.150) 0473) (0.471) (0.175) Weeks worked (weeks worked in year prior to census) 20.8 19.0 48.0 26.2 26 47.1 22.3) 21.9) (10.5) (22.9) (22.9) (12.0) Hours/week (average hours worked per week) 188 16.7 435 225 222 440 (18.9) (18.3) (12.3) 19.1 (189) (13.3) Labor income (labor earnings in year prior to census, in 1995 dollars) 7,160 6,250 38919 9,550 9,616 36,623 (10,804) (10,211) (25,014) (13,0713 (13,238) (30,283) Family income (family income in year prior to census, in 1995 dollars) 42,342 (26,563) 47,646 (25,821) \u2014 42,558 (34,692) 49,196 (34,740) \u2014 Non-wife income {family income minus wife\u2019s labor income, in 1995 dollars) 41,635 (24,734) 39,580 (31,892) Number of observations 394,835 254,654 254,654 380,007 301,588 301,588"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 25,
+    "pages": [
+      6
+    ],
+    "text": "Notes: The samples include women aged 215 with two or more children except for women whose second child is less than a year old. In the 1980 PUMS, the married women sample refers to women who were married at the time of their first birth, married at the time of the survey, and married once. In the 1990 PUMS, the married women are those married at the time of the Census.\n\n455\n\nincome. The latter three variables are set to zero for those who did not work for pay during the year. The final two variables in the table\n\nare measures of Family income and, for the married sample, a variable called Non-wife in- come computed as family income minus the"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 26,
+    "pages": [
+      7
+    ],
+    "text": "456\n\nTHE AMERICAN ECONOMIC REVIEW\n\nJUNE 1998\n\nwife\u2019s labor income.\u2019 The descriptive statistics show that women\u2019s labor-force participation rates, weeks and hours worked, and age at first birth increased between 1980 and 1990. Women\u2019s real (1995 dollar) earnings in- creased substantially as well, especially for married women, while real Non-wife income declined. It should also be noted that the var- jances of earnings, husband\u2019s earnings, and family income increased substantially over this period."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 27,
+    "pages": [
+      7
+    ],
+    "text": "Finally, note that husband\u2019s age at first birth was calculated assuming that the husband is the father of the children in the household. All of the husbands\u2019 variables are computed based in this assumption, which seems plausible for the 1980 data since women in the 1980 mar- ried women sample were married only once and they were married at the time of their first birth. Only 4.7 percent of the husbands in this sample were married before, and very few children live with their fathers after divorce. On the other hand, the 1990 match is probably not as good as the 1980 match. We therefore confirmed the basic first-stage relationships used in this paper with June CPS data, which includes true retrospective fertility informa- tion. See the appendix to our earlier paper (Angrist and Evans, 1996a) using a Census household match for more on data problems and issues related to the match.\n\nB. Sex Mix and Fertility"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 28,
+    "pages": [
+      7
+    ],
+    "text": "The phenomenon of parental preferences for amixed sibling-sex composition has been doc- umented in a number of studies. For example, Yoram Ben-Porath and Finis Welch (1976) found that in the 1970 Census, 56 percent of families with either two boys or two girls had a third birth, whereas only 51 percent of fam- ilies with one boy and one girl had a third child.\n\n?In the few cases where there were negative or zero family-income values, we set the variables equal to one when computing logs. Family income and person wage and salary income are top coded at $75,000 in the 1980 Census. In the 1990 Census, family income is top coded at $999,999 and individual wage and salary income is top substituted for the top code. coded at $140,000, with state medians of top-coded values\n\n?In the few cases where there were negative or zero family-income values, we set the variables equal to one when computing logs. Family income and person wage and salary income are top coded at $75,000 in the 1980 Census. In the 1990 Census, family income is top coded at $999,999 and individual wage and salary income is top substituted for the top code. coded at $140,000, with state medians of top-coded values"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 29,
+    "pages": [
+      7
+    ],
+    "text": "The theoretical impact of sex mix on fertil- ity can be captured in the standard quantity/ quality model of fertility, originally outlined by Becker and Gregg H. Lewis (1973) and Becker and Nigel Tomes (1976), and ex- tended in detail by Rosenzweig and Wolpin (1980a). In these models, parents derive util- ity from the number of children and a comple- mentary good, \u2018\u2018child quality,\u201d\u201d which enters the utility function and budget constraint in proportion to the number of children. Child quality is generated through the purchase of inputs and the expenditure of parents\u2019 time in home production. Ben-Porath and Welch (1980) describe the sex mix as something that determines child quality in quantity/quality of models. Alternately, the impact of sex prefer- ences can be modeled using state-dependent utility. Suppose a mother already has n, = 1 children and she is trying to decide how many additional children to have (n.). If parents pre- fer a mixed sibling-sex composition, then a same-sex sibling composition reduces the utility from #... This in turn raises the marginal utility of n,., increasing the chances that par- ents will try to have additional children. Twin- ning can similarly be"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 30,
+    "pages": [
+      7
+    ],
+    "text": "ling composition reduces the utility from #... This in turn raises the marginal utility of n,., increasing the chances that par- ents will try to have additional children. Twin- ning can similarly be incorporated into this model as a shock to , that cannot be fully offset by future fertility choices. For a more detailed theoretical discussion, see our work- ing paper (Angrist and Evans, 1996b)."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 31,
+    "pages": [
+      7
+    ],
+    "text": "Table 3 reports estimates of the impact of child sex and the sex mix on fertility similar to those in Ben-Porath and Welch (1976). The first panel looks at sex preferences in families with one or more children by showing the frac- tion of women with at least one child who had a second child, conditional on the sex of the first child. The third row of this panel shows the difference by sex. In spite of the fact that attitudinal surveys suggest many couples would prefer more boys than girls, or prefer their firstborn child to be male (see, e.g., Williamson, 1976), there is only one subsam- ple (all women in the 1990 PUMS ) where sub- sequent fertility is a function of the sex of the first child. Even in this case, the impact of the ex of the firstborn on fertility is very small.\n\nThe second panel of Table 3 documents the relationship between the fraction of women who have a third child and the sex of the first two children. The first three rows from this\n\nVOL. 88 NO. 3 ANGRIST AND EVANS: CHILDREN AND THEIR PARENTS\u2019 LABOR SUPPLY\n\nTaBLE 3\u2014FRACTION OF FAMILIES THAT HAD ANOTHER CHILD BY PARITY AND SEX OF CHILDREN\n\n457"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 32,
+    "pages": [
+      8
+    ],
+    "text": "All women Married women 1980 PUMS 1990 PUMS 1980 PUMS 1990 PUMS (649,887 observations) (627,362 observations) {410,333 observations) Sex of first child . (477,798 observations) in families with Fraction that Fraction that Fraction that Fraction that one or more Fraction had another Fraction had another Fraction had another Fraction had another children child child child child of sample of sample of sample of sample 0.488 0.694 0.489 0.665 0.485 0.720 0.487 0.698 (1) one girl 0.001) (0.001) (0.001) (0.001) (2) one boy 0.512 0.694 0.511 0.667 0515 0.720 0513 0.699 (0.001) (0.001) (0.001) 0.001) difference (2) \u2014 (1) 0.000 0.002 0.000 0.001 0.001) (0.001) (0.001) (0.001)"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 33,
+    "pages": [
+      8
+    ],
+    "text": "All women Married women 1980 PUMS 1990 PUMS 1980 PUMS 1990 PUMS Sex of first two (394,835 observations) (380,007 observations) (254,654 observations) (301,588 observations) children in families Fraction that Fraction that Fraction that Fraction that with two or more Fraction had another Fraction had another Fraction had another Fraction had another children of sample child of sample child of sample child of sample child one boy, one girl 0.494 0.372 0.495 0.344 0.494 0.346 0.497 0.331 (0.001) (0.001) 0.001) (0.001) 0.242 0.441 0.241 0.412 0.239 0.425 0.239 0.408 two girls (0.002) (0.002) 0.002) (0.002) two boys 0.264 0.423 0.264 0.401 0.266 0.404 0.264 0.396 0.002) (0.002) 0.002) (0.002) (1) one boy, one 0.494 0.372 0.495 0.344 0.494 0.346 0.497 0.331 girl (0.001) (0.001) \u20ac0.001) (0.001) 0.506 0.432 0.505 0.407 0.506 0414 0.503 0.401 (2) both same sex (0.001) (0.001) (0.001) (0.001) difference (2) \u2014 (1) 0.060 0.063 0.068 0.070 (0.002) (0.002) (0.002) (0.002)\n\nNotes: The samples are the same as in Table 2. Standard errors are reported in parentheses.\n\nNotes: The samples are the same as in Table 2. Standard errors are reported in parentheses."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 34,
+    "pages": [
+      8
+    ],
+    "text": "section show the sample characteristics of women in the following groups: those with one boy and one girl, those with two girls, and those with two boys. The next two rows report estimates for women with two children of the same sex and for women with one boy and one girl. The final row reports the differences be- tween the same-sex and mixed-sex group averages.\n\nBoth data sets and samples suggest that women with two children of the same sex are much more likely to have a third child than the mothers of one boy and one gitl. For example, in the 1980 all-women sample, only 37.2 per- cent of women with one boy and one girl have"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 35,
+    "pages": [
+      8
+    ],
+    "text": "a third child, compared to 43.2 for women with two girls or two boys. The relationship between sex mix and the probability of addi- tional childbearing is even larger for married women, reaching a precisely estimated 7- percentage-point difference in the 1990 Cen- sus. This is approximately 21 percent of the rate of additional childbearing among women with one boy and one girl. Finally, we note that the relationship between sex mix and childbearing is confirmed in data from the fer- tility supplements to the June 1980, 1985, and 1990 CPS. This is important because, unlike the Census where information about children is partly based on our household match, the\n\n458\n\nTHE AMERICAN ECONOMIC REVIEW\n\nJUNE 1998\n\nJune CPS contains detailed fertility histories for each woman, including information on the dates of birth and sex of each child."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 36,
+    "pages": [
+      9
+    ],
+    "text": "The virtual random assignment of Same sex makes it very likely that reduced-form re- gressions of fertility and labor-supply out- comes on the instruments have a causal interpretation. One simple check on this claim is to compare the demographic characteristics of people who have same-sex and mixed-sex sibling compositions. Table 4 reports Same sex contrasts for mother\u2019s age, age at first birth, race, ethnicity, and years of education in the 1980 and 1990 all-women samples. Even in these large samples, none of the con- trasts is significantly different from zero at the 5-percent level. The magnitude of the dif- ferences by Same sex is also very small. For example, the difference of \u20140.0028 for years of education in 1980 represents 0.02 percent of the sample mean years of schooling, which is about 13."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 37,
+    "pages": [
+      9
+    ],
+    "text": "In contrast with the small and insignificant differences in demographic characteristics by Same sex, there are some large and pre- cisely estimated differences in mean demo- graphic variables by twin status. The estimates in the final column of Table 4 rep- licate the well-known result that twins are more likely for older women (John A. H. Waterhouse, 1950) and for blacks (Ntinos Myrianthopoulos, 1970). Women with more years of schooling are also more likely to have twins, although this probably reflects more childbearing at older ages among more educated women.\n\nII. Fertility and Labor Supply\n\nA. Wald Estimates\n\nBecause sibling-sex composition is virtually randomly assigned, simple statistical tech- niques can be used to illustrate how the sex- mix IV strategy identifies the effect of fertility on parents\u2019 labor supply. Consider the bivari- ate regression model,\n\n(1 h i = a+ Bx + \u00a2\n\nwhere y; is a measure of labor supply and x; is the endogenous fertility measure of interest.\n\nLet z; denote the binary instrument, Same sex. The IV estimate of \u00a3 in this equation is\n\n(2) B = = o) (% \u2014 %),"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 38,
+    "pages": [
+      9
+    ],
+    "text": "where 7 is the mean of y; for those observa- tions with z; = 1 and other terms are similarly defined. The numerator and denominator cap- ture the reduced-form relationships between y; and z; and between x; and z;. The IV method attributes any effect of z; on y; to the effect of z on.\n\nAlthough equation (1) is written as a bivar- iate regression with constant coefficients, Guido W. Imbens and Angrist (1994) have shown that B can be interpreted as a loca! average treatment effect specific to the instro- ment, z, . In this case, 8 estimates the average effect of x; on y; for individuals whose fertility has been affected by their children\u2019s sex mix. Similarly, when z; is an indicator of multipie births at the second pregnancy, Twins-2, the IV estimates reflect the effect of children on labor supply for those who have had more children than they otherwise would have be- cause of twinning. For this reason, the Twins-2 and Same sex instruments do not necessarily identify the same average effect."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 39,
+    "pages": [
+      9
+    ],
+    "text": "The first six columns of Table 5 report the components of Sy when Same sex is vsed as the instrument in the all-women samples from the 1980 and 1990 PUMS. The last three col- umns report corresponding results from the 1980 PUMS using the Twins-2 instrument. The first two rows of the table show the de- nominator of the Wald estimate, \u00a5, \u2014 , for two possible choices of x; . One is an indicator for having had a third child, More than 2 chil- dren. The other is total Number of children. The effect of the Same sex instrument on More than 2 children, equal to the difference in means reported at the bottom of Table 3, is 0.06 in 1980 and 0.063 in 1990. The effect of Same sex on Number of children is 0.077 in 1980 and 0.084 in 1990. The effect of Twins- 2 on the probability of having a third birth in 1980 is 0.60, and the effect of Twins-2 on Number of children is 0.81.\n\nBelow the estimates of X \u2014~ X, columns (1) and (4) of Table 5 report 3, \u2014 \u00a5, for alternative outcomes using the Same sex in- strument. These results show that in addition\n\nVOL. 88 NO. 3 ANGRIST AND EVANS: CHILDREN AND THEIR PARENTS\u2019 LABOR SUPPLY"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 40,
+    "pages": [
+      10
+    ],
+    "text": "TABLE 4\u2014DIFFERENCES IN MEANS FOR DEMOGRAPHIC VARIABLES BY SAME SEX AND TWINS-2\n\nDifference in means (standard error) By Same sex By Twins-2 Variable 1980 PUMS 1990 PUMS 1980 PUMS \u20140.0147 0.0174 0.2505 Age 0.0112) 0.0112) (0.0607) Age at first birth 0.0162 \u20140.0074 0.2233 (0.0094) (0.0114) (0.0510) Black 0.0003 0.0021 0.0300 (0.0010) (0.0011) (0.0056) White 0.0003 \u20140.0006 \u20140.0210 (0.0012) (0.0013) (0.0066) Other race \u20140.0006 \u20140.0014 \u20140.0090 (0.0005) (0.0009) (0.0041) Hispanic -0.0014 \u20140.0007 \u20140.0069 (0.0009) (0.0010) (0.0047) Years of education \u20140.0028 0.0100 0.0940 (0.0076) (0.0074) (0.0415)\n\nNotes: The samples are the same as in Table 2. Standard errors are reported in parentheses.\n\nNotes: The samples are the same as in Table 2. Standard errors are reported in parentheses.\n\n459\n\nto having more children than women with one boy and one girl, women with two chil- dren of the same sex have a lower probability of working, work fewer weeks per year and fewer hours per week, and have lower annual earnings and lower family income. All but the final result is statistically significant in both Census years."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 41,
+    "pages": [
+      10
+    ],
+    "text": "The Wald estimates for 1980 calculated by dividing \u00a5, \u2014 , by \u00a5; \u2014 X when x; is More than 2 children imply that having more than two children reduced labor supply by 13.3 (\u20140.008/0.06) percentage points, weeks worked by about 6.4 weeks, hours of work per week by 5.2, and labor income by just over $2,200 per year. The results for 1990 are also negative, though (with the exception of family income ) somewhat smaller. The Wald esti- mates calculated using the effect of Same sex on total Number of children put these effects in per-child terms. In per-child terms, the esti- mates are about 0.78 as large in 1980 and 0.75 as large in 1990 as the estimates produced with More than 2 children in the denominator.\n\nThe last three columns in the table show that women whose second pregnancy resulted in twins are also less likely to work. With the ex- ception of the estimate for family income, which is not very precise, the Wald estimates generated by Twins-2, reported in column (6), are lower than the Wald estimates based on Same sex. In Section HI, we explore the com- parison between Same sex and Twins-2 esti- mates further and show how they can be reconciled."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 42,
+    "pages": [
+      10
+    ],
+    "text": "As with the Same sex estimates, Twins-2 es- timates in per-child terms are necessarily smaller than estimates treating the indicator More than 2 children as the endogenous re- gressor. But the factor of proportionality con- necting the per-child and More than 2 children estimates using Twins-2 is also 0.75. It there- fore makes little difference which denominator is used because estimates based on More than 2 children can always be converted into per- child estimates by multiplying by 0:75. We chose to discuss estimates treating More than 2 children as the endogenous regressor in the re-\n\n460\n\nTHE AMERICAN ECONOMIC REVIEW\n\nJUNE 1998\n\nTABLE 5\u2014WALD ESTIMATES OF LABOR-SUPPLY MODELS"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 43,
+    "pages": [
+      11
+    ],
+    "text": "Variable 1980 PUMS 1990 PUMS 1980 PUMS Mean difference by Same sex Wald estimate using as covariate: Mean difference by Same sex Wald estimate using as covariate: Mean difference by Twins-2 \u2018Wald estimate usin as covariate: More than 2 children Number o children More than 2 children Number of children More than 2 children Number of children More than 2 children 0.0600 (0.0016) 0.0628 (0.0016) 0.6031 (0.0084) \u2014 Number of 0.0765 0.0836 0.8094 children (0.0026) (0.0025) (0.0139) Worked for pay \u20140.0080 0.0016) 0.133 (0.026) \u20140.104 0.021) \u20140.0053 (0.0015) \u20140.084 (0.024) ~.063 (0.018) \u2014-0.0459 (0.0086) -0.076 0.014) -0.057 0.011) Weeks worked 0.3826 (0.0709) \u20146.38 (117 \u20145.00 0.92) \u20140.3233 (0.0743) 5.15 (117 \u20143.87 (0.88) \u20141.982 (0.386) \u20143.28 0.63) 45 \u00a9.47) Hours/week ~0.3110 (0.0602) 5.18 (1.00) \u20144.07 (0.78) \u20140.2363 (0.0620) =36 (0.98) \u20142.83 (0.73) 1.979 (0.327) \u20143.28 (0.54) 2.44 (0.40) Labor income 1325 (34.4) \u20142208.8 (569.2) \u201417324 (446.3) 119.4 (42.4) \u20141901.4 (670.3) \u20141428.0 (502.6) \u2014570.8 (186.9) \u2014946.4 (308.6) =705.2 (229.8) In(Family income) \u20140.0018 (0.0041) 0.029 (0.068) 0.023 (0.054) \u20140.0085 (0.0047) 0.136 0.074) 0.102 (0.056) \u20140.0341 (0.0223) ~0.057 (0.037) 0.042 0.027)"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 44,
+    "pages": [
+      11
+    ],
+    "text": "Notes: The samples are the same as in Table 2. Standard errors are reported in parentheses.\n\nmainder of the paper because this emphasizes the fact that the fertility increment induced by either instrument is a move from two to more than two children.\n\nB. Two-Stage Least-Squares Estimation\n\nWhile the Wald estimates provide a simple illustration of how the instruments identify the effect of children on labor supply, the rest of the paper discusses two-stage least-squares (2SLS) and ordinary least-squares (OLS) es- timates of regression models relating labor- market outcomes to fertility and a variety of exogenous covariates. 2SLS estimation allows us to accomplish three things. First, even if there is no association between the instrument and exogenous covariates, as suggested by Ta- ble 4, controlling for exogenous covariates can lead to more precise estimates if the treatment effects are roughly constant across groups.\n\nSecond, we can use 2SLS to control for any secular additive effects of child sex when us- ing Same sex as an instrument. This is desir- able because Same sex is an interaction term"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 45,
+    "pages": [
+      11
+    ],
+    "text": "involving the sex of the first two children, and therefore potentially correlated with the sex of cither child. To see this, let s, and s, be indi- cators for male firstborn and second-born chil- dren. The instrument can be written as\n\n3) Same sex = 515, + (1 \u2014 5)(1 \u2014 s).\n\nAssuming that child sex is independent and identically distributed (i.i.d.) over children, the population regression of Same sex on ei- ther s; produces a slope coefficient equal to 2E[s;] \u2014 1, which is zero only if E[s;] = '5.1\u00b0 Since the probability of giving birth to a male child is 0.51, there is a slight positive associ- ation between Same sex and the sex of each child. This correlation is a concern only if s;\n\nProof: Assuming child sex is i.i.d., we have E[s,] = E[s,] and E{ss;] = E[s;]. Therefore, Cov(Same sex, 5;) = E[s;](E[s;] \u2014 E[Same sex]). Some manipulation gives E[s;] \u2014 E[Same sex] = (1 \u2014 E[5;])(2E[s;] = 1). Since the variance of s;is E[5;](1 \u2014 E[s;]), the regression coefficient is (2E[s;] \u2014 1)."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 46,
+    "pages": [
+      11
+    ],
+    "text": "Proof: Assuming child sex is i.i.d., we have E[s,] = E[s,] and E{ss;] = E[s;]. Therefore, Cov(Same sex, 5;) = E[s;](E[s;] \u2014 E[Same sex]). Some manipulation gives E[s;] \u2014 E[Same sex] = (1 \u2014 E[5;])(2E[s;] = 1). Since the variance of s;is E[5;](1 \u2014 E[s;]), the regression coefficient is (2E[s;] \u2014 1).\n\nVOL. 88 NO. 3 ANGRIST AND EVANS: CHILDREN AND THEIR PARENTS LABOR SUPPLY\n\n461\n\naffects labor supply for reasons other than family size. Such effects could arise if the sex of offspring affects the father\u2019s commitment to the family (see, e.g., Philip S. Morgan et al., 1988) or changes the way parents treat their children (Kristin F. Butcher and Anne Case, 1994; Duncan Thomas, 1994). Secular effects of sex mix on labor supply could also be gen- erated by the fact that boys are more likely than girls to have disabilities (see, e.g., Angrist and Victor Lavy, 1996) since having a dis- abled child might change parents\u2019 behavior. Adding s, and s, as regressors to the estimating equations reduces the likelihood of omitted- variables bias from these sources."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 47,
+    "pages": [
+      12
+    ],
+    "text": "Of course, controls for additive effects can only eliminate bias from omitted variables with effects that are additive in the number of children. However, a third advantage of the 2SLS framework is that it allows us to exploit the fact that the Same sex instrument can be decomposed into two instruments, leading to an overidentified model. In particular, the sep- arate indicators, Two boys [ ss,] and Two girls [(1 = 5)(1 \u2014 5,)], are both available as po- tential instruments. This is useful because bias from any secular effects of child sex on labor supply should be different for these two in- struments, while the labor-supply conse- quences of childbearing seem likely to be independent of whether Same sex equals Two boys or Two girls. A natural specification test is therefore the conventional instrument-error overidentification test statistic for 2SLS esti- mation using both instruments, since this is the same as a test for whether the Two boys and Two girls instruments give the same estimate when used separately.'"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 48,
+    "pages": [
+      12
+    ],
+    "text": "The following regression models are used to link labor-supply variables for husbands and wives to the endogenous More than 2 variable, x;, and the list of exogenous covariates, in- cluding additive effects for the sex of each child:\n\n\u201c Vi = aW; + as + aosy + Bx + &,\n\n!! See Whitney K. Newey and Kenneth D. West (1987) for this interpretation of overidentification tests. Angrist (1991) discusses the dummy instrument case.\n\nwhere w; is a vector of demographic variables, and s; and s,; are indicators for the sex of the first two children of mother i. Initially, w; is limited to variables that are clearly exogenous to fertility: mother\u2019s age and age at first birth, plus race and Hispanic indicators. In the just- identified model where Same sex is the only instrument, the first-stage equation relating More than 2 children to sex mix is\n\n5) X; = WOW; + TS + Wy\n\n5) X; = WOW; + TS + Wy + y(Same sex;) + n,\n\nwhere 7y is the first-stage effect of the instrument."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 49,
+    "pages": [
+      12
+    ],
+    "text": "The alternative identification strategy uses the two components of Same sex\u2014Two boys and Two girls\u2014as instruments for More than 2 children. n this case, however, either s,; or s; must be dropped from the list of covariates because ;, , 812, and (1 \u2014 s )(1 \u2014 5) are linearly dependent. We chose to drop s (the results are not sensitive to this choice, or to the elimination of both s and s as we show below). In this case, the equation of in- terest becomes\n\n(6) Vi = , + a + Bixi + &\n\nThe first-stage relationship between x; and sex mix is\n\n1 x; = woW; + m8; + vo(Two boys;) + vi(Two girls;) + n;,\n\nwhere Two boys; = s; and Two girls; (1 = 1)(1 = s2).\n\nC. 28LS Results\n\nThe first-stage results linking sex mix and fertility are reported in Table 6. In the top half of the table, we report results from the 1980 PUMS. These estimates show that women in 1980 with same-sex children are estimated to be 6.2 percentage points more likely to have a third child in a model with covariates. The corresponding estimate for married women is 6.9 percent. The"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 50,
+    "pages": [
+      13
+    ],
+    "text": "462\n\nTHE AMERICAN ECONOMIC REVIEW\n\nJUNE 1998\n\nTABLE 6\u2014OLS ESTIMATES OF MORE THAN 2 CHILDREN EQUATIONS\n\nAll women Married women Independent variable @ @ 3 @ \u00ae \u00ae 1980 PUMS Boy Ist \u20140.0080 0.0001 -0.0111 \u20140.0016 (0.0015) (0.0021) (0.0018) (0.0026) Boy 2nd \u20140.0081 0.0095 (0.0015) (0.0018) Same sex 0.0600 0.0617 0.0675 0.0694 (0.0016) (0.0015) (0.0019) (0.0018) Two boys 0.0536 _ 0.0598 (0.0021) 0.0026) Two girls 0.0698 0.0789 (0.0021) (0.0026) With other covariates no yes yes no yes yes R 0.004 0.084 0.084 0.005 0.078 0.078 1990 PUMS \u20140.0081 \u20140.0083 ~0.0097 \u20140.0086 Boy 1st (0.0015) (0.0022) (0.0017) (0.0024) Boy 2nd 0.0002 0.0011 (0.0015) (0.0017) Same sex 0.0628 (0.0623) 0.0702 0.0703 (0.0016) (0.0015) (0.0018) (0.0017) Two boys 0.0624 0.0692 (0.0021) (0.0023) Two girls 0.0621 0.0714 (0.0022) (0.0024) With other covariates no no yes yes yes yes Rr? 0.004 0.082 0.082 0.005 0.082 0.082\n\nNotes: Other covariates in the models are indicators for Age, Age at first birth, Black, Hispanic, and Other race. The variable Boy 2nd is excluded from columns (3) and (6). Standard errors are reported in parentheses."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 51,
+    "pages": [
+      13
+    ],
+    "text": "t-statistics for these first-stage effects are well over 30. As in Table 3, the estimates for the 1990 PUMS (reported in the lower half of Table 6) are somewhat larger in both the full and married women samples.\n\nTable 6 also provides some evidence of an association between having a male child and reduced childbearing at higher parities. Note, however, that the effect of Boy Ist in the 1980\n\ndata is explained entirely by the difference in the effect of Two boys and Two girls when these regressors are entered separately. In other words, when the effects of sex mix are allowed to differ by sex, there is no relation- ship between Boy 1st and fertility, although the effect of Same sex on fertility in 1980 is larger for boys than for girls. The Boy st effects for 1990 remain significant in all specifications,\n\nVOL. 88 NO. 3 ANGRIST AND EVANS: CHILDREN AND THEIR PARENTS\u2019 LABOR SUPPLY\n\n463\n\nbut they are very small, especially in compar- ison to the effects of the sex mix."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 52,
+    "pages": [
+      14
+    ],
+    "text": "Next, we use the sex mix to estimate the effect of More than 2 children on measures of employment and earnings in 1980. Table 7 re- ports a set of OLS estimates and two sets of 2SLS estimates using Same sex and the pair of dummies Two boys and Two girls as instru- ments. The exogenous regressors are the same as in Table 6 (coefficients not reported). In models that use Two boys and Two girls as instruments, we dropped the Boy 2nd variable from the list of covariates. The first three col- umns show results for the full sample, the next three columns show results for married women, and the last three columns show re- sults for the husbands of married women.\n\nOLS estimates in both the full and married women sample suggest that the presence of a third child reduces the probability of working by about 17 percentage points, and causes weeks worked to fall by about 8\u20149 per year, hours per week to fall by 67, and family in- come to fall by about 13 percent. OLS esti- mates of earnings effects are $3,166 in the married sample and $3,768 in the full sample. Not surprisingly, all of these OLS estimates are very precisely estimated."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 53,
+    "pages": [
+      14
+    ],
+    "text": "In contrast with the results for women, OLS estimates of the effect of More than 2 children on husbands\u2019 labor supply are small. Having a third child is estimated to reduce the proba- bility a husband worked for pay by less than one percentage point. The impact of a third child on other measures of husbands\u2019 labor supply is also small, though precise enough to be significantly different from zero. The esti- mated effect on annual weeks worked is \u20140.90 and the estimate for hours per week is 0.25. The effect on husbands\u2019 earnings appears sub- stantial (\u2014$1,506), but this amount is still only about 3.9 percent of the average earnings of men in the sample.\n\nThe first set of 2SLS estimates uses Same sex alone as an instrument. In the full sam- ple, the estimates (standard errors) for the dependent variables Worked for pay, Weeks orked, Hours/week, and Labor income models are \u20140.12 (0.025), \u20145.7 (1.1), \u20144.6 (0.95), and \u20141,961 (542). These results suggest that having a third child causes a 20\u2014 30-percent reduction in women\u2019s labor sup-"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 54,
+    "pages": [
+      14
+    ],
+    "text": "ply and earnings. One important finding is that estimates using Same sex as an instru- ment are smaller than the corresponding OLS estimates. This is true for the labor- supply estimates in the married women\u2019s sample as well, although here the gap be- tween 2SLS and OLS estimates is not as large. Overall, however, the OLS estimates appear to exaggerate the causal effect of fer- tility on female labor supply.\n\nIt is also worth noting that the relationship between the OLS and 2SLS estimates is sim- ilar when the estimates are converted into per- child units. Above, we noted that 2SLS esti- mates treating More than 2 children as the en- dogenous regressor should be multiplied by about 0.75 to obtain estimates in per-child terms (i.e., with Number of children as the en- dogenous regressor). It turns out that the OLS estimates can be converted into per-child units by multiplying by about 0.7 using either 1980 or 1990 data. Thus, regardless of whether the estimates are cast in terms of the effect of hav- ing more than two children or in per-child units, the OLS estimates are considerably smaller than the 2SLS estimates."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 55,
+    "pages": [
+      14
+    ],
+    "text": "In addition to differing from the OLS esti- mates, the estimates using Same sex as an in- strument also differ from most of the 2SLS estimates previously reported in the literature on children and labor supply. In his review article, Browning (1992 p. 1469) notes that, \u2018\u201cThere is one salient difference between stud- ies that take fertility as exogenous and those that take it as endogenous. In many of the latter it is found that fertility either has no effect on labor supply ... or it has a positive effect.\u201d Browning also points out that it is not clear from these estimates whether children really have no effect on female labor supply, or whether the instruments are too weak or simply poorly chosen. While the 2SLS esti- mates generated by Same sex are smaller than the corresponding OLS estimates, they are still negative, precise, and of a plausible magnitude.\n\nIn contrast to the female labor-supply esti- mates, there is little evidence of a relationship between having a third child and family in- come. Given the strong labor-supply effects, the weak impact on family income may seem surprising. There are a few potential explanations\n\n464\n\nTHE AMERICAN ECONOMIC REVIEW\n\nJUNE 1998"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 56,
+    "pages": [
+      15
+    ],
+    "text": "for this result. First, the lost income due to a reduction in mothers\u2019 labor supply could be made up by other family members. The small and statistically insignificant 2SLS estimates in the In(Non-wife income) equations suggest that this is not the case. The most likely ex- planation is that the instrument is not powerful enough to detect the family-income conse- quences of childbearing. For example, in the married women sample, the third child reduces female earnings by about 21 percent and fe- male labor income is (on average) 13 percent of total family income. If the third child does not alter husbands\u2019 labor supply, we would ex- pect an estimated effect of More than 2 chil- dren in the In(Family income) equations of roughly \u20140.21 X 0.13 = \u20140.027, which is close to the reported estimate of \u20140.05. But the standard error for this estimate is slightly higher than 0.05, so that impacts this small cannot be precisely measured."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 57,
+    "pages": [
+      15
+    ],
+    "text": "Gronau (1977 p. 1102) reports results sug- gesting that husbands increase their work ef- fort in response to an increase in family size. Table 7 also reports estimates of the impact of the third child on husbands\u2019 labor supply in the 1980 married sample. While the OLS es- timates show a small but significant (negative ) relationship between husbands\u2019 labor supply and additional childbearing, estimates con- structed using Same sex as an instrument gen- erate no evidence of any effects on the labor supply of men. The standard errors on the 2SLS estimates for husbands\u2019 variables Worked for pay, Weeks worked, and Hours/ week are actually smaller than the correspond- ing standard errors for women, and they are small enough so that modest positive or neg- ative effects could be detected if they existed."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 58,
+    "pages": [
+      15
+    ],
+    "text": "The labor-supply effects estimated using 1990 data are remarkably similar to those es- timated for 1980. This can be seen in Table 8, which reports OLS estimates and 2SLS esti- mates for 1990 using Same sex and Two boys and Two girls as instruments. Some of the es- timated effects are slightly smaller in 1990 than in 1980, but these differences are not sta- tistically meaningful. One difference between the 1980 and 1990 results that does seem note- worthy is the larger negative impact of child- bearing on married women\u2019s earnings in 1990, perhaps because of an increase in women\u2019s\n\nwages. This result may also be attributable to the fact that married women are delaying childbearing (average age at first birth in- creased from 20.8 in 1980 to 22.4 in 1990 for this group), and therefore they have more years of experience and higher wages when they exit the workforce due to childbirth."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 59,
+    "pages": [
+      15
+    ],
+    "text": "Table 6 shows that mothers of two girls are more likely than mothers of two boys to have a third child. So the first-stage relationship dif- fers for these two instruments. However, the 2SLS estimates in Tables 7 and 8 show that the additional predictive power provided by separating the two components of Same sex does not change the coefficient estimates very much or lead to an appreciable increase in pre- cision using either the 1980 or 1990 data."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 60,
+    "pages": [
+      15
+    ],
+    "text": "We noted above that the overidentification test statistic associated with the use of Two boys and Two girls as instruments jointly tests for a difference between 2SLS estimates com- puted using only Two boys and 2SLS estimates computed using only Two girls. The p-values for this test are reported in square brackets in both Tables 7 and Table 8. The p-values for the 1990 estimates suggest that it does not mat- ter which instrument is used. In fact, the 2SLS estimates using Two boys and Two girls in 1990 are remarkably close. On the other hand, the 1980 2SLS estimates are consistently smaller when Two girls alone is used as the instrument. Moreover, some of the p-values for estimates computed using 1980 data indi- cate a significant contrast between the Two girls and Two boys instruments, although no marginal significance level is below 1 percent. As in the 1990 data, however, in the 1980 data both instruments are always associated with more children and reduced labor supply.\n\nD. Other Specification Issues"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 61,
+    "pages": [
+      15
+    ],
+    "text": "Other specification issues considered here include the robustness of the results, the gen- erality of the results, and the validity of the instruments. Because sex mix is essentially randomly assigned, the results reported in Tables 7 and 8 are unchanged by altering the basic set of covariates. For example, using data for married women from the 1980 PUMS, we estimated models adding the fol- lowing covariates to the vector w; : linear and\n\nVOL. 88 NO. 3 ANGRIST AND EVANS: CHILDREN AND THEIR PARENTS\u2019 LABOR SUPPLY\n\nVOL. 88 NO. 3\n\nTaBLE 7\u2014OLS AND 2SLS ESTIMATES OF LABOR-SUPPLY MODELS USING 1980 CeNsus DATA"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 62,
+    "pages": [
+      16
+    ],
+    "text": "All women Married women Husbands of married women ) ) 3 @ [\u00a9) 6 ] \u00ae) O] Estimation method OLS. 2SLS 2SLS OLS 28LS 2LS OLS 2SLS 2SLS Instrament for More than 2 children Same sex Two boys, Two girls Same sex Two boys, Two girls Same sex Two boys, Two girls Dependent variable: Worked for pay -0.176 (0.002) 0.120 (0.025) 0.113 (0.025) [0.013] 0.167 (0.002) 0.120 (0.028) ~0.113 (0.028) 0.013] \u20140.008 \u00a90001) 0.004 (0.009) 0.001 (0.008) [0.013] Weeks worked \u20148.97 0.07) \u20145.66 (L -5.37 (1.10) [0017] \u20148.05 (0.09) 5.40 (1.20) 5.16 (1.20) 0.0711 \u20140.82 (0.04) 0.59 0.60) 045 0.59) [0.030] Hours/week \u20146.66 0.06) \u20144.59 (0.95) \u20144.37 (0.94) [0.030] \u20146.02 (0.08) 4.83 (1.02) \u20144.61 (101) 0.049] 0.25 (0.05) 0.56 0.70) 0.50 (0.69) [0.71] Labor income \u20143768.2 (35.4) \u20141960.5 (541.5) \u20141870.4 (538.5) [0.126} \u20143165.7 (42.0) ~13448 (569.2) \u20141321.2 (565.9) 0.703] \u20141505.5 (103.5) \u20141248.1 (1397.8) \u201413823 (1388.9) (0.549) In(Family income) -0.126 0.004) \u20140.038 0.064) ~0.045 (0.064) [0.319 0.132 (0.004) \u20140.051 (0.056) -0.053 (0.056) 0.743] \u2014 \u2014 In(Non-wife income) \u2014 \u20140.053 (0.005) 0.023 (0.066) 0.016 (0.066) 0.2971"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 63,
+    "pages": [
+      16
+    ],
+    "text": "Notes: The table reports estimates of the coefficient on the More than 2 children variable in equations (4) and (6) in the text. Other covariates in the models are Age, Age at first birth, plus indicators for Boy Ist, Boy 2nd, Black, Hispanic, and Other race. The variable Boy 2nd is excluded from equation (6). The p-value for the test of overidentifying restrictions associated with equation (6) is shown in brackets. Standard errors are reported in parentheses.\n\n465\n\nquadratic terms in the wife\u2019s education, quadratic terms in wife\u2019s age, age at first birth, linear and quadratic terms in hus- band\u2019s age, husband\u2019s age at first birth and education, linear and quadratic terms in hus- band\u2019s labor income, and a full set of state dummy variables.'? In these models, the 2SLS estimates ( standard errors) of the More than 2 children coefficient have the following values: Worked for pay, \u20140.122 (0.027); Weeks worked, \u20145.45 (1.18); Hours/week, ~5.04 (0.99); Labor income, \u20141,390 (555). All of these values are within"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 64,
+    "pages": [
+      16
+    ],
+    "text": "'2 Two of these covariates, years of education and hus- band\u2019s earnings, are potentially endogenous because they may be partly determined by fertility. For this reason, they were excluded from the main set of estimates.\n\n5 percent of the corresponding estimates from Table 7.\n\nA referee and others who read earlier ver- sions of this paper expressed concern about whether the results are likely to be represen- tative of the impact of childbearing in gen- eral since the sample is restricted to women with two or more children and to women in a relatively young age-group. Estimates of the effect of going from two to more than two children do not necessarily generalize. On the other hand, we believe these results are likely to be of general interest because a significant fraction of the change in fertility between 1970 and 1990 was due to reduc- tions in the number of women having more than two children. As noted in Section I, this fact is apparent in Census data on completed family size.\n\n466\n\nTHE AMERICAN ECONOMIC REVIEW\n\nJUNE 1998\n\nTABLE 8\u2014OLS AND 2SLS ESTIMATES OF LABOR-SUPPLY MODELS USING 1990 CENSUS DATA"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 65,
+    "pages": [
+      17
+    ],
+    "text": "All women Married women Husbands of married women O] @) \u00a9)] \u201c) (5) \u00a9) \u00ae) \u00a9 Estimation method OLS 2SLS 28Ls OLS 2LS 2SLS OLS 2SLS 2SLS Instrument for More than 2 children Same sex Two boys, Two girls Same sex Two boys, Two girls Same sex Two boys, To girls Dependent variable: Worked for pay 0.155 (0.002) 0.092 (0.024) 0.092 (0.024) 0.743] \u20140.147 (0.002) ~0.104 (0.024) ~0.104 (0.024) [0.576] -0.102 0.001) 0.017 (0.009) 0017 (0.009) [0.989] Weeks worked 8.71 0.08) \u20145.66 (1.16) 5.64 (1.16) 0.391] \u2014825 .09) \u20145.76 (1.15) -5.76 (1.15) [0.670] ~1.03 0.05) 01 (0.63) 1.01 0.63) [0.708) Hours/week \u20146.80 0.07) ~4.08 (0.98) 4.10 0.98) 0.489] \u20146.39 .07) -34 (0.96) ~3.95 (0.96) [0.665] ~0.06 0.05) 0.85 0.69) 0.83 (0.69) {0.180] Labor income \u20143984.4 (44.2) \u20142099.6 (664.0) 2096.2 (663.8) 0.830] \u20143753.9 (50.7) \u20142457.5 (669.7) --2456.3 (669.7) [0.893] 9297 (114.9) 13487 (1536.0) 1354.8 (1535.9) [0.711] In(Family income) 0.119 (0.005) 0.124 0.071) ~0.122 \u00a90.071) 0.270] 0.103 (0.004) -0.054 0.051) ~0.054 (0.051) 0.878] In(Non-wife income) \u2014 \u20140.004 (0.005) 0.020 (0.068) 0.020 (0.068) 0.452) \u2014"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 66,
+    "pages": [
+      17
+    ],
+    "text": "Notes: The table reports the coefficient on the More than 2 children variable in equations (4) and (6) in the text estimated with 1990 Census data. Other covariates in the models are Age, Age at first birth, plus indicators for Boy Ist, Boy 2nd, Black, Hispanic, and Other race. The variable Boy 2nd is excluded from equation (6). The p-value for the test of overidentifying restrictions associated with equation (6) is shown in brackets. Standard errors are reported in parentheses.\n\nThe sample was restricted to women under the age of 35 because nearly all children born to women in this age-group are still at home. Relaxing this restriction, a greater fraction of women with two or more children are lost be- cause the oldest child is increasingly unlikely to be at home. We note, however, that the re- sults are not very sensitive to this sample- selection rule. For example, expanding the age-group to include women up to age 45 in the 1980 data, the sample size increases to 552,606 observations. The resulting 2SLS es- timate (standard error) of the effect of the More than 2 children variable in the Worked for pay model is \u20140.096 (0.021) in the all- women sample."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 67,
+    "pages": [
+      17
+    ],
+    "text": "A final point is that because Same sex is an interaction term, the 2SLS estimates were computed using a model that controls for ad-\n\nditive effects of s, and s,. This specification was motivated by a concern with the validity of the instruments and possible omitted vari- ables bias. It is useful to know whether the control for these additive effects is important because if it is, identification turns on our abil- ity to distinguish additive effects from the in- teraction term. Moreover, when using Two boys and Two girls as separate instruments, we must drop one of the additive effects. As it turns out, the 2SLS estimates are virtually in- variant to the inclusion of regressors that con- trol for the sex of each child.\u201d* The coefficients (standard errors) on the More than 2 children variable in the Worked for pay, Weeks worked,\n\n** The Wald estimates in Table 5 also constitute 2SLS estimates with no controls for main effects.\n\nVOL. 88 NO. 3 ANGRIST AND EVANS: CHILDREN AND THEIR PARENTS\u2019 LABOR SUPPLY\n\n467"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 68,
+    "pages": [
+      18
+    ],
+    "text": "and Hours/week equations change by no more than 2 percent. There is also little evidence of an association between having male children and labor supply. The only significant sex ef- fects are for s, in the 1980 sample, but these are small.'\n\nE. Heterogeneity in the Impact of Children on Labor Supply"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 69,
+    "pages": [
+      18
+    ],
+    "text": "A number of theoretical models describe how the impact of children on labor supply might vary with the wages or schooling of hus- bands or wives. For example, Angrist and Evans (1996b) outline a version of Gronau\u2019s (1977) model of market work and home pro- duction that incorporates child quality effects of the sort discussed by Becker and Lewis (1973). This model predicts that higher own wages of either partner magnify the labor- supply consequences of childbearing, al- though there are no cross-wage effects.' Gronau\u2019s survey paper (1986 p. 287) refers to a number of empirical studies consistent with this prediction, showing that the labor supply of more educated women is more sensitive to the presence of children than the labor supply of less educated women. Earlier, Gronau (1973 p. S170) reported finding that the effect of a child on his mother\u2019s value of time in- creases with the mother\u2019s education. On the other hand, an assumption implicit in most em- pirical labor-supply models, where the focus is on wage effects and not the consequences of childbearing, is that there are no interactions in the effect of wages and the number of chil- dren (see, e.g., Thomas A. Mroz, 1987)."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 70,
+    "pages": [
+      18
+    ],
+    "text": "' For example, the coefficient (standard error) on Boy 2nd in the Worked for pay model is \u20140.0038 (0.0015). Estimates for this variable in the Weeks worked and Hours/week equations are \u20140.164 (0.069) and \u20140.127 (0.059), respectively.\n\n' For example, the coefficient (standard error) on Boy 2nd in the Worked for pay model is \u20140.0038 (0.0015). Estimates for this variable in the Weeks worked and Hours/week equations are \u20140.164 (0.069) and \u20140.127 (0.059), respectively.\n\n' The explanation for this is that in equilibrium, the marginal returns to an hour spent at home are higher for high-wage people than for low-wage people. Although the effects of children are generally ambiguous, in the Angrist and Evans (1996b) model, increasing the number of chil- dren increases time spent at home because of returns to scale in parental time spent on child-rearing. Returns to scale are larger when the marginal return to hours (and hence wages) are higher."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 71,
+    "pages": [
+      18
+    ],
+    "text": "We use the Same sex instrument to explore the question of how the labor-market conse- quences of childbearing varies with the earn- ings or earnings potential of husbands and wives. Panel A of Table 9 reports OLS and 2SLS estimates of the effect of More than 2 children on married women, conditional on the position of their husbands in the husbands\u2019 earnings distribution. The first column shows the first-stage relationship between More than 2 children and Same sex, interacted with dum- mies that indicate whether husbands\u2019 earnings are in the upper third, middle third, or lower third of the earnings distribution. These esti- mates show that the effect of Same sex on fer- tility is increasing in husbands\u2019 earnings. For women with high-wage husbands, however, 2SLS estimates of labor-supply effects are smaller and they are not significantly different from zero. Note that average participation rates do not decline enough with husbands\u2019 earnings to account for the decline in the mag- nitude of the coefficients among women with high-wage husbands. It is also worth noting that the OLS estimates do not decline nearly as much with husbands\u2019 earnings as do the 2SLS estimates."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 72,
+    "pages": [
+      18
+    ],
+    "text": "It is not possible to analyze labor-supply ef- fects conditional on women\u2019s wages because wages are unobserved for women who do not work. But we can condition on schooling, which is an important predictor of individual earnings potential. This is done in Panel B of Table 9 for married women in the 1980 sample with less than a high-school education (18 percent of the sample), high-school graduates (49 percent of the sample), and more than a high-school edu- cation (33 percent of the sample). The reduced forms show a strong association between Same sex and fertility in each schooling group, al- though the effect is about 1 percentage point smaller for mothers in the highest education cat- egory. The 2SLS estimates suggest that women with relatively low levels of schooling experi- ence the largest effects of children on labor sup- ply. In contrast, there is no statistically significant association between additional child- bearing and labor supply for women with more than a high-school education. As with the esti- mates that condition on husbands\u2019 earnings, the variation in 2SLS estimates by schooling group differs from the variation in OLS estimates,"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 73,
+    "pages": [
+      19
+    ],
+    "text": "468\n\nTHE AMERICAN ECONOMIC REVIEW\n\nJUNE 1998\n\nTABLE 9\u20142SLS ESTIMATES OF LABOR-SUPPLY MODELS WITH INTERACTION TERMS UsING 1980 CeNsus DATA"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 74,
+    "pages": [
+      19
+    ],
+    "text": "Sample/variables More than 2 children First stage Worked for pay Weeks/year Mean of dependent variable OLS 2SLS Mean of dependent variable OLS 2SLS A. Results for wives by husband\u2019s earnings: Bottom third of husband\u2019s earnings distribution 0.057 (0.003) 0.570 \u20140.186 (0.003) \u20140.122 (0.060) 21 ~9.23 (0.15) \u20147.55 (2.60) Middle third of husband\u2019s eamings distribution 0.072 0.003) 0.569 \u2014.165 (0.004) \u20140.185 (0.047) 20.8 8.31 (0.15) =7.11 (2.04) Top third of 0.079 0.448 \u20140.152 0.078 15.2 \u20146.76 \u2014.17 husband\u2019s earnings distribution (0.003) (0.003) (0.042) (0.15) (1.82) B. Results for wives by wife\u2019s education: Wife < high-school 0.071 0.468 \u20140.150 0.121 16.1 ~7.30 =72 graduate (0.004) (0.005) (0.064) (0.20) (2.80) Wife high-school graduate 0.073 (0.003) 0.524 \u20140.156 (0.003) \u20140.147 (0.038) 19 7.74 (\u00a90.13) \u20146.42 (1.65) Wife > high-school graduate 0.063 (0.003) 0.567 \u20140.179 (0.004) \u20140.082 (0.054) 204 ~8.33 (0.15) -2.93 (2.33) C. Results for wives by wife\u2019s education for women whose husband\u2019s earnings are in middle third: Wife < high-school graduate 0.079 (0.008) 0.481 \u20140.138 (0.009) ~0.275 (0.109) 16.7 7.10 (0.38) \u201410.2 (4.83)"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 75,
+    "pages": [
+      19
+    ],
+    "text": "Wife high-school graduate 0.076 (0.004) 0.551 \u20140.157 (0.003) -0.189 (0.060) 203 \u20148.33 021) 7.78 (2.64) Wife > high-school graduate 0.062 (0.006) 0.640 \u20140.184 (0.006) \u20140.125 (0.098) 237 9.07 (0.28) -3.98 (4.30) D. Results for husbands by wife's education: Wife < high-school graduate 0.071 (0.004) 0.945 ~0.014 (0.001) 0.013 0.020) 44.5 1.36 (0.10) 0.21 (1.37) Wife high-school graduate 0.074 (0.003) 0.981 0.005 (0.001) 0.005 (0.012) 484 \u20140.53 (0.06) 0.92 0.81) Wife > high-school graduate 0.063 0.003) 0.987 0.002 (0.001) 0.009 (0.016) 49.2 \u20140.23 (0.08) 0.25 (1.14)"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 76,
+    "pages": [
+      19
+    ],
+    "text": "Notes: The table reports estimates of the coefficient on More than 2 children in equation (4) in the text, modified to allow interactions with wives\u2019 schooling and husbands\u2019 education as indicated. Main effects for each interaction variable (husband\u2019s earnings distribution and wife\u2019s education) are included in the equation. Other covariates in the models are those listed in the notes to Table 7. Data are from the 1980 married women and husband samples. Standard errors are reported in parentheses.\n\nVOL. 88 NO. 3 ANGRIST AND EVANS: CHILDREN AND THEIR PARENTS\u2019 LABOR SUPPLY\n\n469\n\nwhich show effects that increase in magnitude as schooling increases."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 77,
+    "pages": [
+      20
+    ],
+    "text": "Because mothers\u2019 education and hus- bands\u2019 wages are correlated, it is not clear whether a set of estimates that condition on husbands\u2019 earnings and a set of estimates that condition on mothers\u2019 education are capturing distinct phenomena. We therefore present estimates by mothers\u2019 education group in a sample restricted to women whose husbands have earnings in the middle third of the earnings distribution. Again, the 2SLS estimates suggest that the impact of childbearing on labor supply declines as ed- ucation rises, contradicting a theoretical prediction and the OLS estimates, both of which suggest that the labor supply of more educated women responds more to the pres- ence of children. This finding is even more remarkable when viewed in light of the fact that participation rates increase with moth- ers schooling. It should be noted, however, that while the results by education group differ substantially, and the pattern of differences is consistent across outcomes, the estimates for subgroups are not very precise."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 78,
+    "pages": [
+      20
+    ],
+    "text": "The last panel in Table 9 (Panel D) reports estimates for husbands, conditional on wives\u2019 education. OLS estimates of labor-supply ef- fects for husbands are small and negative, and they decrease in magnitude as wives\u2019 school- ing increases. As with the overall estimates for husbands in Table 7, the 2SLS estimates for husbands in Table 9 are small and not signif- icantly different from zero.\n\nTable 10 reports estimates conditional on hus- bands\u2019 earnings and wives\u2019 schooling using 1990 data. These results are largely similar to those for 1980, showing 2SLS estimates that de- cline in magnitude with husbands\u2019s earnings and wives\u2019 schooling, while the OLS estimates for wives by schooling group are stable or increas- ing. One interesting difference, however, is that the 1990 results show some small, but statisti- cally significant, positive effects of childbearing on the labor supply of the husbands of less ed- ucated women. The estimated effect (standard error) on participation rates is 0.031 (0.013) for husbands of women who are high-school grad- uates and 0.053 (0.023) for husbands of women who did not graduate high school. The effect on"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 79,
+    "pages": [
+      20
+    ],
+    "text": "weeks worked is also significantly different from zero for the husbands of high-school graduates. These estimates suggest a possible change in husbands\u2019 labor-supply response to childbearing between 1980 and 1990, at least for some groups. On the other hand, the 1990 husband effects are still less than half the size of most of the corresponding estimates for women, and they appear even smaller when viewed in light of the greater degree of labor-force attachment among husbands.\n\nII1. Comparison with Estimates Using Multiple Births"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 80,
+    "pages": [
+      20
+    ],
+    "text": "The most important source of exogenous variation in fertility used in fertility research to date is twinning. Rosenzweig and Wolpin (1980b) used 87 U.S. twin pairs to estimate labor-supply effects, and Rosenzweig and Wolpin (1980a) used 25 twin pairs from India to estimate the effect of family size on school progress. Bronars and Grogger (1994) were the first to study the consequences of multiple births with Census data. They used twins in the 1970 and 1980 PUMS to estimate the effect of additional childbearing on mothers\u2019 labor- market status, though most of their estimates are for unwed mothers. Gangadharan and Rosenbloom (1996) also used Census twins to estimate the reduced-form effect of twinning on labor-supply variables, but they fail to scale the reduced-form effects of twinning into effects of childbearing. These studies focused almost ex- clusively on twinning at first birth. An excep- tion is the Bronars and Grogger study, which also briefly discusses (p. 1149) some estimates using twins at second birth."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 81,
+    "pages": [
+      20
+    ],
+    "text": "A twin second birth is similar to the Same sex instrument in that it can be used to measure the consequences of moving from two to three chil- dren. We noted in the discussion of Table 4, however, that the use of twins as an instrument may be problematic since twinning probabilities appear to be correlated with some observed charactetistics of the mother. On the other hand, if the demographic characteristics associated with twinning are all observed, then these factors can be controlled in 2SLS estimation.\n\n2SLS estimates using Same sex and Twins- 2 are compared in Table 11. As in Table 7, the models used to produce these estimates\n\n470\n\nTHE AMERICAN ECONOMIC REVIEW\n\nJUNE 1998\n\nTaBLE 10\u20142SLS ESTIMATES OF LABOR-SUPPLY MODELS WITH INTERACTION TERMS USING 1990 CENsuUS DaTA"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 82,
+    "pages": [
+      21
+    ],
+    "text": "Sample/variables More than 2 children First stage Worked for pay Weeks/year Mean of dependent variable OLS 2SLS Mean of dependent variable OLS 2SLS A. Results for wives by husband\u2019s earnings: Bottom third of husband\u2019s earnings distribution 0.064 (0.003) 0.668 -0.160 (0.003) ~0.129 (0.045) 263 \u20148.8 \u00a9.15) -5.99 (2.18) Middle third of husband\u2019s earnings distribution 0.076 (0.003) 0.728 ~0.133 (0.003) 0.151 (0.039) 298 \u20148.09 (0.15) \u20148.37 (1.88) Top third of husband\u2019s 0.071 (0.003) 0.61 -0.137 (0.003) ~0.029 (0.040) 23.6 .27 0.14) \u20142.74 (1.93) earnings distribution B. Results for wives by wife\u2019s education. Wife < high-school graduate 0.069 (0.004) 0.531 \u20140.145 (0.004) -0.257 (0.061) 19.2 \u20147.34 (0.20) -12.9 (29 Wife high-school 0.078 0.661 \u20140.140 0.100 263 \u20148.07 5.57 graduate Wife > high-school (0.003) 0.064 0.718 (0.003) ~0.147 (0.035) \u20140.058 29.1 (0.14) ~8.43 (1.67) \u20143.60 graduate (0.002) (0.003) (0.038) (0.13) (1.84) C. Results for wives by wife\u2019s education for women whose husband\u2019s earnings are in middle third: Wife < high-school graduate 0.073 (0.008) 0.579 \u2014 \u20140.128 (0.008) -0.279 (0.097) 217 -6.92 0.37) \u201454 (4.85)"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 83,
+    "pages": [
+      21
+    ],
+    "text": "Wife high-school graduate 0.082 (0.004) 0.707 \u2014_\u2014 0.122 (0.005) \u20140.204 (0.052) 28.8 ~7.62 0.23) 9.20 (2.58) Wife > high-school graduate 0.071 (0.004) 0.795 \u2014 0.130 (0.005) 0.071 (0.060) 333 \u20148.40 0.28) 6.05 (2.98) D. Results for husbands by wife\u2019s education: Wife < high-school graduate 0.069 (0.004) 0.919 \u2014 ~0.033 (0.002) 0.053 (0.023) 42.3 \u20142.36 \u00a9.11) 1.68 (1.57) Wife high-school graduate 0.076 (0.003) 0971 \u2014 \u20140.007 (0.001) 0.031 (0.013) 473 \u20140.70 0.07) 3.05 0.91) Wife > high school graduate 0.064 (0.002) 0.982 \u2014 \u20140.004 (0.001) \u20140.014 (0.014) 48.7 \u2014041 0.07) 1.53 0.99)"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 84,
+    "pages": [
+      21
+    ],
+    "text": "Notes: The table reports estimates of the coefficient on More than 2 children in equation (4) in the text, modified to allow interactions with wives\u2019 schooling and husbands\u2019 education as indicated. Main effects for each interaction variable (husband\u2019s earnings distribution and wife\u2019s education) are included in the equation. Other covariates in the models are those listed in the notes to Table 8. Data are from the 1990 married women and husband samples. Standard errors are reported in parentheses.\n\nVOL. 88 NO. 3 ANGRIST AND EVANS: CHILDREN AND THEIR PARENTS\u2019 LABOR SUPPLY\n\nTABLE 11\u2014COMPARISION OF 2SLS ESTIMATES USING SAME SEX AND TWINS-2 INSTRUMENTS IN 1980 CeNsus DaTa"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 85,
+    "pages": [
+      22
+    ],
+    "text": "All women Married women Husbands Model @ @ [)) ) [)) @ Instrument for More than 2 children Same sex Twins-2 Same sex Twins-2 Same sex Twins-2 Dependent variable: Worked for pay \u20140.125 -0.079 \u20140.123 \u20140.087 0.004 \u20140.001 (0.026) (0.013) (0.028) (0.017) (0.009) (0.005) Weeks worked \u20145.82 \u20143.64 =547 \u20144.21 0.65 0.35 (1.15) (0.60) (1.23) \u00a90.72) (0.61) (0.36) Hours/week -4,76 \u20143.33 \u2014491 3.49 0.57 \u20140.49 (0.98) (0.51) (1.03) (0.61) 0.71) (0.42) Labor income \u20141961.7 \u20141262.2 \u20141329.8 \u20141453.1 \u20141194.8 616.8 (560.5) (292.8) (579.1) (339.8) (1421.4) (836.9) In(Family income) \u20140.021 0.071 \u20140.049 \u20140.025 (0.067) (0.035) (0.057) (0.033) In(Non-wife income) \u2014_\u2014 0.026 0.051 (0.068) (0.040)\n\nNotes: The table reports 2SLS estimates of the coefficient on More than 2 children in equation (4) in the text using Same sex and Twins-2 as instruments. Other covariates in the models are Age, Age at first birth, ages of the first two children, plus indicators for Boy Ist, Boy 2nd, Black, Hispanic, and Other race. Data are from the 1980 Census. Standard errors are reported in parentheses.\n\n471"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 86,
+    "pages": [
+      22
+    ],
+    "text": "include exogenous covariates to control for mothers\u2019 age, race, age at first birth, and the sex of the first two children. Additional cov- ariates included in these models are the ages of the first and second child in quarters. The estimates of female labor-supply effects pro- duced using Twins-2 are consistently smaller than the corresponding estimates using Same sex. Although the contrast between Same sex and Twins-2 coefficient estimates is not large enough to be statistically significant for many of the individual coefficients, the comparison of estimates strongly suggests these two shocks have different effects.\n\nA likely explanation for the smaller Twins-2 effects is that, conditional on the age of the second child, a third child who is born as a consequence of twinning is nec- essarily older than a third child who is born for other reasons. This is because third chil- dren who are born as twins are exactly the same age as second children, while at least a year and usually longer must go by be-"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 87,
+    "pages": [
+      22
+    ],
+    "text": "tween the second child\u2019s birth and the birth of anon-twin third child. In the 1980 sample, for example, the average age of third chil- dren who are twins is 6.4 years while the average age of other third children is five years. Regression-adjusting for the covaria- tes used to construct the estimates in Table 10, the age gap between twins and other third children grows to about 2.5 years. This dif- ference in ages has implications for labor- supply estimates constructed using Same sex and twins instruments if the effect of chil- dren on labor supply is larger when the chil- dren are younger.\n\nWe use the following model to check whether differences in the Same sex and Twins-2 2SLS estimates can be explained by differences in the ages of third children. The equation of interest is\n\n\u00ae) i = + y + asy + aay; + a + Bixi + &,\n\n\u00ae) i = + y + asy + aay;\n\n+ a + Bixi + &,\n\n472\n\nTHE AMERICAN ECONOMIC REVIEW\n\nJUNE 1998\n\nTaBLE 12\u20142SLS AND 3SLS ESTIMATES OF TWO-PARAMETER LABOR-SUPPLY MODELS UsING 1980 Census Daa"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 88,
+    "pages": [
+      23
+    ],
+    "text": "Variable Worked for pay Weeks/year Hours/week Labor income Not restricted Restricted Not restricted Restricted Not restricted Restricted Not restricted Restricted A. Instruments: Same sex and Twins-2 Bo \u20140.191 (0.066) \u20140.178 (0.059) \u20148.94 (291 \u2014824 @72) -6.79 (2.48) 7.22 (2.38) ~2959 (1423) \u20142827 (1002) B 0.015 (0.096) 0.013 (0.009) 0.724 (0.429) 0.616 (0.398) 073 (0.366) 0.540 (0.348) 232 (210) 211 (139 a* 124 (3.69) 134 (4.38) 12.3 (342) 13.4 (4.38) 144 (6.03) 13 (4.38) 12.8 (5.62) 134 (4.38) Instrument: Same sex (restricted a* = 13.4) Bo \u2014 \u20140.184 (0.038) \u2014 ~8.58 (1.69) =71 (1.44) \u20142891 (827) Instrument: Twins-2 (restricted a* = 13.4) Bo \u2014_\u2014 \u20140.174 (0.030) \u2014 -8.02 (1.32) 7.35 1.13) ~2787 (646)"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 89,
+    "pages": [
+      23
+    ],
+    "text": "Notes: Panel A of the table reports 2SLS and 3SLS parameter estimates for equation (10) in the text. Same sex and Twins- 2 are both used as instruments. The restricted models in Panel A force the parameter a* (the age at which labor-supply effects decay to zero) to be the same for all four dependent variables in joint estimation using nonlinear 3SLS. Panels B and C report 2SLS estimates of equation (11) using the Same sex and Twins-2 instruments separately. Other covariates in the models are listed in the notes to Table 11. The data are from the 1980 Census all-women sample. Standard errors are reported in parentheses.\n\nwhere a,; and a,; are the ages of the first two children. The coefficient ; is now an indi- vidually varying causal effect that depends on the age of the third child. In particular, we assume\n\n) Bi = Bo + Ba,\n\nwhere a; is equal to the age of the mothers\u2019 third child for women who have a third child and is equal to zero otherwise. Combining (8) and (9) generates the estimating equation,\n\n(10) Vi = @W; + oy + apsy + asa + auty + Box + ilax) +"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 90,
+    "pages": [
+      23
+    ],
+    "text": "Assuming that differences in a are the only reason why the Same sex and Twins-2 instru- ments generate different estimates, we can use both instruments to estimate the coefficients\n\non the two endogenous regressors in (10), x; and as; x; .\n\n2SLS estimates of 8, and , are reported in Table 12 for the full 1980 sample, where a; was measured to the nearest quarter for the purposes of estimation. All of the estimates of Bo are negative and all of the estimates of 3, are positive, suggesting that the negative im- pact of childbearing declines as the third child ages. The table also reports estimates of the value of a; at which 8 = 0; this isa* = \u2014 S,/ B,. Estimates of a* are 12.4 years for effects on Worked for pay, 12.3 years for effects on Weeks worked, 14.4 years for effects on Hours/week, and 12.8 years for effects on La- bor income.'\u00ae We also estimated a* under the\n\n' The linear model for ; is obviously an approxima- tion since it implies that the effects of childbearing on\n\n' The linear model for ; is obviously an approxima- tion since it implies that the effects of childbearing on\n\nVOL. 88 NO. 3 ANGRIST AND EVANS: CHILDREN AND THEIR PARENTS LABOR SUPPLY\n\n473"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 91,
+    "pages": [
+      24
+    ],
+    "text": "= restriction that \u00a7,a* = = \u2014f, with the same value of a* across all four dependent vari- ables. The estimation method for this model is three-stage least squares (3SLS). The re- stricted estimate is 13.4 with standard error of 4.4. Imposing this restriction leads to slightly smaller standard errors for the estimates of , and B,. The test statistic for this restriction, distributed as x*(3) under the null hypothesis that the restrictions are satisfied, takes on the value 0.79, which has a p-value of about 0.86.\n\nTo further illustrate how this model recon- ciles the Same sex and Twins-2 estimates, note that if 8, = \u2014fB/a*, we have\n\n(11) y = o + a; + ay + aay; + y; + Bo( \u2014a a)x; + &\n\n+ y; + Bo( \u2014a a)x; + &"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 92,
+    "pages": [
+      24
+    ],
+    "text": "Substituting the pooled estimate of a* into (11), we can use the Same sex and Twins-2 instruments to construct separate estimates of Bo in (11) by treating (1 \u2014 ay;/a*)x; as the single endogenous regressor. The results when a* = 13.4, reported in Panels B and C of Table 12, show that the Same sex and Twins-2 in- struments generate very similar estimates of 3, for all dependent variables. This suggests that the model of the effect of childbearing em- bodied in (9), combined with the restriction that \u00a7; decays to zero at age 13.4, does a good job of reconciling the Same sex and Twins-2 estimates.'\u201d\n\nDifferences in the age of the third child constitute one of many possible explanations for the contrast between the Same sex and Twins-2 estimates. For example, there may be economies of scale in parenting two chil- dren of the same age. On the other hand, closely spaced young children may require more attention than an older child and a\n\nabor supply become positive once the third child is older than a*. This approximation seems harmless since only about 2 percent of third children are older than 13 in our data (because the oldest mother is aged 35)."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 93,
+    "pages": [
+      24
+    ],
+    "text": "abor supply become positive once the third child is older than a*. This approximation seems harmless since only about 2 percent of third children are older than 13 in our data (because the oldest mother is aged 35).\n\n\"7 If we set a* = \u2014 B,/ using the coefficient estimates from each equation, then the Same sex and Twins-2 esti- mates of (11) for any equation will necessarily be iden- tical. The point of estimation with a* fixed at 13.4 is to show how one extra free parameter reconciles all four of the Same sex and Twins-2 estimates."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 94,
+    "pages": [
+      24
+    ],
+    "text": "younger child. It is worth noting, however, that the model outlined in this section also serves to explain why the twins estimates re- ported by Bronars and Grogger (1994) for married mothers are smaller than the Same sex estimates reported here. When Bronars and Grogger use twins to estimate the effects of childbearing conditional on the age of the first child (and hence on the age of the twin), they find effects on the labor-force partici- pation rates of mothers of children aged 0\u2014 3 remarkably similar to the Same sex esti- mates, with no effects for the mothers of children aged 1013 (see Table 4 in Bronars and Grogger, 1994). Because second-born twins are younger, on average, than firstborn twins, age differences could also explain why the effects of twins at second birth briefly mentioned by Bronars and Grogger in the text of their article (p. 1149) are larger than their estimates of the effects of twins at first birth.'\u00ae\n\nIV. Implications for the Increase in Female Labor Supply"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 95,
+    "pages": [
+      24
+    ],
+    "text": "At the turn of the century, less than 20 per- cent of all workers were women. Today, women make up almost half the workforce (Goldin, 1990). A number of researchers have attempted to decompose the rise in the female labor-force participation rates into components attributable to demand and sup- ply shifts. For example, Mincer (1962) con- cluded that 90 percent of the rise in postwar labor-force participation of married women can be attributed to an increase in demand. James P. Smith and Ward (1984) also found that demand characteristics can explain a ma- jority of the increase in total hours worked by all women in between 1850 and 1980. In con- trast, Goldin (1990) argues that shifts in sup- ply explain about half of the change in female\n\n' The fact that the Bronars and Grogger estimates are less precise than the twins estimates reported here is likely due to their having drawn a 1-percent sample of singleton births for the comparison sample. Note also that Bronars and Grogger's estimates are for the reduced-form impact of twinning; for purposes of comparison, these estimates should be scaled up by dividing by the twins first-stage effect (about 0.68 in their data)."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 96,
+    "pages": [
+      25
+    ],
+    "text": "474\n\nTHE AMERICAN ECONOMIC REVIEW\n\nJUNE 1998\n\nlabor-force participation between 1960 and 1980.\n\nDeclining fertility represents a potentially important supply shifter that might account for some of the increase in female labor-force at- tachment. How much of the trend in labor- force attachment in the population we have studied can be accounted for by reduced child- bearing beyond the second child? Table 1 showed that the probability of having more than two children for women aged 215 with at least two children fell by 16.5 percentage points between 1970 and 1990, a drop of about 30 percent. At the same time, labor-force par- ticipation rates rose by 21.8 percentage points, a 49-percent increase. Similar statistics for other groups reported in Table 1 show that our sample is not unusual in experiencing these trends."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 97,
+    "pages": [
+      25
+    ],
+    "text": "Using the Same sex 2SLS estimate of the impact of More than 2 children on Worked for pay from Table 7 (\u20140.119), declining fertility can account for an employment increase equal to 0.165 X 0.12, which is about 2 percentage points. This calculation suggests that even though childbearing clearly affects labor sup- ply, the increase in female labor-force partic- ipation has been so large that declining fertility can explain only a small fraction of the overall change.\n\nV. Conclusions\n\nEconomic models of houschold behavior generate a rich variety of predictions and theo- retical relationships, few of which have been confronted with credible empirical evidence. The evidence reported here is unique in that it derives from plausibly exogenous sources of variation in family size. However, the empir- ical results probably raise as many questions as they answer."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 98,
+    "pages": [
+      25
+    ],
+    "text": "2SLS and IV estimates that exploit the fer- tility consequences of sibling sex composi- tion and twinning both confirm the OLS estimates showing that children lead to a re- duction in female labor supply, although the OLS estimates appear to exaggerate the causal effect of children. This is probably not too surprising, at least not to the mothers of small children. What is surprising is that the effects of children on labor supply appear to\n\nbe much smaller and possibly even absent among college-educated women and women whose husbands have high wages. This result contradicts the predictions of some theories of household time allocation as well as the OLS results, which suggest that the labo- supply consequences of childbearing are larger for more educated women. Our esti- mates consistently show that the labor-market consequences of childbearing are more likely to be severe for poor and less educated women."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 99,
+    "pages": [
+      25
+    ],
+    "text": "Equally important is the finding that hus- bands change their labor-market behavior very little in response to a change in family size. Even the husbands of well-educated and relatively well-paid women do not change their work habits in response to the birth of a child. Thus, families absorb the cost of caring for a third child either through a reduction in wife\u2019s earnings or by purchasing child-care services from nonfamily providers. If addi- tional childbearing does lead husbands to put additional time into home production of child care, this is done at the expense of the hus- band\u2019s leisure time and not through a reduc- tion in his work effort. We also find little evidence of an increase in husbands\u2019 earnings that would offset the decline in wives\u2019 earn- ings. In spite of the increase in women\u2019s wages and labor-force participation rates dur- ing the period studied here, the labor-market behavior of most married men appears to have remained largely insensitive to the num- ber of children.\n\nREFERENCES\n\nAngrist, Joshua D. \u2018Grouped-Data Estimation and Testing in Simple Labor Supply Mod- els.\u201d\u201d Journal of Econometrics, February\u2014 March 1991, 47(2-3), pp. 243\u201466."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 100,
+    "pages": [
+      25
+    ],
+    "text": "Angrist, Joshua D. and Evans, Wiiliam N. \u2018\u2018Schooling and Labor-Market Conse- quences of the 1970 State Abortion Re- forms.\u201d\u2019 National Bureau of Economic Research (Cambridge, MA ) Working Paper No. 5406, January 1996a.\n\n. \u201c\u2018Children and Their Parents\u2019 Labor Supply: Evidence from Exogenous Varia- tion in Family Size.\u201d\u201d National Bureau of Economic Research (Cambridge, MA)\n\nVOL. 88 NO. 3 ANGRIST AND EVANS: CHILDREN AND THEIR PARENTS\u2019 LABOR SUPPLY\n\n475\n\nWorking Paper No. 5778, September 1996b.\n\nWorking Paper No. 5778, September 1996b.\n\nAngrist, Joshua D. and Lavy, Victor. \u2018The Effect of Teen Childbearing and Single Parent- hood on Childhood Disabilities and Pro- gress in School.\u201d\u201d National Bureau of Economic Research (Cambridge, MA) Working Paper No. 5807, October 1996.\n\nAshenfelter, Orley and Heckman, James J. \u201cThe Estimation of Income and Substitution Ef- fects in a Model of Family Labor Supply.\u201d Econometrica, January 1974, 42(1), pp. 73-85.\n\nBecker, Gary S. \u2018\u2018Human Capital, Effort, and the Sexual Division of Labor.\u201d\u201d Journal of Labor Economics, January 1985, Pt. II, 3(1), pp- $33-58."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 101,
+    "pages": [
+      26
+    ],
+    "text": "Becker, Gary S.; Landes, Elisabeth M. and Michael, Robert T. \u2018\u2018An Economic Analysis of Marital Instability.\u201d\u201d Journal of Political Economy, December 1977, 85(6), pp. 1141-87.\n\nBecker, Gary S. and Lewis, Gregg H. \u2018On the Interaction Between the Quantity and Qual- ity of Children.\u201d\u201d Journal of Political Econ- omy, March\u2014April 1973, Pt. 11, 81(2), pp. $279-88.\n\nBecker, Gary S. and Tomes, Nigel. \u2018\u2018Child En- dowments and the Quantity and Quality of Children.\u201d\u201d Journal of Political Econ- omy, August 1976, Pt. 2, 84(4), pp. S143-62.\n\nBen-Porath, Yoram and Welch, Finis. \u2018Do Sex Preferences Really Matter?\u2019\u2019 Quarterly Journal of Economics, May 1976, 90(2), Pp. 285-307.\n\n\u201c\u2018On Sex Preferences and Family Size,\u2019 s in Julian L. Simon and Julie De- Vanzo, eds., Research in population eco- nomics. Greenwich, CT: JAI Press, 1980, pp. 387-99.\n\n\u201c\u2018On Sex Preferences and Family Size,\u2019 s in Julian L. Simon and Julie De- Vanzo, eds., Research in population eco- nomics. Greenwich, CT: JAI Press, 1980, pp. 387-99.\n\nBlau, Francine and Grossberg, Adam J. \u2018\u2018Maternal Labor Supply and Children\u2019s Cognitive De- velopment.\u201d\u201d Review of Economics and Sta- tistics, August 1992, 74(3), pp. 474-81."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 102,
+    "pages": [
+      26
+    ],
+    "text": "Bronars, Stephen G. and Grogger, Jeff. \u2018The Economic Consequences of Unwed Moth- erhood: Using Twins as a Natural Exper- iment.\u201d\u2019 American Economic Review, December 1994, 84(5), pp. 1141-56.\n\nBrowning, Martin. \u2018\u2018Children and Household Economic Behavior.\u201d\u201d Journal of Economic\n\nLiterature, September 1992, 30(3), pp. 1434-75.\n\nLiterature, September 1992, 30(3), pp. 1434-75.\n\nButcher, Kristin F. and Case, Anne. \u2018\u2018The Effect of Sibling Sex Composition on Women\u2019s Education and Eamings.\u201d\u201d Quarterly Jour- nal of Economics, August 1994, 109(3), pp. 531-63.\n\nButz, William P. and Ward, Michael. P. \u2018The Emergence of Countercyclical U.S. Fertil- ity.\u201d\u201d American Economic Review, June 1979, 69(3), pp. 318-28.\n\nColeman, Mary T. and Pencavel, John. \u2018\u201cTrends in Market Work Behavior of Women Since 1940.\u201d Industrial and Labor Relations Re- view, July 1993, 46(4), pp. 653-76.\n\nGangadharan, Jaisri and Rosenbloom, Joshua L. \u201c\u201cThe Effects of Child-bearing on Married Women\u2019s Labor Supply and Earnings: Us- ing Twin Births as a Natural Experiment.\u201d\u2019 National Bureau of Economic Research (Cambridge, MA) Working Paper No. 5647, July 1996."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 103,
+    "pages": [
+      26
+    ],
+    "text": "Goldin, Claudia. Understanding the gender gap. New York: Oxford University Press, 1990.\n\n.. *Career and Family: College Women Look to the Past.\u201d\u201d National Bureau of Eco- nomic Research (Cambridge, MA) Work- ing Paper No. 5188, July 1995.\n\n.. *Career and Family: College Women Look to the Past.\u201d\u201d National Bureau of Eco- nomic Research (Cambridge, MA) Work- ing Paper No. 5188, July 1995.\n\nGronau, Reuben. \u2018\u2018The Effect of Children on the Housewife\u2019s Value of Time.\u201d\u201d Journal of Political Economy, March\u2014April 1973, Pt. 11, 81(2), pp. S168-99.\n\n... \u2018Leisure, Home Production, and Work\u2014The Theory of the Allocation of Time Revisited.\u201d\u201d Journal of Political Economy, December 1977, 85(6), pp. 1099--124.\n\n. \u201c\u201cHome Production\u2014A Survey,\u201d\u2019 in Orley Ashenfelter and Richard Layard, eds., Handbook of labor economics, Vol. 1. Amsterdam: North-Holland, 1986, pp. 273\u2014 304.\n\n-\n\n. \u2018\u2018Sex-Related Wage Differentials and Women\u2019s Interrupted Careers\u2014The Chicken or the Egg.\u201d Journal of Labor Economics, July 1988, 6(3), pp. 277~ 301.\n\nGruber, Jonathan and Cullen, Julie Berry. \u201c\u2018Spousal Labor Supply as Insurance: Does Unemployment Insurance Crowd Qut the Added Worker Effect?\u2019 National Bureau of\n\n476"
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 104,
+    "pages": [
+      27
+    ],
+    "text": "THE AMERICAN ECONOMIC REVIEW\n\nJUNE 1998\n\nEconomic Research (Cambridge, MA) \u2018Working Paper No. 5608, June 1996.\n\nHeckman, James J. and MaCurdy, Thomas E. A Life-Cycle Model of Female Labor Sup- ply.\u201d\u201d Review of Economic Studies, January 1980, 47(1), pp. 47-74.\n\nHeckman, James J. and Walker, James R. \u2018\u2018The Relationship Between Wages and Income and the Timing and Spacing of Births: Ev- idence from Swedish Longitudinal Data.\u201d Econometrica, November 1990, 58(6), pp. 1411-441.\n\nIacovou, Maria. \u2018Fertility and Female Labor Force Participation.\u201d\u201d Unpublished manu- script, University College, London, July 1996.\n\nImbens, Guido W. and Angrist, Joshua D. \u2018\u2018Iden- tification and Estimation of Local Average Treatment Effects.\u201d\u201d Econometrica, March 1994, 62(2), pp. 467-76.\n\nKillingsworth, Mark R. and Heckman, James J. \u2018\u2018Female Labor Supply: A Survey,\u201d\u201d in Orley Ashenfelter and Richard Layard, eds., Handbook of labor economics, Vol. 1. Am- sterdam: North-Holland, 1986, pp. 103\u2014 204.\n\nKorenman, Sanders and Neumark, David. \u2018 \u2018Mar- riage, Motherhood, and Wages.\u201d\u201d Journal of Human Resources, Spring 1992, 27(2), pp. 233-55."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 105,
+    "pages": [
+      27
+    ],
+    "text": "Mincer, Jacob. \u2018\u2018Labor Force Participation of Married Women: A Study of Labor Sup- ply,\u201d\u201d in H. Gregg Lewis, ed., Aspects of la- bor economics. Princeton, NJ: Princeton University Press, 1962, pp. 63\u2014105.\n\n. \u201c\u2018Market Prices, Opportunity Costs, and Income Effects,\u201d\u201d in Carl F. Christ, ed., Measurement in economics. Stanford, CA: Stanford University Press, 1963, pp. 67\u201482.\n\nMontgomery, Mark R. and Trussell, James. \u2018\u201cModels of Marital Status and Childbear- ing,\u201d\u2019 in Orley Ashenfelter and Richard Layard, eds., Handbook of labor econom- ics, Vol. 1. Amsterdam: North-Holland, 1986, pp. 205-71.\n\nMorgan, Philip S.; Lye, Diane N. and Condran, Gretchen A. \u2018Sons, Daughters, and the Risk of Marital Disruption.\u201d\u201d American Journal Sociology, July 1988, 94(1), pp. 110\n\nMroz, Thomas A. \u2018\u2018The Sensitivity of an Em- pirical Model of Married Women\u2019s Hours\n\nof Work to Economic and Statistical As- sumptions.\u201d Econometrica, July 1987, 55(4), pp. 765-99.\n\nMyrianthopoulos, Ntines C. \u2018\u2018An Epidemiologic Survey of Twins in a Large Prospectively Studied Population.\u201d\u201d American Journal of Human Genetics, November 1970, 22(6), pp. 611-29."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 106,
+    "pages": [
+      27
+    ],
+    "text": "Nakamura, Alice and Nakamura, Masao. \u2018\u2018The Econometrics of Female Labor Supply and Children.\u201d\u201d Econometric Reviews, 1992, 11(1), pp. 1-71.\n\nNational Center for Health Statistics. Vital statis- tics of the United States: Natality. Hyatts- ville, MD: National Center for Health Statistics, various years.\n\nNewey, Whitney K. and West, Kenneth D. \u2018\u2018Hy- pothesis Testing with Efficient Method of Moments Estimation.\u201d\u2019 International Eco- nomic Review, October 1987, 28(3), pp. 777-87.\n\nPencavel, John. \u2018\u2018Labor Supply of Men: A Sur- vey,\u201d\u201d in Orley Ashenfelter and Richard Layard, eds., Handbook of labor econom- ics, Vol. 1. Amsterdam: North-Holland, 1986, pp. 3-101.\n\nRosenzweig, Mark R. and Wolpin, Kenneth I. \u201c\u201cTesting the Quantity-Quality Fertility Model: The Use of Twins as a Natural Ex- periment.\u201d\u201d Econometrica, January 1980a, 48(1), pp. 227-40.\n\n. \u201c\u2018Life-Cycle Labor Supply and Fer- tility: Causal Inferences From Household Models.\u201d Journal of Political Economy, April 1980b, 88(2), pp. 328-48.\n\nSchultz, Paul T. Economics of population. Reading, MA: Addison-Wesley, 1981."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 107,
+    "pages": [
+      27
+    ],
+    "text": ". \u201cTesting the Neoclassical Model of Family Labor Supply and Fertility.\u201d\u201d Jour- nal of Human Resources, Fall 1990, 25(4), P. 599-634.\n\nSmith, James P. and Ward, Michael P. Women\u2019s wages and work in the twentieth century. Santa Monica, CA: Rand Corporation, 1984.\n\nStafford, Frank P. \u201c\u201cWomen\u2019s Work, Sibling Competition, and Children\u2019s School Perfor- mance.\u201d\u2019 American Economic Review, De- cember 1987, 77(5), pp. 972\u201480.\n\nThomas, Duncan. \u2018\u2018Like Father, Like Son; Like Mother, Like Daughter: Parental Re- sources and Child Height.\u201d\u201d Journal of\n\nVOL. 88 NO. 3 ANGRIST AND EVANS: CHILDREN AND THEIR PARENTS\u2019 LABOR SUPPLY\n\n477\n\nHuman Resources, Fall 1994, 29(4), pp. 950-89.\n\nHuman Resources, Fall 1994, 29(4), pp. 950-89.\n\nU.S. Department of Commerce, Bureau of the Census. Census of population and housing, 1970 [ United States ] : Public use microdata samples 1/100, 5-percent file [ computer file]. Washington, DC: U.S. Department of Commerce, Bureau of the Census [ pro- ducer], 1972.\n\n. Census of population and housing, 1980 [ United States ] : Public use microdata sample, 5-percent sample [computer file]. Washington, DC: U.S. Department of Com- merce, Bureau of the Census [producer], 1983."
+  },
+  {
+    "source": "Angrist and Evans 1998.pdf",
+    "chunk_index": 108,
+    "pages": [
+      28
+    ],
+    "text": ". Census of population and housing, 1980 [ United States ] : Public use microdata sample, 5-percent sample [computer file]. Washington, DC: U.S. Department of Com- merce, Bureau of the Census [producer], 1983.\n\n\u2014\u2014. Census of population and housing, 1990 [ United States ] : Public use microdata sample, 5-percent sample [computer file].\n\nWashington, DC: U.S. Department of Com- merce, Bureau of the Census [producer], 1995.\n\nWaterhouse, John A. H. \u201c\u201cTwinning in Twin Pedigrees.\u201d\u201d British Journal of Social Med- icine, October 1950, 5, p. 197.\n\nWestoff, Charles F.; Potter, Robert G. and Sagi, Phillip C, The third child: A study in the pre- diction of fertility. Princeton, NJ: Princeton University Press, 1963.\n\nWilliamson, Nancy E. Sons or daughters: A cross-cultural survey of parental pre- Jerences. Beverly Hills, CA: Sage, 1976.\n\nWillis, Robert J. \u2018\u201cWhat Have We Learned from the Economics of the Family?\u2019 American Economic Review, May 1987 (Papers and Proceedings), 77(2), pp. 68-81."
+  }
+]

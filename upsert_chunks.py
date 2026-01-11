@@ -6,7 +6,7 @@ SRC_ROOT = os.path.join(PROJECT_ROOT, "src")
 if SRC_ROOT not in sys.path:
     sys.path.insert(0, SRC_ROOT)
 
-from mcp_research.ingest_unstructured import main
+from mcp_research.upsert_chunks import main
 
 
 if __name__ == "__main__":
