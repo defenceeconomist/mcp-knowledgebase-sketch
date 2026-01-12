@@ -95,6 +95,11 @@ services:
     command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}
     depends_on: [mcp]
     restart: unless-stopped
+  cloudflared2:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN2}
+    depends_on: [minio]
+    restart: unless-stopped
 
 volumes:
   qdrant_storage:
