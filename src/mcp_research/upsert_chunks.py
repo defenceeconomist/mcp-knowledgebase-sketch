@@ -151,6 +151,23 @@ def upsert_items(
 
         points = []
         for item, dense_vec, sparse_vec in zip(batch, dense_embs, sparse_embs):
+            payload = {
+                "document_id": item.get("document_id"),
+                "source": item.get("source"),
+                "chunk_index": item.get("chunk_index"),
+                "pages": item.get("pages") or [],
+                "text": item.get("text") or "",
+            }
+            for key in (
+                "source_ref",
+                "bucket",
+                "key",
+                "version_id",
+                "page_start",
+                "page_end",
+            ):
+                if key in item and item.get(key) is not None:
+                    payload[key] = item.get(key)
             points.append(
                 models.PointStruct(
                     id=str(uuid.uuid4()),
@@ -161,13 +178,7 @@ def upsert_items(
                             values=list(sparse_vec.values),
                         ),
                     },
-                    payload={
-                        "document_id": item.get("document_id"),
-                        "source": item.get("source"),
-                        "chunk_index": item.get("chunk_index"),
-                        "pages": item.get("pages") or [],
-                        "text": item.get("text") or "",
-                    },
+                    payload=payload,
                 )
             )
 

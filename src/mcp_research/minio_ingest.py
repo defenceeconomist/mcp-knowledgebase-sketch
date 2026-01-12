@@ -25,6 +25,7 @@ from mcp_research.ingest_unstructured import (
     record_collection_mapping,
     upload_to_redis,
 )
+from mcp_research.link_resolver import build_source_ref
 from mcp_research.upsert_chunks import ensure_collection, upsert_items
 
 
@@ -159,7 +160,7 @@ class MinioIngestor:
         )
         return [element.to_dict() if hasattr(element, "to_dict") else element for element in elements]
 
-    def process_object(self, bucket: str, object_name: str) -> None:
+    def process_object(self, bucket: str, object_name: str, version_id: str | None = None) -> None:
         object_name = unquote_plus(object_name)
         if not object_name:
             return
@@ -169,7 +170,7 @@ class MinioIngestor:
         source = f"{bucket}/{object_name}"
         logger.info("Processing s3://%s", source)
 
-        response = self.minio_client.get_object(bucket, object_name)
+        response = self.minio_client.get_object(bucket, object_name, version_id=version_id)
         try:
             file_bytes = response.read()
         finally:
@@ -190,12 +191,27 @@ class MinioIngestor:
                 return
             chunk_items = []
             for idx, (chunk, page_list) in enumerate(zip(chunk_payloads, page_ranges)):
+                page_start = min(page_list) if page_list else None
+                page_end = max(page_list) if page_list else None
+                source_ref = build_source_ref(
+                    bucket=bucket,
+                    key=object_name,
+                    page_start=page_start,
+                    page_end=page_end,
+                    version_id=version_id,
+                )
                 chunk_items.append(
                     {
                         "document_id": doc_id,
                         "source": source,
+                        "source_ref": source_ref,
+                        "bucket": bucket,
+                        "key": object_name,
+                        "version_id": version_id,
                         "chunk_index": idx,
                         "pages": page_list,
+                        "page_start": page_start,
+                        "page_end": page_end,
                         "text": chunk,
                     }
                 )
@@ -208,6 +224,32 @@ class MinioIngestor:
                     chunks_payload=chunk_items,
                     prefix=self.redis_prefix,
                     collection=bucket,
+                )
+        else:
+            for entry in chunk_items:
+                if not isinstance(entry, dict):
+                    continue
+                if entry.get("source_ref"):
+                    continue
+                page_list = entry.get("pages") or []
+                page_start = min(page_list) if page_list else None
+                page_end = max(page_list) if page_list else None
+                entry.update(
+                    {
+                        "source": entry.get("source") or source,
+                        "source_ref": build_source_ref(
+                            bucket=bucket,
+                            key=object_name,
+                            page_start=page_start,
+                            page_end=page_end,
+                            version_id=version_id,
+                        ),
+                        "bucket": bucket,
+                        "key": object_name,
+                        "version_id": version_id,
+                        "page_start": page_start,
+                        "page_end": page_end,
+                    }
                 )
 
         with self._lock:
@@ -252,11 +294,13 @@ def _listen_bucket(
             for record in event.get("Records", []):
                 s3_info = record.get("s3", {})
                 bucket_name = s3_info.get("bucket", {}).get("name") or bucket
-                object_name = s3_info.get("object", {}).get("key")
+                object_info = s3_info.get("object", {})
+                object_name = object_info.get("key")
+                version_id = object_info.get("versionId") or object_info.get("version_id")
                 if not object_name:
                     continue
                 try:
-                    ingestor.process_object(bucket_name, object_name)
+                    ingestor.process_object(bucket_name, object_name, version_id=version_id)
                 except Exception as exc:
                     logger.exception("Failed to process %s/%s: %s", bucket_name, object_name, exc)
     except S3Error as exc:

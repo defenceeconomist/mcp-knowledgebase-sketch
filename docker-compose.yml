@@ -59,8 +59,30 @@ services:
       - UNSTRUCTURED_STRATEGY=${UNSTRUCTURED_STRATEGY:-hi_res}
       - UNSTRUCTURED_CHUNKING_STRATEGY=${UNSTRUCTURED_CHUNKING_STRATEGY:-basic}
       - UNSTRUCTURED_LANGUAGES=${UNSTRUCTURED_LANGUAGES:-}
+      - CITATION_BASE_URL=${CITATION_BASE_URL:-}
+      - CITATION_REF_PATH=${CITATION_REF_PATH:-/r/doc}
     volumes:
       - ./data:/app/data:ro
+  resolver:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - minio
+    environment:
+      - RESOLVER_HOST=0.0.0.0
+      - RESOLVER_PORT=8080
+      - LINK_RESOLVER_MODE=${LINK_RESOLVER_MODE:-presign}
+      - CITATION_BASE_URL=${CITATION_BASE_URL:-}
+      - CITATION_REF_PATH=${CITATION_REF_PATH:-/r/doc}
+      - CDN_BASE_URL=${CDN_BASE_URL:-}
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
+      - MINIO_SECURE=0
+      - MINIO_PRESIGN_EXPIRY_SECONDS=${MINIO_PRESIGN_EXPIRY_SECONDS:-3600}
+    command: -m mcp_research.resolver_app
   minio_ingest:
     build: .
     restart: unless-stopped
@@ -99,6 +121,11 @@ services:
     image: cloudflare/cloudflared:latest
     command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN2}
     depends_on: [minio]
+    restart: unless-stopped
+  cloudflared_resolver:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN_RESOLVER}
+    depends_on: [resolver]
     restart: unless-stopped
 
 volumes:

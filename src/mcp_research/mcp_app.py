@@ -1,7 +1,7 @@
 import json
 import logging
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from fastmcp import FastMCP
 from fastmcp.server.auth.providers.github import GitHubProvider
@@ -10,6 +10,7 @@ from fastembed import SparseTextEmbedding, TextEmbedding
 from qdrant_client import QdrantClient
 
 from mcp_research import hybrid_search
+from mcp_research.link_resolver import build_citation_url, build_source_ref, resolve_link
 
 try:
     import redis
@@ -49,6 +50,8 @@ REDIS_URL = os.getenv("REDIS_URL", "")
 REDIS_PREFIX = os.getenv("REDIS_PREFIX", "unstructured")
 DENSE_MODEL = os.getenv("DENSE_MODEL", "BAAI/bge-small-en-v1.5")
 SPARSE_MODEL = os.getenv("SPARSE_MODEL", "Qdrant/bm25")
+CITATION_BASE_URL = os.getenv("CITATION_BASE_URL") or os.getenv("DOCS_BASE_URL", "")
+CITATION_REF_PATH = os.getenv("CITATION_REF_PATH", "/r/doc")
 
 _qdrant_client: QdrantClient | None = None
 _dense_model: TextEmbedding | None = None
@@ -99,6 +102,33 @@ def _get_default_collection() -> str | None:
     if not client:
         return None
     return _decode_redis_value(client.get(_default_collection_key()))
+
+
+def _pages_to_range(pages: List[int]) -> tuple[Optional[int], Optional[int]]:
+    if not pages:
+        return None, None
+    return min(pages), max(pages)
+
+
+def _source_ref_from_payload(payload: Dict[str, Any]) -> Optional[str]:
+    source_ref = payload.get("source_ref")
+    if source_ref:
+        return source_ref
+    bucket = payload.get("bucket")
+    key = payload.get("key")
+    if not bucket or not key:
+        return None
+    page_start = payload.get("page_start")
+    page_end = payload.get("page_end")
+    if page_start is None and page_end is None:
+        page_start, page_end = _pages_to_range(payload.get("pages", []))
+    return build_source_ref(
+        bucket=bucket,
+        key=key,
+        page_start=page_start,
+        page_end=page_end,
+        version_id=payload.get("version_id"),
+    )
 
 # --------------------------------------------------------------------
 # Auth (GitHub OAuth for ChatGPT UI)
@@ -179,12 +209,25 @@ def search(
     results: List[Dict[str, Any]] = []
     for point in response.points:
         payload = point.payload or {}
+        source_ref = _source_ref_from_payload(payload)
+        citation_url = (
+            build_citation_url(source_ref, CITATION_BASE_URL, CITATION_REF_PATH)
+            if source_ref
+            else None
+        )
         results.append(
             {
                 "id": str(point.id),
                 "score": point.score,
                 "source": payload.get("source"),
+                "source_ref": source_ref,
+                "citation_url": citation_url,
+                "bucket": payload.get("bucket"),
+                "key": payload.get("key"),
+                "version_id": payload.get("version_id"),
                 "pages": payload.get("pages", []),
+                "page_start": payload.get("page_start"),
+                "page_end": payload.get("page_end"),
                 "text": payload.get("text", ""),
             }
         )
@@ -209,13 +252,50 @@ def fetch(id: str, collection: str | None = None) -> Dict[str, Any]:
 
     point = points[0]
     payload = point.payload or {}
+    source_ref = _source_ref_from_payload(payload)
+    citation_url = (
+        build_citation_url(source_ref, CITATION_BASE_URL, CITATION_REF_PATH)
+        if source_ref
+        else None
+    )
     return {
         "id": str(point.id),
         "found": True,
         "source": payload.get("source"),
+        "source_ref": source_ref,
+        "citation_url": citation_url,
+        "bucket": payload.get("bucket"),
+        "key": payload.get("key"),
+        "version_id": payload.get("version_id"),
         "pages": payload.get("pages", []),
+        "page_start": payload.get("page_start"),
+        "page_end": payload.get("page_end"),
         "text": payload.get("text", ""),
     }
+
+
+@mcp.tool
+def resolve_citation(
+    source_ref: str | None = None,
+    bucket: str | None = None,
+    key: str | None = None,
+    version_id: str | None = None,
+    page: int | None = None,
+    page_start: int | None = None,
+    page_end: int | None = None,
+    mode: str | None = None,
+) -> Dict[str, Any]:
+    """Resolve a citation to a stable portal URL or a presigned MinIO URL."""
+    return resolve_link(
+        source_ref=source_ref,
+        bucket=bucket,
+        key=key,
+        version_id=version_id,
+        page=page,
+        page_start=page_start,
+        page_end=page_end,
+        mode=mode,
+    )
 
 def main() -> None:
     # Remote deployment uses HTTP transport; default MCP path is /mcp

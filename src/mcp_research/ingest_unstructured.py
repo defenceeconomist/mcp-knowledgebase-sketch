@@ -9,6 +9,7 @@ from unstructured_client import UnstructuredClient
 from unstructured_client.models import operations, shared
 from unstructured_client.models.errors import SDKError
 
+from mcp_research.link_resolver import build_source_ref
 try:
     import redis
 except ImportError:  # pragma: no cover - optional dependency
@@ -362,14 +363,30 @@ def ingest_pdfs(
             logger.warning("No text extracted from %s", pdf_path.name)
             continue
 
+        source_bucket = os.getenv("SOURCE_BUCKET", "local")
+        source_key = pdf_path.name
         chunk_items = []
         for idx, (chunk, page_list) in enumerate(zip(chunk_payloads, page_ranges)):
+            page_start = min(page_list) if page_list else None
+            page_end = max(page_list) if page_list else None
+            source_ref = build_source_ref(
+                bucket=source_bucket,
+                key=source_key,
+                page_start=page_start,
+                page_end=page_end,
+            )
             chunk_items.append(
                 {
                     "document_id": doc_id,
                     "source": pdf_path.name,
+                    "source_ref": source_ref,
+                    "bucket": source_bucket,
+                    "key": source_key,
+                    "version_id": None,
                     "chunk_index": idx,
                     "pages": page_list,
+                    "page_start": page_start,
+                    "page_end": page_end,
                     "text": chunk,
                 }
             )
