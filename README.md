@@ -285,6 +285,46 @@ Ping the MCP server locally:
 python examples/ping_mcp.py --url http://localhost:8000/mcp --auth none
 ```
 
+## End-to-end sequence (high level)
+```mermaid
+sequenceDiagram
+    participant U as User/Uploader
+    participant M as MinIO
+    participant Q as Queue/Webhook
+    participant IW as Ingest worker
+    participant UN as Unstructured
+    participant V as Embedder
+    participant QD as Qdrant
+    participant DW as Deletion worker
+    participant CG as ChatGPT Deep Research
+    participant MCP as MCP server
+    participant LR as Link Resolver
+
+    U->>M: Upload file(s)
+    M-->>Q: PUT event
+    Q-->>IW: Notify ingest job
+    IW->>M: Download object
+    IW->>UN: Partition to elements
+    IW->>IW: Chunk elements
+    IW->>V: Embed chunks
+    IW->>QD: Upsert chunks\n(doc_id + source_ref)
+
+    U->>M: Delete object
+    M-->>Q: DELETE event
+    Q-->>DW: Notify deletion job
+    DW->>QD: Delete points by doc_id\n(or bucket/key/version)
+
+    CG->>MCP: search(query)
+    MCP->>QD: Query vectors
+    QD-->>MCP: Relevant chunk ids
+    CG->>MCP: fetch(ids)
+    MCP->>QD: Retrieve chunks
+    QD-->>MCP: Chunks + metadata
+    MCP-->>CG: Chunks + citations
+    CG->>LR: Resolve citations
+    LR-->>CG: MinIO-hosted doc links
+```
+
 
 # Architecture
 
