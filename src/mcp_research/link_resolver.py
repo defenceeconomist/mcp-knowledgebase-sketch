@@ -33,8 +33,26 @@ def build_source_ref(
     return ref
 
 
+def _normalize_source_ref(source_ref: str) -> str:
+    if not source_ref:
+        return source_ref
+    raw = source_ref.strip()
+    if raw.startswith("http://") or raw.startswith("https://"):
+        parsed = urlparse(raw)
+        query = parse_qs(parsed.query or "")
+        ref_values = query.get("ref", [])
+        if ref_values:
+            return ref_values[0]
+    if raw.startswith("ref="):
+        return raw.split("=", 1)[1]
+    if raw.startswith("doc:%2F%2F"):
+        return unquote(raw)
+    return raw
+
+
 def parse_source_ref(source_ref: str) -> dict:
-    parsed = urlparse(source_ref)
+    normalized = _normalize_source_ref(source_ref)
+    parsed = urlparse(normalized)
     if parsed.scheme != "doc":
         raise ValueError(f"Unsupported source_ref scheme: {parsed.scheme}")
     bucket = parsed.netloc
