@@ -284,3 +284,30 @@ Ping the MCP server locally:
 ```bash
 python examples/ping_mcp.py --url http://localhost:8000/mcp --auth none
 ```
+
+
+# Architecture
+
+```mermaid
+architecture-beta
+    group ingest(disk)[Pipeline]
+    group rag(disk)[RAG]
+    service minio(disk)[MinIO] in ingest
+    service unstructured(server)[Unstructured] in ingest
+    service qdrant(database)[Qdrant] in ingest
+  
+    service mcp(server)[MCP] in rag
+    service chatgpt(server)[ChatGPT] in rag
+
+    minio:R -- L:unstructured
+    unstructured:L -- R:minio
+
+    unstructured:R -- L:qdrant
+    qdrant:L -- R:unstructured
+
+    qdrant:B -- T:mcp
+    
+    mcp:R -- L:chatgpt
+    chatgpt:L -- R:mcp
+
+```
