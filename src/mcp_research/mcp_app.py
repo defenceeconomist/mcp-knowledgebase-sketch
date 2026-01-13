@@ -91,6 +91,10 @@ def _default_collection_key() -> str:
     return f"{REDIS_PREFIX}:qdrant:default_collection"
 
 
+def _redis_key(prefix: str, doc_id: str, suffix: str) -> str:
+    return f"{prefix}:pdf:{doc_id}:{suffix}"
+
+
 def _decode_redis_value(value):
     if value is None:
         return None
@@ -296,6 +300,48 @@ def resolve_citation(
         page_end=page_end,
         mode=mode,
     )
+
+
+@mcp.tool
+def fetch_document_chunks(document_id: str) -> Dict[str, Any]:
+    """
+    Fetch all chunk payloads for a document id stored in Redis.
+    """
+    redis_client = _get_redis_client()
+    if not redis_client:
+        raise RuntimeError("REDIS_URL is required to fetch document chunks")
+    chunks_key = _redis_key(REDIS_PREFIX, document_id, "chunks")
+    raw = _decode_redis_value(redis_client.get(chunks_key))
+    if not raw:
+        return {"document_id": document_id, "found": False, "chunks": []}
+    try:
+        chunks = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"Invalid chunk payload for {document_id}") from exc
+    if not isinstance(chunks, list):
+        return {"document_id": document_id, "found": False, "chunks": []}
+
+    enriched = []
+    for entry in chunks:
+        if not isinstance(entry, dict):
+            continue
+        payload = dict(entry)
+        source_ref = _source_ref_from_payload(payload)
+        if source_ref:
+            payload.setdefault("source_ref", source_ref)
+            payload.setdefault(
+                "citation_url",
+                build_citation_url(source_ref, CITATION_BASE_URL, CITATION_REF_PATH),
+            )
+        enriched.append(payload)
+
+    return {
+        "document_id": document_id,
+        "found": True,
+        "chunks_key": chunks_key,
+        "count": len(enriched),
+        "chunks": enriched,
+    }
 
 def main() -> None:
     # Remote deployment uses HTTP transport; default MCP path is /mcp

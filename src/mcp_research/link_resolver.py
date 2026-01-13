@@ -108,13 +108,23 @@ def build_citation_url(
 
 
 def _get_minio_client() -> Minio:
-    endpoint = os.getenv("MINIO_ENDPOINT", "localhost:9000")
+    endpoint = os.getenv("MINIO_PRESIGN_ENDPOINT") or os.getenv("MINIO_ENDPOINT", "localhost:9000")
     access_key = os.getenv("MINIO_ACCESS_KEY") or os.getenv("MINIO_ROOT_USER")
     secret_key = os.getenv("MINIO_SECRET_KEY") or os.getenv("MINIO_ROOT_PASSWORD")
-    secure = os.getenv("MINIO_SECURE", "false").strip().lower() in {"1", "true", "yes", "y", "on"}
+    secure_value = os.getenv("MINIO_PRESIGN_SECURE") or os.getenv("MINIO_SECURE", "false")
+    secure = secure_value.strip().lower() in {"1", "true", "yes", "y", "on"}
+    region = os.getenv("MINIO_PRESIGN_REGION") or os.getenv("MINIO_REGION") or (
+        "us-east-1" if os.getenv("MINIO_PRESIGN_ENDPOINT") else None
+    )
     if not access_key or not secret_key:
         raise RuntimeError("MINIO_ACCESS_KEY/MINIO_SECRET_KEY are required for presigned URLs")
-    return Minio(endpoint, access_key=access_key, secret_key=secret_key, secure=secure)
+    return Minio(
+        endpoint,
+        access_key=access_key,
+        secret_key=secret_key,
+        secure=secure,
+        region=region,
+    )
 
 
 def resolve_link(

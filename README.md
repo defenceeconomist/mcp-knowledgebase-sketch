@@ -139,6 +139,8 @@ Key environment:
 - `REDIS_PREFIX` – key prefix for Redis entries (default `unstructured`).
 - `REDIS_SKIP_PROCESSED` – skip PDFs already in Redis (`1`/`0`, default `1`).
 - `STORE_PARTITIONS_DISK` / `STORE_CHUNKS_DISK` – also write JSON to disk (`1`/`0`, default `0`).
+- `MINIO_PRESIGN_ENDPOINT` – public hostname for presigned MinIO URLs (defaults to `MINIO_ENDPOINT`).
+- `MINIO_PRESIGN_SECURE` – set to `1` for HTTPS presigned URLs (defaults to `MINIO_SECURE`).
 
 Run locally (directory ingest, default output paths):
 ```bash
