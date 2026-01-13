@@ -66,6 +66,7 @@ Storage is persisted in a Docker volume (`minio_data`) so buckets and objects su
 
 ## MinIO upload -> Unstructured -> Qdrant (auto-ingest)
 Use `minio_ingest.py` (or the `minio_ingest` compose service) to listen for new uploads and run the Unstructured ingest process automatically. Each upload is upserted into a Qdrant collection named after the bucket, while partitions and chunks are still stored in Redis. A Redis set tracks which collections each document belongs to so a single file can map to multiple collections.
+If `MINIO_ENQUEUE_CELERY=1`, uploads are queued to the Celery worker instead of being processed in the listener process (make sure the `celery` service is running).
 
 Example (Docker Compose):
 ```bash
@@ -74,6 +75,7 @@ MINIO_ALL_BUCKETS=1 UNSTRUCTURED_API_KEY=your-key docker compose up minio_ingest
 ```
 
 Key env vars:
+- `MINIO_ENQUEUE_CELERY` (default `1` in compose, set to `0` to process inline)
 - `MINIO_ENDPOINT` (default `minio:9000`)
 - `MINIO_BUCKETS` (comma-separated bucket list) or `MINIO_ALL_BUCKETS=1`
 - `MINIO_SUFFIX` (default `.pdf`)
@@ -152,6 +154,29 @@ If Redis is enabled, a content hash (`document_id`) is stored per PDF to avoid r
 You can inspect those keys with RedisInsight (default `http://localhost:8001` when using the compose stack).
 
 The Dockerfile uses a Python entrypoint, so you can swap commands as needed (server default remains `python mcp_app.py`).
+
+### Queue Unstructured ingestion with Celery + Flower
+The compose stack includes a Celery worker and Flower UI for queueing ingestion tasks and tracking progress.
+
+Start worker + Flower:
+```bash
+UNSTRUCTURED_API_KEY=your-key docker compose up --build celery flower
+```
+
+Enqueue an ingestion task (uses env vars for `PDF_PATH`/`DATA_DIR`):
+```bash
+docker compose run --rm celery \
+  celery -A mcp_research.celery_app call mcp_research.ingest_unstructured
+```
+
+Pass a specific PDF path or data directory:
+```bash
+docker compose run --rm celery \
+  celery -A mcp_research.celery_app call mcp_research.ingest_unstructured \
+  --args='["/app/data/my.pdf", null]'
+```
+
+Open Flower at `http://localhost:5555` to monitor task state and progress. Tasks are configured with late acknowledgements and a visibility timeout (`CELERY_VISIBILITY_TIMEOUT`) so if the worker is interrupted the task will be re-queued automatically.
 
 ### Upload existing JSON to Redis (same schema as Unstructured ingest)
 If you already have partition/chunk JSON files in `data/partitions` + `data/chunks`, use `upload_data_to_redis.py` to populate Redis in the exact layout used by `ingest_unstructured.py`.

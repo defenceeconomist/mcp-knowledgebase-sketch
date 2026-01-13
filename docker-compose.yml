@@ -71,6 +71,7 @@ services:
     depends_on:
       - minio
     environment:
+      - PYTHONPATH=/app/src
       - RESOLVER_HOST=0.0.0.0
       - RESOLVER_PORT=8080
       - LINK_RESOLVER_MODE=${LINK_RESOLVER_MODE:-presign}
@@ -91,6 +92,8 @@ services:
       - qdrant
       - redis
     environment:
+      - PYTHONPATH=/app/src
+      - MINIO_ENQUEUE_CELERY=${MINIO_ENQUEUE_CELERY:-1}
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
       - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
@@ -112,6 +115,54 @@ services:
       - UNSTRUCTURED_CHUNKING_STRATEGY=${UNSTRUCTURED_CHUNKING_STRATEGY:-basic}
       - UNSTRUCTURED_LANGUAGES=${UNSTRUCTURED_LANGUAGES:-}
     command: minio_ingest.py
+  celery:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - redis
+    environment:
+      - PYTHONPATH=/app/src
+      - CELERY_BROKER_URL=${REDIS_URL:-redis://redis:6379/0}
+      - CELERY_RESULT_BACKEND=${REDIS_URL:-redis://redis:6379/0}
+      - CELERY_VISIBILITY_TIMEOUT=${CELERY_VISIBILITY_TIMEOUT:-3600}
+      - DATA_DIR=/app/data
+      - PDF_PATH=${PDF_PATH:-}
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
+      - MINIO_SECURE=0
+      - QDRANT_URL=http://qdrant:6333
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - REDIS_PREFIX=${REDIS_PREFIX:-unstructured}
+      - REDIS_SKIP_PROCESSED=${REDIS_SKIP_PROCESSED:-1}
+      - STORE_PARTITIONS_DISK=${STORE_PARTITIONS_DISK:-1}
+      - STORE_CHUNKS_DISK=${STORE_CHUNKS_DISK:-1}
+      - DENSE_MODEL=${DENSE_MODEL:-BAAI/bge-small-en-v1.5}
+      - SPARSE_MODEL=${SPARSE_MODEL:-Qdrant/bm25}
+      - UNSTRUCTURED_API_KEY=${UNSTRUCTURED_API_KEY:-}
+      - UNSTRUCTURED_API_URL=${UNSTRUCTURED_API_URL:-https://api.unstructured.io}
+      - UNSTRUCTURED_STRATEGY=${UNSTRUCTURED_STRATEGY:-hi_res}
+      - UNSTRUCTURED_CHUNKING_STRATEGY=${UNSTRUCTURED_CHUNKING_STRATEGY:-basic}
+      - UNSTRUCTURED_LANGUAGES=${UNSTRUCTURED_LANGUAGES:-}
+      - CHUNK_SIZE=${CHUNK_SIZE:-1200}
+      - CHUNK_OVERLAP=${CHUNK_OVERLAP:-200}
+    volumes:
+      - ./data:/app/data
+    command: -m celery -A mcp_research.celery_app worker --loglevel=info
+  flower:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      - redis
+      - celery
+    environment:
+      - PYTHONPATH=/app/src
+      - CELERY_BROKER_URL=${REDIS_URL:-redis://redis:6379/0}
+      - CELERY_RESULT_BACKEND=${REDIS_URL:-redis://redis:6379/0}
+      - FLOWER_BASIC_AUTH=${FLOWER_BASIC_AUTH:-}
+    ports:
+      - "5555:5555"
+    command: -m celery -A mcp_research.celery_app flower --port=5555
   cloudflared:
     image: cloudflare/cloudflared:latest
     command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}

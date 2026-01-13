@@ -3,7 +3,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import List, Sequence, Tuple
+from typing import Callable, List, Sequence, Tuple
 
 from unstructured_client import UnstructuredClient
 from unstructured_client.models import operations, shared
@@ -297,6 +297,7 @@ def ingest_pdfs(
     redis_skip_processed: bool,
     store_partitions_disk: bool,
     store_chunks_disk: bool,
+    on_progress: Callable[[dict], None] | None = None,
 ) -> List[dict]:
     """Partition PDFs with Unstructured and dump partitions/chunks to disk."""
     if not pdfs:
@@ -305,13 +306,33 @@ def ingest_pdfs(
 
     results: List[dict] = []
 
-    for pdf_path in pdfs:
+    total = len(pdfs)
+
+    def emit_progress(payload: dict) -> None:
+        if not on_progress:
+            return
+        try:
+            on_progress(payload)
+        except Exception:
+            logger.debug("Progress callback failed", exc_info=True)
+
+    for idx, pdf_path in enumerate(pdfs, start=1):
         logger.info("Processing %s via Unstructured API", pdf_path.name)
+        emit_progress({"current": idx, "total": total, "file": pdf_path.name, "status": "started"})
 
         try:
             file_bytes = pdf_path.read_bytes()
         except OSError as exc:
             logger.exception("Failed to read %s: %s", pdf_path.name, exc)
+            emit_progress(
+                {
+                    "current": idx,
+                    "total": total,
+                    "file": pdf_path.name,
+                    "status": "failed",
+                    "error": str(exc),
+                }
+            )
             continue
 
         doc_id = _hash_bytes(file_bytes)
@@ -323,6 +344,15 @@ def ingest_pdfs(
             try:
                 if redis_client.exists(meta_key):
                     logger.info("Skipping %s (already processed: %s)", pdf_path.name, doc_id)
+                    emit_progress(
+                        {
+                            "current": idx,
+                            "total": total,
+                            "file": pdf_path.name,
+                            "document_id": doc_id,
+                            "status": "skipped",
+                        }
+                    )
                     results.append(
                         {
                             "file": pdf_path.name,
@@ -347,6 +377,16 @@ def ingest_pdfs(
             )
         except Exception as exc:
             logger.exception("Failed to partition %s: %s", pdf_path.name, exc)
+            emit_progress(
+                {
+                    "current": idx,
+                    "total": total,
+                    "file": pdf_path.name,
+                    "document_id": doc_id,
+                    "status": "failed",
+                    "error": str(exc),
+                }
+            )
             continue
 
         elements_payload = [
@@ -361,6 +401,16 @@ def ingest_pdfs(
         chunk_payloads, page_ranges = elements_to_chunks(elements_payload)
         if not chunk_payloads:
             logger.warning("No text extracted from %s", pdf_path.name)
+            emit_progress(
+                {
+                    "current": idx,
+                    "total": total,
+                    "file": pdf_path.name,
+                    "document_id": doc_id,
+                    "status": "failed",
+                    "error": "no_text_extracted",
+                }
+            )
             continue
 
         source_bucket = os.getenv("SOURCE_BUCKET", "local")
@@ -423,6 +473,16 @@ def ingest_pdfs(
                 "chunk_path": chunk_path_value,
             }
         )
+        emit_progress(
+            {
+                "current": idx,
+                "total": total,
+                "file": pdf_path.name,
+                "document_id": doc_id,
+                "chunks": len(chunk_payloads),
+                "status": "completed",
+            }
+        )
 
     return results
 
@@ -437,6 +497,7 @@ def parse_languages(raw: str | None) -> List[str] | None:
 def run_from_env(
     pdf_path_override: str | None = None,
     data_dir_override: str | None = None,
+    on_progress: Callable[[dict], None] | None = None,
 ) -> List[dict]:
     load_dotenv(Path(".env"))
     data_dir = Path(data_dir_override or os.getenv("DATA_DIR", "data-raw")).expanduser()
@@ -494,6 +555,7 @@ def run_from_env(
         redis_skip_processed=redis_skip_processed,
         store_partitions_disk=store_partitions_disk,
         store_chunks_disk=store_chunks_disk,
+        on_progress=on_progress,
     )
 
 

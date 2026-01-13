@@ -72,6 +72,63 @@ def _get_redis_client(redis_url: str):
     return redis.from_url(redis_url)
 
 
+def process_object_from_env(
+    bucket: str,
+    object_name: str,
+    version_id: str | None = None,
+) -> None:
+    load_dotenv(Path(".env"))
+
+    endpoint = os.getenv("MINIO_ENDPOINT", "localhost:9000")
+    access_key = os.getenv("MINIO_ACCESS_KEY") or os.getenv("MINIO_ROOT_USER")
+    secret_key = os.getenv("MINIO_SECRET_KEY") or os.getenv("MINIO_ROOT_PASSWORD")
+    secure = load_env_bool("MINIO_SECURE", False)
+
+    if not access_key or not secret_key:
+        raise RuntimeError("MINIO_ACCESS_KEY/MINIO_SECRET_KEY are required")
+
+    minio_client = _get_minio_client(endpoint, access_key, secret_key, secure)
+
+    redis_url = os.getenv("REDIS_URL", "")
+    redis_prefix = os.getenv("REDIS_PREFIX", "unstructured")
+    redis_client = _get_redis_client(redis_url) if redis_url else None
+
+    qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
+    dense_model = TextEmbedding(model_name=os.getenv("DENSE_MODEL", "BAAI/bge-small-en-v1.5"))
+    sparse_model = SparseTextEmbedding(model_name=os.getenv("SPARSE_MODEL", "Qdrant/bm25"))
+    qdrant_client = QdrantClient(url=qdrant_url)
+
+    unstructured_api_key = os.getenv("UNSTRUCTURED_API_KEY", "")
+    unstructured_api_url = os.getenv("UNSTRUCTURED_API_URL", "https://api.unstructured.io")
+    unstructured_strategy = os.getenv("UNSTRUCTURED_STRATEGY", "hi_res")
+    chunking_strategy_raw = os.getenv("UNSTRUCTURED_CHUNKING_STRATEGY", "basic")
+    unstructured_chunking = (
+        chunking_strategy_raw if chunking_strategy_raw.lower() != "none" else None
+    )
+    chunk_size = load_env_int("CHUNK_SIZE", 1200)
+    chunk_overlap = load_env_int("CHUNK_OVERLAP", 200)
+    languages = parse_languages(os.getenv("UNSTRUCTURED_LANGUAGES"))
+    skip_existing = load_env_bool("MINIO_SKIP_EXISTING", True)
+
+    ingestor = MinioIngestor(
+        minio_client=minio_client,
+        qdrant_client=qdrant_client,
+        dense_model=dense_model,
+        sparse_model=sparse_model,
+        redis_client=redis_client,
+        redis_prefix=redis_prefix,
+        unstructured_api_key=unstructured_api_key,
+        unstructured_api_url=unstructured_api_url,
+        unstructured_strategy=unstructured_strategy,
+        unstructured_chunking=unstructured_chunking,
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        languages=languages,
+        skip_existing=skip_existing,
+    )
+    ingestor.process_object(bucket, object_name, version_id=version_id)
+
+
 class MinioIngestor:
     def __init__(
         self,
@@ -276,10 +333,11 @@ class MinioIngestor:
 def _listen_bucket(
     bucket: str,
     minio_client: Minio,
-    ingestor: MinioIngestor,
+    ingestor: MinioIngestor | None,
     prefix: str,
     suffix: str,
     events: List[str],
+    enqueue_celery: bool,
 ) -> None:
     logger.info("Listening for %s in bucket %s", events, bucket)
     try:
@@ -300,7 +358,18 @@ def _listen_bucket(
                 if not object_name:
                     continue
                 try:
-                    ingestor.process_object(bucket_name, object_name, version_id=version_id)
+                    if enqueue_celery:
+                        from mcp_research.celery_app import celery_app
+
+                        celery_app.send_task(
+                            "mcp_research.ingest_minio_object",
+                            args=[bucket_name, object_name, version_id],
+                        )
+                        logger.info("Queued Celery task for s3://%s/%s", bucket_name, object_name)
+                    else:
+                        if not ingestor:
+                            raise RuntimeError("MinIO ingestor is not configured")
+                        ingestor.process_object(bucket_name, object_name, version_id=version_id)
                 except Exception as exc:
                     logger.exception("Failed to process %s/%s: %s", bucket_name, object_name, exc)
     except S3Error as exc:
@@ -360,43 +429,46 @@ def main() -> None:
     if not buckets and not watch_all:
         raise RuntimeError("No buckets specified. Use --bucket or MINIO_BUCKETS.")
 
-    redis_url = os.getenv("REDIS_URL", "")
-    redis_prefix = os.getenv("REDIS_PREFIX", "unstructured")
-    redis_client = _get_redis_client(redis_url) if redis_url else None
+    enqueue_celery = load_env_bool("MINIO_ENQUEUE_CELERY", False)
+    ingestor = None
+    if not enqueue_celery:
+        redis_url = os.getenv("REDIS_URL", "")
+        redis_prefix = os.getenv("REDIS_PREFIX", "unstructured")
+        redis_client = _get_redis_client(redis_url) if redis_url else None
 
-    qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
-    dense_model = TextEmbedding(model_name=os.getenv("DENSE_MODEL", "BAAI/bge-small-en-v1.5"))
-    sparse_model = SparseTextEmbedding(model_name=os.getenv("SPARSE_MODEL", "Qdrant/bm25"))
-    qdrant_client = QdrantClient(url=qdrant_url)
+        qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
+        dense_model = TextEmbedding(model_name=os.getenv("DENSE_MODEL", "BAAI/bge-small-en-v1.5"))
+        sparse_model = SparseTextEmbedding(model_name=os.getenv("SPARSE_MODEL", "Qdrant/bm25"))
+        qdrant_client = QdrantClient(url=qdrant_url)
 
-    unstructured_api_key = os.getenv("UNSTRUCTURED_API_KEY", "")
-    unstructured_api_url = os.getenv("UNSTRUCTURED_API_URL", "https://api.unstructured.io")
-    unstructured_strategy = os.getenv("UNSTRUCTURED_STRATEGY", "hi_res")
-    chunking_strategy_raw = os.getenv("UNSTRUCTURED_CHUNKING_STRATEGY", "basic")
-    unstructured_chunking = (
-        chunking_strategy_raw if chunking_strategy_raw.lower() != "none" else None
-    )
-    chunk_size = load_env_int("CHUNK_SIZE", 1200)
-    chunk_overlap = load_env_int("CHUNK_OVERLAP", 200)
-    languages = parse_languages(os.getenv("UNSTRUCTURED_LANGUAGES"))
-    skip_existing = load_env_bool("MINIO_SKIP_EXISTING", True)
+        unstructured_api_key = os.getenv("UNSTRUCTURED_API_KEY", "")
+        unstructured_api_url = os.getenv("UNSTRUCTURED_API_URL", "https://api.unstructured.io")
+        unstructured_strategy = os.getenv("UNSTRUCTURED_STRATEGY", "hi_res")
+        chunking_strategy_raw = os.getenv("UNSTRUCTURED_CHUNKING_STRATEGY", "basic")
+        unstructured_chunking = (
+            chunking_strategy_raw if chunking_strategy_raw.lower() != "none" else None
+        )
+        chunk_size = load_env_int("CHUNK_SIZE", 1200)
+        chunk_overlap = load_env_int("CHUNK_OVERLAP", 200)
+        languages = parse_languages(os.getenv("UNSTRUCTURED_LANGUAGES"))
+        skip_existing = load_env_bool("MINIO_SKIP_EXISTING", True)
 
-    ingestor = MinioIngestor(
-        minio_client=minio_client,
-        qdrant_client=qdrant_client,
-        dense_model=dense_model,
-        sparse_model=sparse_model,
-        redis_client=redis_client,
-        redis_prefix=redis_prefix,
-        unstructured_api_key=unstructured_api_key,
-        unstructured_api_url=unstructured_api_url,
-        unstructured_strategy=unstructured_strategy,
-        unstructured_chunking=unstructured_chunking,
-        chunk_size=chunk_size,
-        chunk_overlap=chunk_overlap,
-        languages=languages,
-        skip_existing=skip_existing,
-    )
+        ingestor = MinioIngestor(
+            minio_client=minio_client,
+            qdrant_client=qdrant_client,
+            dense_model=dense_model,
+            sparse_model=sparse_model,
+            redis_client=redis_client,
+            redis_prefix=redis_prefix,
+            unstructured_api_key=unstructured_api_key,
+            unstructured_api_url=unstructured_api_url,
+            unstructured_strategy=unstructured_strategy,
+            unstructured_chunking=unstructured_chunking,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            languages=languages,
+            skip_existing=skip_existing,
+        )
 
     events = _normalize_events(args.events.split(","))
     active_buckets: set[str] = set()
@@ -406,7 +478,7 @@ def main() -> None:
         client = _get_minio_client(endpoint, access_key, secret_key, secure)
         thread = threading.Thread(
             target=_listen_bucket,
-            args=(bucket_name, client, ingestor, args.prefix, args.suffix, events),
+            args=(bucket_name, client, ingestor, args.prefix, args.suffix, events, enqueue_celery),
             daemon=True,
         )
         thread.start()
