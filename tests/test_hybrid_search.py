@@ -1,7 +1,10 @@
 import os
 import sys
 import unittest
+
+import httpx
 from dotenv import load_dotenv
+
 load_dotenv(".env")
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -10,6 +13,7 @@ if SRC_ROOT not in sys.path:
     sys.path.insert(0, SRC_ROOT)
 
 from qdrant_client import QdrantClient, models
+from qdrant_client.http import exceptions as qdrant_exceptions
 
 from mcp_research import hybrid_search
 
@@ -186,9 +190,14 @@ class HybridSearchLiveTests(unittest.TestCase):
             )
 
             self.assertGreaterEqual(len(result.points), 1)
+        except (httpx.ConnectError, qdrant_exceptions.ResponseHandlingException) as exc:
+            self.skipTest(f"Qdrant not reachable at {qdrant_url}: {exc}")
         finally:
-            if client.collection_exists(collection_name):
-                client.delete_collection(collection_name)
+            try:
+                if client.collection_exists(collection_name):
+                    client.delete_collection(collection_name)
+            except (httpx.ConnectError, qdrant_exceptions.ResponseHandlingException):
+                pass
 
 
 if __name__ == "__main__":
