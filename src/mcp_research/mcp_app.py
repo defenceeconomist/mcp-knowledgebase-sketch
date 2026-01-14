@@ -95,6 +95,10 @@ def _redis_key(prefix: str, doc_id: str, suffix: str) -> str:
     return f"{prefix}:pdf:{doc_id}:{suffix}"
 
 
+def _source_key(prefix: str, source: str) -> str:
+    return f"{prefix}:pdf:source:{source}"
+
+
 def _decode_redis_value(value):
     if value is None:
         return None
@@ -223,6 +227,7 @@ def search(
             {
                 "id": str(point.id),
                 "score": point.score,
+                "document_id": payload.get("document_id"),
                 "source": payload.get("source"),
                 "source_ref": source_ref,
                 "citation_url": citation_url,
@@ -265,6 +270,7 @@ def fetch(id: str, collection: str | None = None) -> Dict[str, Any]:
     return {
         "id": str(point.id),
         "found": True,
+        "document_id": payload.get("document_id"),
         "source": payload.get("source"),
         "source_ref": source_ref,
         "citation_url": citation_url,
@@ -303,44 +309,78 @@ def resolve_citation(
 
 
 @mcp.tool
-def fetch_document_chunks(document_id: str) -> Dict[str, Any]:
+def fetch_document_chunks(
+    document_id: str | None = None,
+    bucket: str | None = None,
+    key: str | None = None,
+) -> Dict[str, Any]:
     """
-    Fetch all chunk payloads for a document id stored in Redis.
+    Fetch all chunk payloads for a document id or bucket/key stored in Redis.
     """
     redis_client = _get_redis_client()
     if not redis_client:
         raise RuntimeError("REDIS_URL is required to fetch document chunks")
-    chunks_key = _redis_key(REDIS_PREFIX, document_id, "chunks")
-    raw = _decode_redis_value(redis_client.get(chunks_key))
-    if not raw:
-        return {"document_id": document_id, "found": False, "chunks": []}
-    try:
-        chunks = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise RuntimeError(f"Invalid chunk payload for {document_id}") from exc
-    if not isinstance(chunks, list):
-        return {"document_id": document_id, "found": False, "chunks": []}
 
-    enriched = []
-    for entry in chunks:
-        if not isinstance(entry, dict):
+    doc_ids: List[str] = []
+    source = None
+    if document_id:
+        doc_ids = [document_id]
+    if not doc_ids:
+        if not (bucket and key):
+            raise ValueError("document_id or bucket/key is required")
+        source = f"{bucket}/{key}"
+        source_key = _source_key(REDIS_PREFIX, source)
+        raw_members = redis_client.smembers(source_key)
+        for entry in raw_members or []:
+            decoded = _decode_redis_value(entry)
+            if decoded:
+                doc_ids.append(decoded)
+        if not doc_ids:
+            return {"source": source, "found": False, "chunks": []}
+
+    chunks: List[Dict[str, Any]] = []
+    chunks_key = None
+    for doc_id in doc_ids:
+        chunks_key = _redis_key(REDIS_PREFIX, doc_id, "chunks")
+        raw = _decode_redis_value(redis_client.get(chunks_key))
+        if not raw:
             continue
-        payload = dict(entry)
-        source_ref = _source_ref_from_payload(payload)
-        if source_ref:
-            payload.setdefault("source_ref", source_ref)
-            payload.setdefault(
-                "citation_url",
-                build_citation_url(source_ref, CITATION_BASE_URL, CITATION_REF_PATH),
-            )
-        enriched.append(payload)
+        try:
+            payload = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(f"Invalid chunk payload for {doc_id}") from exc
+        if not isinstance(payload, list):
+            continue
+
+        for entry in payload:
+            if not isinstance(entry, dict):
+                continue
+            chunk = dict(entry)
+            source_ref = _source_ref_from_payload(chunk)
+            if source_ref:
+                chunk.setdefault("source_ref", source_ref)
+                chunk.setdefault(
+                    "citation_url",
+                    build_citation_url(source_ref, CITATION_BASE_URL, CITATION_REF_PATH),
+                )
+            chunks.append(chunk)
+
+    if not chunks:
+        return {
+            "document_id": document_id,
+            "source": source,
+            "found": False,
+            "chunks": [],
+        }
 
     return {
-        "document_id": document_id,
+        "document_id": document_id if len(doc_ids) == 1 else None,
+        "document_ids": doc_ids,
+        "source": source,
         "found": True,
         "chunks_key": chunks_key,
-        "count": len(enriched),
-        "chunks": enriched,
+        "count": len(chunks),
+        "chunks": chunks,
     }
 
 def main() -> None:

@@ -103,6 +103,7 @@ services:
       - MINIO_BUCKETS=${MINIO_BUCKETS:-}
       - MINIO_ALL_BUCKETS=${MINIO_ALL_BUCKETS:-0}
       - MINIO_SUFFIX=${MINIO_SUFFIX:-.pdf}
+      - MINIO_EVENTS=${MINIO_EVENTS:-s3:ObjectCreated:*,s3:ObjectRemoved:*}
       - MINIO_SKIP_EXISTING=${MINIO_SKIP_EXISTING:-1}
       - QDRANT_URL=http://qdrant:6333
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}

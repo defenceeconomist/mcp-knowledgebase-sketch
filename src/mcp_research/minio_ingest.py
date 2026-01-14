@@ -12,6 +12,7 @@ from fastembed import SparseTextEmbedding, TextEmbedding
 from minio import Minio
 from minio.error import S3Error
 from qdrant_client import QdrantClient
+from qdrant_client.models import FieldCondition, Filter, MatchValue
 
 from mcp_research.ingest_unstructured import (
     _hash_bytes,
@@ -51,6 +52,10 @@ def _decode_redis_value(value):
     return value.decode("utf-8") if isinstance(value, (bytes, bytearray)) else value
 
 
+def _source_key(prefix: str, source: str) -> str:
+    return f"{prefix}:pdf:source:{source}"
+
+
 def _load_env_list(key: str) -> List[str]:
     raw = os.getenv(key, "").strip()
     if not raw:
@@ -70,6 +75,31 @@ def _get_redis_client(redis_url: str):
     except ImportError as exc:  # pragma: no cover - optional dependency
         raise RuntimeError("redis package is required for Redis usage") from exc
     return redis.from_url(redis_url)
+
+
+def _source_doc_ids(redis_client, redis_prefix: str, source: str) -> List[str]:
+    source_key = _source_key(redis_prefix, source)
+    if hasattr(redis_client, "smembers"):
+        raw_members = redis_client.smembers(source_key)
+        members = []
+        for entry in raw_members or []:
+            decoded = _decode_redis_value(entry)
+            if decoded:
+                members.append(decoded)
+        if members:
+            return members
+    raw = _decode_redis_value(redis_client.get(source_key))
+    return [raw] if raw else []
+
+
+def _remove_source_mapping(redis_client, redis_prefix: str, source: str, doc_id: str) -> None:
+    source_key = _source_key(redis_prefix, source)
+    if hasattr(redis_client, "srem"):
+        redis_client.srem(source_key, doc_id)
+        if redis_client.scard(source_key) == 0:
+            redis_client.delete(source_key)
+    else:
+        redis_client.delete(source_key)
 
 
 def process_object_from_env(
@@ -127,6 +157,47 @@ def process_object_from_env(
         skip_existing=skip_existing,
     )
     ingestor.process_object(bucket, object_name, version_id=version_id)
+
+
+def _delete_from_qdrant(
+    client: QdrantClient,
+    bucket: str,
+    object_name: str,
+    version_id: str | None = None,
+) -> int:
+    if not client.collection_exists(bucket):
+        logger.info("Skipping delete for %s/%s (collection missing)", bucket, object_name)
+        return 0
+    must = [
+        FieldCondition(key="bucket", match=MatchValue(value=bucket)),
+        FieldCondition(key="key", match=MatchValue(value=object_name)),
+    ]
+    if version_id:
+        must.append(FieldCondition(key="version_id", match=MatchValue(value=version_id)))
+    client.delete(collection_name=bucket, points_selector=Filter(must=must), wait=True)
+    return 1
+
+
+def delete_object_from_env(
+    bucket: str,
+    object_name: str,
+    version_id: str | None = None,
+) -> None:
+    load_dotenv(Path(".env"))
+
+    redis_url = os.getenv("REDIS_URL", "")
+    redis_prefix = os.getenv("REDIS_PREFIX", "unstructured")
+    redis_client = _get_redis_client(redis_url) if redis_url else None
+
+    qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
+    qdrant_client = QdrantClient(url=qdrant_url)
+    deleted = _delete_from_qdrant(qdrant_client, bucket, object_name, version_id=version_id)
+    if redis_client:
+        source = f"{bucket}/{object_name}"
+        for doc_id in _source_doc_ids(redis_client, redis_prefix, source):
+            redis_client.srem(f"{redis_prefix}:pdf:{doc_id}:collections", bucket)
+            _remove_source_mapping(redis_client, redis_prefix, source, doc_id)
+    logger.info("Delete request for %s/%s (deleted=%d)", bucket, object_name, deleted)
 
 
 class MinioIngestor:
@@ -235,11 +306,14 @@ class MinioIngestor:
             response.release_conn()
 
         doc_id = _hash_bytes(file_bytes)
-        if self.skip_existing and self._collection_mapping_exists(doc_id, bucket):
-            logger.info("Skipping %s (already mapped to %s)", source, bucket)
-            return
+
+        if self.redis_client:
+            self.redis_client.sadd(_source_key(self.redis_prefix, source), doc_id)
 
         chunk_items = self._load_chunks_from_redis(doc_id)
+        if self.skip_existing and self._collection_mapping_exists(doc_id, bucket) and not chunk_items:
+            logger.info("Skipping %s (already mapped to %s)", source, bucket)
+            return
         if not chunk_items:
             elements_payload = self._partition_bytes(object_name, file_bytes)
             chunk_payloads, page_ranges = elements_to_chunks(elements_payload)
@@ -329,6 +403,18 @@ class MinioIngestor:
             )
         logger.info("Upserted %d chunks into '%s'", len(chunk_items), bucket)
 
+    def delete_object(self, bucket: str, object_name: str, version_id: str | None = None) -> None:
+        object_name = unquote_plus(object_name)
+        if not object_name:
+            return
+        if self.redis_client:
+            source = f"{bucket}/{object_name}"
+            for doc_id in _source_doc_ids(self.redis_client, self.redis_prefix, source):
+                self.redis_client.srem(f"{self.redis_prefix}:pdf:{doc_id}:collections", bucket)
+                _remove_source_mapping(self.redis_client, self.redis_prefix, source, doc_id)
+        deleted = _delete_from_qdrant(self.qdrant_client, bucket, object_name, version_id=version_id)
+        logger.info("Delete request for %s/%s (deleted=%d)", bucket, object_name, deleted)
+
 
 def _listen_bucket(
     bucket: str,
@@ -350,6 +436,7 @@ def _listen_bucket(
             if not event:
                 continue
             for record in event.get("Records", []):
+                event_name = (record.get("eventName") or "").lower()
                 s3_info = record.get("s3", {})
                 bucket_name = s3_info.get("bucket", {}).get("name") or bucket
                 object_info = s3_info.get("object", {})
@@ -358,18 +445,40 @@ def _listen_bucket(
                 if not object_name:
                     continue
                 try:
-                    if enqueue_celery:
-                        from mcp_research.celery_app import celery_app
+                    if "objectremoved" in event_name:
+                        if enqueue_celery:
+                            from mcp_research.celery_app import celery_app
 
-                        celery_app.send_task(
-                            "mcp_research.ingest_minio_object",
-                            args=[bucket_name, object_name, version_id],
-                        )
-                        logger.info("Queued Celery task for s3://%s/%s", bucket_name, object_name)
+                            celery_app.send_task(
+                                "mcp_research.delete_minio_object",
+                                args=[bucket_name, object_name, version_id],
+                            )
+                            logger.info(
+                                "Queued delete task for s3://%s/%s",
+                                bucket_name,
+                                object_name,
+                            )
+                        else:
+                            if not ingestor:
+                                raise RuntimeError("MinIO ingestor is not configured")
+                            ingestor.delete_object(bucket_name, object_name, version_id=version_id)
                     else:
-                        if not ingestor:
-                            raise RuntimeError("MinIO ingestor is not configured")
-                        ingestor.process_object(bucket_name, object_name, version_id=version_id)
+                        if enqueue_celery:
+                            from mcp_research.celery_app import celery_app
+
+                            celery_app.send_task(
+                                "mcp_research.ingest_minio_object",
+                                args=[bucket_name, object_name, version_id],
+                            )
+                            logger.info(
+                                "Queued ingest task for s3://%s/%s",
+                                bucket_name,
+                                object_name,
+                            )
+                        else:
+                            if not ingestor:
+                                raise RuntimeError("MinIO ingestor is not configured")
+                            ingestor.process_object(bucket_name, object_name, version_id=version_id)
                 except Exception as exc:
                     logger.exception("Failed to process %s/%s: %s", bucket_name, object_name, exc)
     except S3Error as exc:

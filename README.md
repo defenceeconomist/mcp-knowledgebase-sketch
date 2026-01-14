@@ -79,6 +79,7 @@ Key env vars:
 - `MINIO_ENDPOINT` (default `minio:9000`)
 - `MINIO_BUCKETS` (comma-separated bucket list) or `MINIO_ALL_BUCKETS=1`
 - `MINIO_SUFFIX` (default `.pdf`)
+- `MINIO_EVENTS` (default `s3:ObjectCreated:*,s3:ObjectRemoved:*`)
 - `MINIO_SKIP_EXISTING` (default `1`, skip if document already mapped to the bucket)
 - `UNSTRUCTURED_API_KEY` (required when new files need parsing)
 
@@ -186,6 +187,11 @@ If you already have partition/chunk JSON files in `data/partitions` + `data/chun
 Upload all pairs in the default directories:
 ```bash
 REDIS_URL=redis://localhost:6379/0 python upload_data_to_redis.py
+```
+
+Backfill the source index for existing documents in Redis:
+```bash
+REDIS_URL=redis://localhost:6379/0 python backfill_source_index.py
 ```
 
 Upload a single pair:

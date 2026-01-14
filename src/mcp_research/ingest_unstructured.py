@@ -93,6 +93,10 @@ def _collections_key(prefix: str, doc_id: str) -> str:
     return f"{prefix}:pdf:{doc_id}:collections"
 
 
+def _source_key(prefix: str, source: str) -> str:
+    return f"{prefix}:pdf:source:{source}"
+
+
 def record_collection_mapping(
     redis_client,
     doc_id: str,
@@ -141,6 +145,7 @@ def upload_to_redis(
         },
     )
     redis_client.sadd(f"{prefix}:pdf:hashes", doc_id)
+    redis_client.sadd(_source_key(prefix, source), doc_id)
     if collection:
         redis_client.sadd(collections_key, collection)
     return {
