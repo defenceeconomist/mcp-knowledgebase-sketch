@@ -35,6 +35,13 @@ Unit tests live in `tests/`:
 python -m unittest
 ```
 
+End-to-end integration tests exercise running services (e.g. the resolver app):
+```bash
+RUN_E2E_TESTS=1 docker compose up -d resolver
+RUN_E2E_TESTS=1 python -m unittest tests.test_e2e_integration
+```
+Set `RESOLVER_BASE_URL` if the resolver is not on `http://localhost:8080`.
+
 ## Documentation
 Sphinx docs live in `docs/`:
 ```bash
