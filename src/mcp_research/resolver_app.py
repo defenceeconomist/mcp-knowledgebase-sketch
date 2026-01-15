@@ -234,6 +234,50 @@ def _minio_has_source(minio_index: Dict[str, set], source: str, minio_client: An
     return "yes" if key in minio_index[bucket] else "no"
 
 
+def _find_missing_minio_objects() -> Tuple[List[Tuple[str, str]], List[str]]:
+    errors: List[str] = []
+    minio_client, minio_error = _get_minio_client()
+    if minio_error:
+        errors.append(minio_error)
+    redis_client, redis_error = _get_redis_client()
+    if redis_error:
+        errors.append(redis_error)
+    if not minio_client or not redis_client:
+        return [], errors
+    redis_prefix = os.getenv("REDIS_PREFIX", "unstructured")
+    minio_prefix = os.getenv("MINIO_PREFIX", "").strip()
+    minio_suffix = os.getenv("MINIO_SUFFIX", ".pdf").strip()
+    missing: List[Tuple[str, str]] = []
+    bucket_names, bucket_error = _resolve_minio_buckets(minio_client)
+    if bucket_error:
+        errors.append(bucket_error)
+        return missing, errors
+    for bucket in bucket_names:
+        try:
+            object_names = _list_minio_objects(minio_client, bucket, minio_prefix, minio_suffix)
+        except S3Error as exc:
+            errors.append(f"Failed to list objects in {bucket}: {exc}")
+            continue
+        for object_name in object_names:
+            source = f"{bucket}/{object_name}"
+            if not _source_doc_ids(redis_client, redis_prefix, source):
+                missing.append((bucket, object_name))
+    return missing, errors
+
+
+def _enqueue_missing_ingests(missing: List[Tuple[str, str]]) -> int:
+    if not missing:
+        return 0
+    from mcp_research.celery_app import celery_app
+
+    for bucket, object_name in missing:
+        celery_app.send_task(
+            "mcp_research.ingest_minio_object",
+            args=[bucket, object_name, None],
+        )
+    return len(missing)
+
+
 def _redis_has_doc(redis_client, redis_prefix: str, doc_id: str | None, source: str | None) -> str:
     if not redis_client:
         return "unknown"
@@ -548,7 +592,7 @@ def _load_inventory() -> Tuple[Dict[str, List[dict]], List[str]]:
     return collections_map, errors
 
 
-def _render_page(title: str, subtitle: str, content: str, active_tab: str) -> str:
+def _render_page(title: str, subtitle: str, content: str, active_tab: str, actions_html: str = "") -> str:
     tab_inventory = "active" if active_tab == "inventory" else ""
     tab_redis = "active" if active_tab == "redis" else ""
     tab_qdrant = "active" if active_tab == "qdrant" else ""
@@ -601,6 +645,30 @@ def _render_page(title: str, subtitle: str, content: str, active_tab: str) -> st
       gap: 10px;
       flex-wrap: wrap;
     }}
+    .actions {{
+      margin-top: 16px;
+    }}
+    .button {{
+      appearance: none;
+      border: none;
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-weight: 600;
+      font-size: 13px;
+      background: var(--accent);
+      color: #f7f7f2;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 10px 18px rgba(26, 108, 92, 0.2);
+    }}
+    .button:hover {{
+      transform: translateY(-1px);
+      box-shadow: 0 12px 22px rgba(26, 108, 92, 0.25);
+    }}
+    .button:active {{
+      transform: translateY(0);
+      box-shadow: 0 8px 16px rgba(26, 108, 92, 0.2);
+    }}
     .tab {{
       text-decoration: none;
       font-size: 13px;
@@ -629,6 +697,15 @@ def _render_page(title: str, subtitle: str, content: str, active_tab: str) -> st
       background: #fff0f0;
       color: #8a2f2f;
       border: 1px solid #f1b3b3;
+    }}
+    .info {{
+      max-width: 1100px;
+      margin: 0 auto 20px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      background: rgba(26, 108, 92, 0.12);
+      color: #0d594d;
+      border: 1px solid rgba(26, 108, 92, 0.35);
     }}
     .empty {{
       max-width: 1100px;
@@ -716,14 +793,17 @@ def _render_page(title: str, subtitle: str, content: str, active_tab: str) -> st
       <a class="tab {tab_redis}" href="/ui/redis">Redis Inventory</a>
       <a class="tab {tab_qdrant}" href="/ui/qdrant">Qdrant Inventory</a>
     </div>
+    {actions_html}
   </header>
   {content}
 </body>
 </html>"""
 
 
-def _render_dashboard(buckets: Dict[str, List[dict]], errors: List[str]) -> str:
+def _render_dashboard(buckets: Dict[str, List[dict]], errors: List[str], infos: List[str] | None = None) -> str:
     body = []
+    for info in infos or []:
+        body.append(f"<div class='info'>{escape(info)}</div>")
     for error in errors:
         body.append(f"<div class='notice'>{escape(error)}</div>")
     if not buckets:
@@ -753,11 +833,17 @@ def _render_dashboard(buckets: Dict[str, List[dict]], errors: List[str]) -> str:
         body.append("</tbody></table></section>")
 
     content = "\n".join(body)
+    actions_html = (
+        "<form class='actions' method='post' action='/ui/ingest-missing'>"
+        "<button class='button' type='submit'>Ingest Missing Files</button>"
+        "</form>"
+    )
     return _render_page(
         title="PDF Inventory",
         subtitle="Grouped by collection with MinIO files plus Redis and Qdrant status.",
         content=content,
         active_tab="inventory",
+        actions_html=actions_html,
     )
 
 
@@ -818,9 +904,21 @@ def resolve_doc_json(
 
 
 @app.get("/ui")
-def inventory_ui():
+def inventory_ui(notice: Optional[str] = Query(default=None)):
     buckets, errors = _load_inventory()
-    html = _render_dashboard(buckets, errors)
+    infos = [notice] if notice else None
+    html = _render_dashboard(buckets, errors, infos=infos)
+    return HTMLResponse(content=html)
+
+
+@app.post("/ui/ingest-missing")
+def ingest_missing_ui():
+    missing, enqueue_errors = _find_missing_minio_objects()
+    count = _enqueue_missing_ingests(missing)
+    buckets, errors = _load_inventory()
+    errors.extend(enqueue_errors)
+    infos = [f"Enqueued {count} ingest task(s) for missing MinIO files."]
+    html = _render_dashboard(buckets, errors, infos=infos)
     return HTMLResponse(content=html)
 
 
