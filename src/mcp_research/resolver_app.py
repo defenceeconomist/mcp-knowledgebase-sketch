@@ -1,13 +1,20 @@
 import json
 import os
 from html import escape
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import RedirectResponse, JSONResponse, HTMLResponse
 from qdrant_client import QdrantClient, models
 
 from mcp_research.link_resolver import resolve_link
+
+try:
+    from minio import Minio
+    from minio.error import S3Error
+except ImportError:  # pragma: no cover - optional dependency
+    Minio = None
+    S3Error = Exception
 
 try:
     import redis
@@ -23,26 +30,55 @@ def _decode_redis_value(value):
     return value.decode("utf-8") if isinstance(value, (bytes, bytearray)) else value
 
 
-def _get_redis_client():
+def _load_env_bool(key: str, default: bool = False) -> bool:
+    raw = os.getenv(key)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def _load_env_list(key: str) -> List[str]:
+    raw = os.getenv(key, "").strip()
+    if not raw:
+        return []
+    return [entry.strip() for entry in raw.split(",") if entry.strip()]
+
+
+def _get_redis_client() -> Tuple[object | None, str | None]:
     redis_url = os.getenv("REDIS_URL", "")
     if not redis_url or redis is None:
-        return None
-    return redis.from_url(redis_url)
+        message = None if redis_url else "REDIS_URL is required for Redis status"
+        if redis_url and redis is None:
+            message = "redis package is required for Redis status"
+        return None, message
+    try:
+        return redis.from_url(redis_url), None
+    except Exception as exc:  # pragma: no cover - runtime connectivity
+        return None, f"Failed to connect to Redis: {exc}"
+
+
+def _get_minio_client() -> Tuple[Any | None, str | None]:
+    if Minio is None:
+        return None, "minio package is required to list MinIO objects"
+    endpoint = os.getenv("MINIO_ENDPOINT", "localhost:9000")
+    access_key = os.getenv("MINIO_ACCESS_KEY") or os.getenv("MINIO_ROOT_USER")
+    secret_key = os.getenv("MINIO_SECRET_KEY") or os.getenv("MINIO_ROOT_PASSWORD")
+    secure = _load_env_bool("MINIO_SECURE", False)
+    if not access_key or not secret_key:
+        return None, "MINIO_ACCESS_KEY/MINIO_SECRET_KEY are required to list MinIO objects"
+    try:
+        return Minio(endpoint, access_key=access_key, secret_key=secret_key, secure=secure), None
+    except Exception as exc:  # pragma: no cover - runtime connectivity
+        return None, f"Failed to connect to MinIO: {exc}"
 
 
 def _get_qdrant_client() -> QdrantClient | None:
-    qdrant_url = os.getenv("QDRANT_URL", "")
+    qdrant_url = os.getenv("QDRANT_URL")
     if not qdrant_url:
-        return None
+        qdrant_host = os.getenv("QDRANT_HOST", "localhost")
+        qdrant_port = os.getenv("QDRANT_PORT", "6333")
+        qdrant_url = f"http://{qdrant_host}:{qdrant_port}"
     return QdrantClient(url=qdrant_url)
-
-
-def _derive_bucket_and_key(source: str) -> Tuple[str, str]:
-    if "/" in source:
-        bucket, key = source.split("/", 1)
-        return bucket, key
-    bucket = os.getenv("SOURCE_BUCKET", "local")
-    return bucket, source
 
 
 def _load_partition_count(redis_client, partitions_key: str) -> int:
@@ -67,106 +103,461 @@ def _load_chunk_count(redis_client, chunks_key: str) -> int:
     return len(payload) if isinstance(payload, list) else 0
 
 
-def _qdrant_uploaded(client: QdrantClient | None, collection: str, document_id: str) -> str:
+def _qdrant_uploaded(
+    client: QdrantClient | None,
+    collection: str,
+    document_id: str | None = None,
+    bucket: str | None = None,
+    key: str | None = None,
+    exists_cache: dict | None = None,
+    errors: List[str] | None = None,
+    error_cache: dict | None = None,
+) -> str:
     if not client:
         return "unknown"
     try:
-        if not client.collection_exists(collection):
+        cache = exists_cache if exists_cache is not None else {}
+        if collection not in cache:
+            cache[collection] = client.collection_exists(collection)
+        if not cache[collection]:
             return "no"
+        must = []
+        if document_id:
+            must.append(models.FieldCondition(key="document_id", match=models.MatchValue(value=document_id)))
+        elif bucket and key:
+            must.extend(
+                [
+                    models.FieldCondition(key="bucket", match=models.MatchValue(value=bucket)),
+                    models.FieldCondition(key="key", match=models.MatchValue(value=key)),
+                ]
+            )
+        else:
+            return "unknown"
         response = client.count(
             collection_name=collection,
-            count_filter=models.Filter(
-                must=[models.FieldCondition(key="document_id", match=models.MatchValue(value=document_id))]
-            ),
+            count_filter=models.Filter(must=must),
             exact=True,
         )
-    except Exception:
+    except Exception as exc:
+        if errors is not None:
+            cache = error_cache if error_cache is not None else {}
+            if collection not in cache:
+                errors.append(f"Qdrant error for collection {collection}: {exc}")
+                cache[collection] = True
         return "unknown"
     return "yes" if response.count > 0 else "no"
 
 
-def _load_inventory() -> Tuple[Dict[str, List[dict]], str | None]:
-    redis_client = _get_redis_client()
-    if not redis_client:
-        return {}, "REDIS_URL is required for the inventory dashboard"
-    redis_prefix = os.getenv("REDIS_PREFIX", "unstructured")
-    qdrant_client = _get_qdrant_client()
+def _source_doc_ids(redis_client, redis_prefix: str, source: str) -> List[str]:
+    source_key = f"{redis_prefix}:pdf:source:{source}"
+    if hasattr(redis_client, "smembers"):
+        raw_members = redis_client.smembers(source_key)
+        members = []
+        for entry in raw_members or []:
+            decoded = _decode_redis_value(entry)
+            if decoded:
+                members.append(decoded)
+        if members:
+            return members
+    raw = _decode_redis_value(redis_client.get(source_key))
+    return [raw] if raw else []
 
-    raw_ids = redis_client.smembers(f"{redis_prefix}:pdf:hashes")
-    doc_ids = [_decode_redis_value(entry) for entry in raw_ids or []]
 
-    buckets: Dict[str, List[dict]] = {}
-    for doc_id in sorted(filter(None, doc_ids)):
-        meta_key = f"{redis_prefix}:pdf:{doc_id}:meta"
-        meta_raw = redis_client.hgetall(meta_key)
-        meta = { _decode_redis_value(k): _decode_redis_value(v) for k, v in meta_raw.items() }
-        source = meta.get("source") or doc_id
-        bucket, key = _derive_bucket_and_key(source)
-        partitions_key = meta.get("partitions_key") or f"{redis_prefix}:pdf:{doc_id}:partitions"
-        chunks_key = meta.get("chunks_key") or f"{redis_prefix}:pdf:{doc_id}:chunks"
-        collections_key = meta.get("collections_key") or f"{redis_prefix}:pdf:{doc_id}:collections"
-
-        partitions_count = _load_partition_count(redis_client, partitions_key)
-        chunks_count = meta.get("chunks")
-        chunks_count_value = int(chunks_count) if str(chunks_count).isdigit() else None
-        if chunks_count_value is None:
-            chunks_count_value = _load_chunk_count(redis_client, chunks_key)
-
-        collections = [
-            _decode_redis_value(entry)
-            for entry in (redis_client.smembers(collections_key) or [])
-        ]
-        expected_collection = bucket if "/" in source else os.getenv("QDRANT_COLLECTION", "pdf_chunks")
-        qdrant_status = _qdrant_uploaded(qdrant_client, expected_collection, doc_id)
-
-        buckets.setdefault(bucket, []).append(
-            {
-                "doc_id": doc_id,
-                "key": key,
-                "source": source,
-                "partitions": partitions_count,
-                "chunks": chunks_count_value,
-                "collections": [c for c in collections if c],
-                "expected_collection": expected_collection,
-                "qdrant_status": qdrant_status,
-            }
-        )
+def _resolve_minio_buckets(minio_client: Any | None) -> Tuple[List[str], str | None]:
+    if not minio_client:
+        return [], "MinIO client is not configured"
+    buckets = _load_env_list("MINIO_BUCKETS")
+    watch_all = _load_env_bool("MINIO_ALL_BUCKETS", False)
+    if not buckets and watch_all:
+        try:
+            buckets = [bucket.name for bucket in minio_client.list_buckets()]
+        except S3Error as exc:
+            return [], f"Failed to list MinIO buckets: {exc}"
+    if not buckets:
+        source_bucket = os.getenv("SOURCE_BUCKET", "").strip()
+        if source_bucket:
+            buckets = [source_bucket]
+    if not buckets:
+        return [], "No MinIO buckets specified. Set MINIO_BUCKETS or MINIO_ALL_BUCKETS."
     return buckets, None
 
 
-def _render_dashboard(buckets: Dict[str, List[dict]], error: str | None) -> str:
+def _list_minio_objects(minio_client: Any, bucket: str, prefix: str, suffix: str) -> List[str]:
+    object_names = []
+    for entry in minio_client.list_objects(bucket, prefix=prefix, recursive=True):
+        if getattr(entry, "is_dir", False):
+            continue
+        name = entry.object_name
+        if suffix and not name.lower().endswith(suffix.lower()):
+            continue
+        object_names.append(name)
+    return object_names
+
+
+def _build_minio_index(minio_client: Any | None, errors: List[str]) -> Dict[str, set]:
+    if not minio_client:
+        return {}
+    minio_prefix = os.getenv("MINIO_PREFIX", "").strip()
+    minio_suffix = os.getenv("MINIO_SUFFIX", ".pdf").strip()
+    index: Dict[str, set] = {}
+    bucket_names, bucket_error = _resolve_minio_buckets(minio_client)
+    if bucket_error:
+        errors.append(bucket_error)
+        return index
+    for bucket in bucket_names:
+        try:
+            object_names = _list_minio_objects(minio_client, bucket, minio_prefix, minio_suffix)
+        except S3Error as exc:
+            errors.append(f"Failed to list objects in {bucket}: {exc}")
+            continue
+        index[bucket] = set(object_names)
+    return index
+
+
+def _split_source(source: str) -> Tuple[str | None, str | None]:
+    if not source or "/" not in source:
+        return None, None
+    bucket, key = source.split("/", 1)
+    if not bucket or not key:
+        return None, None
+    return bucket, key
+
+
+def _minio_has_source(minio_index: Dict[str, set], source: str, minio_client: Any | None) -> str:
+    if not minio_client:
+        return "unknown"
+    bucket, key = _split_source(source)
+    if not bucket or not key:
+        return "unknown"
+    if bucket not in minio_index:
+        return "no"
+    return "yes" if key in minio_index[bucket] else "no"
+
+
+def _redis_has_doc(redis_client, redis_prefix: str, doc_id: str | None, source: str | None) -> str:
+    if not redis_client:
+        return "unknown"
+    if doc_id:
+        meta_key = f"{redis_prefix}:pdf:{doc_id}:meta"
+        if redis_client.exists(meta_key):
+            return "yes"
+    if source:
+        source_key = f"{redis_prefix}:pdf:source:{source}"
+        if hasattr(redis_client, "sismember"):
+            if doc_id:
+                return "yes" if redis_client.sismember(source_key, doc_id) else "no"
+            return "yes" if redis_client.scard(source_key) > 0 else "no"
+        if redis_client.get(source_key):
+            return "yes"
+    return "no"
+
+
+def _build_redis_source_index(redis_client, redis_prefix: str) -> Dict[str, str]:
+    index: Dict[str, str] = {}
+    if not redis_client:
+        return index
+    raw_doc_ids = redis_client.smembers(f"{redis_prefix}:pdf:hashes") or []
+    doc_ids = filter(None, (_decode_redis_value(val) for val in raw_doc_ids))
+    for doc_id in doc_ids:
+        meta_key = f"{redis_prefix}:pdf:{doc_id}:meta"
+        meta_raw = redis_client.hgetall(meta_key)
+        meta = {_decode_redis_value(k): _decode_redis_value(v) for k, v in meta_raw.items()}
+        source = meta.get("source")
+        if source:
+            index[doc_id] = source
+    return index
+
+
+def _load_qdrant_inventory() -> Tuple[List[dict], List[str]]:
+    errors: List[str] = []
+    minio_client, minio_error = _get_minio_client()
+    if minio_error:
+        errors.append(minio_error)
+    redis_client, redis_error = _get_redis_client()
+    if redis_error:
+        errors.append(redis_error)
+    qdrant_client = _get_qdrant_client()
+    redis_prefix = os.getenv("REDIS_PREFIX", "unstructured")
+    entries: List[dict] = []
+    minio_index = _build_minio_index(minio_client, errors)
+    redis_source_index = _build_redis_source_index(redis_client, redis_prefix)
+    if not qdrant_client:
+        return entries, errors
+    try:
+        collection_list = qdrant_client.get_collections().collections
+    except Exception as exc:  # pragma: no cover - runtime connectivity
+        errors.append(f"Failed to list Qdrant collections: {exc}")
+        return entries, errors
+    for collection in collection_list:
+        collection_name = collection.name
+        offset = None
+        grouped: Dict[Tuple[str, str], dict] = {}
+        while True:
+            try:
+                points, next_offset = qdrant_client.scroll(
+                    collection_name=collection_name,
+                    limit=256,
+                    offset=offset,
+                    with_payload=True,
+                    with_vectors=False,
+                )
+            except Exception as exc:  # pragma: no cover - runtime connectivity
+                errors.append(f"Failed to scroll {collection_name}: {exc}")
+                break
+            for point in points:
+                payload = point.payload or {}
+                doc_id = payload.get("document_id")
+                source = payload.get("source")
+                if not source:
+                    bucket = payload.get("bucket")
+                    key = payload.get("key")
+                    if bucket and key:
+                        source = f"{bucket}/{key}"
+                if not source and doc_id:
+                    source = redis_source_index.get(doc_id)
+                source_display = source or "unknown source"
+                group_key = (collection_name, doc_id or source_display)
+                grouped.setdefault(
+                    group_key,
+                    {
+                        "collection": collection_name,
+                        "doc_id": doc_id or "unknown",
+                        "source": source_display,
+                        "chunks": 0,
+                    },
+                )
+                grouped[group_key]["chunks"] += 1
+            if next_offset is None:
+                break
+            offset = next_offset
+        for entry in grouped.values():
+            entry["redis_status"] = _redis_has_doc(
+                redis_client,
+                redis_prefix,
+                None if entry["doc_id"] == "unknown" else entry["doc_id"],
+                None if entry["source"] == "unknown source" else entry["source"],
+            )
+            entry["minio_status"] = _minio_has_source(
+                minio_index,
+                "" if entry["source"] == "unknown source" else entry["source"],
+                minio_client,
+            )
+            entries.append(entry)
+    entries.sort(key=lambda item: (item["collection"], item["source"]))
+    return entries, errors
+
+
+def _render_qdrant_dashboard(entries: List[dict], errors: List[str]) -> str:
     body = []
-    if error:
+    for error in errors:
         body.append(f"<div class='notice'>{escape(error)}</div>")
-    if not buckets:
-        body.append("<div class='empty'>No PDFs found in Redis.</div>")
-    for bucket, entries in buckets.items():
-        body.append(f"<section class='bucket'><h2>{escape(bucket)}</h2>")
+    if not entries:
+        body.append("<div class='empty'>No Qdrant documents found.</div>")
+    else:
+        body.append("<section class='bucket'>")
         body.append("<table><thead><tr>"
-                    "<th>PDF</th><th>Partitions</th><th>Chunks</th>"
-                    "<th>Qdrant</th><th>Collection</th></tr></thead><tbody>")
-        for entry in sorted(entries, key=lambda item: item["key"]):
-            status = entry["qdrant_status"]
-            status_label = "unknown" if status == "unknown" else ("yes" if status == "yes" else "no")
+                    "<th>Collection</th><th>Source</th><th>Doc ID</th>"
+                    "<th>Chunks</th><th>MinIO</th><th>Redis</th></tr></thead><tbody>")
+        for entry in entries:
+            minio_label = entry["minio_status"]
+            redis_label = entry["redis_status"]
             body.append(
                 "<tr>"
-                f"<td><div class='file'>{escape(entry['key'])}</div>"
-                f"<div class='meta'>{escape(entry['doc_id'])}</div></td>"
-                f"<td>{entry['partitions']}</td>"
+                f"<td><div class='meta'>{escape(entry['collection'])}</div></td>"
+                f"<td><div class='file'>{escape(entry['source'])}</div></td>"
+                f"<td><div class='meta'>{escape(entry['doc_id'])}</div></td>"
                 f"<td>{entry['chunks']}</td>"
-                f"<td><span class='status {status_label}'>{status_label}</span></td>"
-                f"<td>{escape(entry['expected_collection'])}</td>"
+                f"<td><span class='status {minio_label}'>{minio_label}</span></td>"
+                f"<td><span class='status {redis_label}'>{redis_label}</span></td>"
                 "</tr>"
             )
         body.append("</tbody></table></section>")
-
     content = "\n".join(body)
+    return _render_page(
+        title="Qdrant Inventory",
+        subtitle="Files indexed in Qdrant collections with Redis and MinIO presence checks.",
+        content=content,
+        active_tab="qdrant",
+    )
+
+
+def _load_redis_inventory() -> Tuple[List[dict], List[str]]:
+    errors: List[str] = []
+    minio_client, minio_error = _get_minio_client()
+    if minio_error:
+        errors.append(minio_error)
+    redis_client, redis_error = _get_redis_client()
+    if redis_error:
+        errors.append(redis_error)
+    qdrant_client = _get_qdrant_client()
+    exists_cache: dict = {}
+    qdrant_error_cache: dict = {}
+    redis_prefix = os.getenv("REDIS_PREFIX", "unstructured")
+    entries: List[dict] = []
+    if not redis_client:
+        return entries, errors
+    minio_index = _build_minio_index(minio_client, errors)
+    raw_doc_ids = redis_client.smembers(f"{redis_prefix}:pdf:hashes") or []
+    doc_ids = sorted(filter(None, (_decode_redis_value(val) for val in raw_doc_ids)))
+    for doc_id in doc_ids:
+        meta_key = f"{redis_prefix}:pdf:{doc_id}:meta"
+        meta_raw = redis_client.hgetall(meta_key)
+        meta = {_decode_redis_value(k): _decode_redis_value(v) for k, v in meta_raw.items()}
+        source = meta.get("source") or ""
+        collections_key = meta.get("collections_key") or f"{redis_prefix}:pdf:{doc_id}:collections"
+        collections_raw = redis_client.smembers(collections_key) or []
+        collections = sorted(filter(None, (_decode_redis_value(val) for val in collections_raw)))
+        bucket, _ = _split_source(source)
+        collection_candidates = collections or ([bucket] if bucket else [])
+        qdrant_status = "unknown"
+        if collection_candidates:
+            statuses = [
+                _qdrant_uploaded(
+                    qdrant_client,
+                    collection,
+                    document_id=doc_id,
+                    exists_cache=exists_cache,
+                    errors=errors,
+                    error_cache=qdrant_error_cache,
+                )
+                for collection in collection_candidates
+            ]
+            if "yes" in statuses:
+                qdrant_status = "yes"
+            elif all(status == "no" for status in statuses):
+                qdrant_status = "no"
+        entries.append(
+            {
+                "doc_id": doc_id,
+                "source": source or "unknown source",
+                "collections": collections,
+                "minio_status": _minio_has_source(minio_index, source, minio_client),
+                "qdrant_status": qdrant_status,
+            }
+        )
+    return entries, errors
+
+
+def _render_redis_dashboard(entries: List[dict], errors: List[str]) -> str:
+    body = []
+    for error in errors:
+        body.append(f"<div class='notice'>{escape(error)}</div>")
+    if not entries:
+        body.append("<div class='empty'>No Redis documents found.</div>")
+    else:
+        body.append("<section class='bucket'>")
+        body.append("<table><thead><tr>"
+                    "<th>Source</th><th>Doc ID</th><th>Collections</th>"
+                    "<th>MinIO</th><th>Qdrant</th></tr></thead><tbody>")
+        for entry in entries:
+            minio_label = entry["minio_status"]
+            qdrant_label = entry["qdrant_status"]
+            collections_label = ", ".join(entry["collections"]) if entry["collections"] else "none"
+            body.append(
+                "<tr>"
+                f"<td><div class='file'>{escape(entry['source'])}</div></td>"
+                f"<td><div class='meta'>{escape(entry['doc_id'])}</div></td>"
+                f"<td><div class='meta'>{escape(collections_label)}</div></td>"
+                f"<td><span class='status {minio_label}'>{minio_label}</span></td>"
+                f"<td><span class='status {qdrant_label}'>{qdrant_label}</span></td>"
+                "</tr>"
+            )
+        body.append("</tbody></table></section>")
+    content = "\n".join(body)
+    return _render_page(
+        title="Redis Inventory",
+        subtitle="Files indexed in Redis with MinIO and Qdrant presence checks.",
+        content=content,
+        active_tab="redis",
+    )
+
+
+def _load_inventory() -> Tuple[Dict[str, List[dict]], List[str]]:
+    errors: List[str] = []
+    minio_client, minio_error = _get_minio_client()
+    if minio_error:
+        errors.append(minio_error)
+    redis_client, redis_error = _get_redis_client()
+    if redis_error:
+        errors.append(redis_error)
+    qdrant_client = _get_qdrant_client()
+    exists_cache: dict = {}
+    qdrant_error_cache: dict = {}
+    redis_prefix = os.getenv("REDIS_PREFIX", "unstructured")
+    minio_prefix = os.getenv("MINIO_PREFIX", "").strip()
+    minio_suffix = os.getenv("MINIO_SUFFIX", ".pdf").strip()
+
+    collections_map: Dict[str, List[dict]] = {}
+    if minio_client:
+        bucket_names, bucket_error = _resolve_minio_buckets(minio_client)
+        if bucket_error:
+            errors.append(bucket_error)
+        for bucket in bucket_names:
+            try:
+                object_names = _list_minio_objects(minio_client, bucket, minio_prefix, minio_suffix)
+            except S3Error as exc:
+                errors.append(f"Failed to list objects in {bucket}: {exc}")
+                continue
+            for object_name in sorted(object_names):
+                source = f"{bucket}/{object_name}"
+                doc_ids: List[str] = []
+                if redis_client:
+                    doc_ids = _source_doc_ids(redis_client, redis_prefix, source)
+                doc_id = doc_ids[0] if doc_ids else None
+                redis_status = "unknown" if not redis_client else ("yes" if doc_ids else "no")
+
+                partitions_count = None
+                chunks_count_value = None
+                if redis_client and doc_id:
+                    meta_key = f"{redis_prefix}:pdf:{doc_id}:meta"
+                    meta_raw = redis_client.hgetall(meta_key)
+                    meta = { _decode_redis_value(k): _decode_redis_value(v) for k, v in meta_raw.items() }
+                    partitions_key = meta.get("partitions_key") or f"{redis_prefix}:pdf:{doc_id}:partitions"
+                    chunks_key = meta.get("chunks_key") or f"{redis_prefix}:pdf:{doc_id}:chunks"
+                    partitions_count = _load_partition_count(redis_client, partitions_key)
+                    chunks_count = meta.get("chunks")
+                    chunks_count_value = int(chunks_count) if str(chunks_count).isdigit() else None
+                    if chunks_count_value is None:
+                        chunks_count_value = _load_chunk_count(redis_client, chunks_key)
+
+                qdrant_status = _qdrant_uploaded(
+                    qdrant_client,
+                    bucket,
+                    document_id=doc_id,
+                    bucket=bucket,
+                    key=object_name,
+                    exists_cache=exists_cache,
+                    errors=errors,
+                    error_cache=qdrant_error_cache,
+                )
+                doc_id_display = doc_id or "not indexed"
+                if doc_id and len(doc_ids) > 1:
+                    doc_id_display = f"{doc_id} (+{len(doc_ids) - 1})"
+                collections_map.setdefault(bucket, []).append(
+                    {
+                        "doc_id": doc_id_display,
+                        "key": object_name,
+                        "source": source,
+                        "partitions": partitions_count,
+                        "chunks": chunks_count_value,
+                        "collection": bucket,
+                        "redis_status": redis_status,
+                        "qdrant_status": qdrant_status,
+                    }
+                )
+    return collections_map, errors
+
+
+def _render_page(title: str, subtitle: str, content: str, active_tab: str) -> str:
+    tab_inventory = "active" if active_tab == "inventory" else ""
+    tab_redis = "active" if active_tab == "redis" else ""
+    tab_qdrant = "active" if active_tab == "qdrant" else ""
     return f"""<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PDF Inventory</title>
+  <title>{escape(title)}</title>
   <style>
     :root {{
       --ink: #1f2328;
@@ -203,6 +594,32 @@ def _render_dashboard(buckets: Dict[str, List[dict]], error: str | None) -> str:
       margin: 0;
       color: var(--muted);
       font-size: 15px;
+    }}
+    .tabs {{
+      margin-top: 16px;
+      display: inline-flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }}
+    .tab {{
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.55);
+      transition: all 0.2s ease;
+    }}
+    .tab:hover {{
+      color: var(--ink);
+      border-color: var(--border);
+    }}
+    .tab.active {{
+      color: var(--accent);
+      border-color: rgba(26, 108, 92, 0.35);
+      background: rgba(26, 108, 92, 0.12);
     }}
     .notice {{
       max-width: 1100px;
@@ -247,6 +664,7 @@ def _render_dashboard(buckets: Dict[str, List[dict]], error: str | None) -> str:
       text-align: left;
       padding: 10px 8px;
       border-bottom: 1px solid var(--border);
+      vertical-align: top;
     }}
     th {{
       font-size: 12px;
@@ -291,12 +709,56 @@ def _render_dashboard(buckets: Dict[str, List[dict]], error: str | None) -> str:
 </head>
 <body>
   <header>
-    <h1>PDF Inventory</h1>
-    <p>Grouped by bucket with partitions, chunks, and Qdrant upload status.</p>
+    <h1>{escape(title)}</h1>
+    <p>{escape(subtitle)}</p>
+    <div class="tabs">
+      <a class="tab {tab_inventory}" href="/ui">MinIO Inventory</a>
+      <a class="tab {tab_redis}" href="/ui/redis">Redis Inventory</a>
+      <a class="tab {tab_qdrant}" href="/ui/qdrant">Qdrant Inventory</a>
+    </div>
   </header>
   {content}
 </body>
 </html>"""
+
+
+def _render_dashboard(buckets: Dict[str, List[dict]], errors: List[str]) -> str:
+    body = []
+    for error in errors:
+        body.append(f"<div class='notice'>{escape(error)}</div>")
+    if not buckets:
+        body.append("<div class='empty'>No PDFs found in MinIO.</div>")
+    for collection_name, entries in buckets.items():
+        body.append(f"<section class='bucket'><h2>{escape(collection_name)}</h2>")
+        body.append("<table><thead><tr>"
+                    "<th>PDF</th><th>Redis</th><th>Partitions</th><th>Chunks</th>"
+                    "<th>Qdrant</th></tr></thead><tbody>")
+        for entry in sorted(entries, key=lambda item: item["key"]):
+            redis_status = entry["redis_status"]
+            status = entry["qdrant_status"]
+            redis_label = "unknown" if redis_status == "unknown" else ("yes" if redis_status == "yes" else "no")
+            status_label = "unknown" if status == "unknown" else ("yes" if status == "yes" else "no")
+            partitions_value = entry["partitions"]
+            chunks_value = entry["chunks"]
+            body.append(
+                "<tr>"
+                f"<td><div class='file'>{escape(entry['key'])}</div>"
+                f"<div class='meta'>{escape(entry['doc_id'])}</div></td>"
+                f"<td><span class='status {redis_label}'>{redis_label}</span></td>"
+                f"<td>{'-' if partitions_value is None else partitions_value}</td>"
+                f"<td>{'-' if chunks_value is None else chunks_value}</td>"
+                f"<td><span class='status {status_label}'>{status_label}</span></td>"
+                "</tr>"
+            )
+        body.append("</tbody></table></section>")
+
+    content = "\n".join(body)
+    return _render_page(
+        title="PDF Inventory",
+        subtitle="Grouped by collection with MinIO files plus Redis and Qdrant status.",
+        content=content,
+        active_tab="inventory",
+    )
 
 
 @app.get("/r/doc")
@@ -357,8 +819,22 @@ def resolve_doc_json(
 
 @app.get("/ui")
 def inventory_ui():
-    buckets, error = _load_inventory()
-    html = _render_dashboard(buckets, error)
+    buckets, errors = _load_inventory()
+    html = _render_dashboard(buckets, errors)
+    return HTMLResponse(content=html)
+
+
+@app.get("/ui/redis")
+def redis_inventory_ui():
+    entries, errors = _load_redis_inventory()
+    html = _render_redis_dashboard(entries, errors)
+    return HTMLResponse(content=html)
+
+
+@app.get("/ui/qdrant")
+def qdrant_inventory_ui():
+    entries, errors = _load_qdrant_inventory()
+    html = _render_qdrant_dashboard(entries, errors)
     return HTMLResponse(content=html)
 
 
