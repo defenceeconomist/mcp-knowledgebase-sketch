@@ -138,6 +138,35 @@ def _source_ref_from_payload(payload: Dict[str, Any]) -> Optional[str]:
         version_id=payload.get("version_id"),
     )
 
+
+def _coerce_qdrant_offset(offset: str | None):
+    if offset is None:
+        return None
+    if offset.isdigit():
+        return int(offset)
+    return offset
+
+
+def _file_identity(payload: Dict[str, Any]) -> Optional[tuple[str, Dict[str, Any]]]:
+    document_id = payload.get("document_id")
+    source = payload.get("source")
+    bucket = payload.get("bucket")
+    key = payload.get("key")
+    if document_id:
+        identity = f"doc:{document_id}"
+    elif source:
+        identity = f"source:{source}"
+    elif bucket and key:
+        identity = f"object:{bucket}/{key}"
+    else:
+        return None
+    return identity, {
+        "document_id": document_id,
+        "source": source,
+        "bucket": bucket,
+        "key": key,
+    }
+
 # --------------------------------------------------------------------
 # Auth (GitHub OAuth for ChatGPT UI)
 # --------------------------------------------------------------------
@@ -187,6 +216,67 @@ def set_default_collection(name: str) -> Dict[str, str]:
         raise RuntimeError("REDIS_URL is required to store the default collection")
     redis_client.set(_default_collection_key(), name)
     return {"default_collection": name}
+
+
+@mcp.tool
+def list_collection_files(
+    collection: str | None = None,
+    limit: int = 200,
+    batch_size: int = 256,
+    offset: str | None = None,
+) -> Dict[str, Any]:
+    """
+    List unique files in a Qdrant collection by scanning chunk payloads.
+    """
+    client = _get_qdrant_client()
+    collection_name = collection or _get_default_collection() or QDRANT_COLLECTION
+    limit = max(1, limit)
+    batch_size = max(1, batch_size)
+
+    files: Dict[str, Dict[str, Any]] = {}
+    scanned_points = 0
+    next_offset = _coerce_qdrant_offset(offset)
+    last_point_id = None
+    truncated = False
+
+    while True:
+        points, next_offset = client.scroll(
+            collection_name=collection_name,
+            limit=batch_size,
+            offset=next_offset,
+            with_payload=True,
+            with_vectors=False,
+        )
+        if not points:
+            break
+        scanned_points += len(points)
+        for point in points:
+            payload = point.payload or {}
+            entry = _file_identity(payload)
+            if not entry:
+                continue
+            last_point_id = point.id
+            identity, info = entry
+            if identity not in files:
+                info["chunks"] = 0
+                files[identity] = info
+            files[identity]["chunks"] += 1
+            if len(files) >= limit:
+                truncated = True
+                if last_point_id is not None:
+                    next_offset = last_point_id
+                break
+        if truncated or next_offset is None:
+            break
+
+    return {
+        "collection": collection_name,
+        "count": len(files),
+        "scanned_points": scanned_points,
+        "next_offset": str(next_offset) if next_offset is not None else None,
+        "truncated": truncated,
+        "files": list(files.values()),
+    }
 
 
 @mcp.tool
