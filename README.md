@@ -204,6 +204,11 @@ Validate collection coverage (reports missing tags/keys):
 REDIS_URL=redis://localhost:6379/0 python validate_collections.py
 ```
 
+Backfill missing Qdrant payload metadata:
+```bash
+QDRANT_URL=http://localhost:6333 QDRANT_COLLECTION=pdf_chunks python backfill_qdrant_metadata.py
+```
+
 Upload a single pair:
 ```bash
 REDIS_URL=redis://localhost:6379/0 python upload_data_to_redis.py \
