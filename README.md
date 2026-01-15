@@ -194,6 +194,16 @@ Backfill the source index for existing documents in Redis:
 REDIS_URL=redis://localhost:6379/0 python backfill_source_index.py
 ```
 
+Backfill collection tags + `collections_key` for existing documents:
+```bash
+REDIS_URL=redis://localhost:6379/0 python backfill_collections.py
+```
+
+Validate collection coverage (reports missing tags/keys):
+```bash
+REDIS_URL=redis://localhost:6379/0 python validate_collections.py
+```
+
 Upload a single pair:
 ```bash
 REDIS_URL=redis://localhost:6379/0 python upload_data_to_redis.py \
