@@ -38,6 +38,7 @@ logger = logging.getLogger(__name__)
 
 
 def _get_minio_client(endpoint: str, access_key: str, secret_key: str, secure: bool) -> Minio:
+    """Build a MinIO client from explicit connection settings."""
     return Minio(
         endpoint,
         access_key=access_key,
@@ -47,16 +48,19 @@ def _get_minio_client(endpoint: str, access_key: str, secret_key: str, secure: b
 
 
 def _decode_redis_value(value):
+    """Convert Redis bytes payloads into UTF-8 strings when needed."""
     if value is None:
         return None
     return value.decode("utf-8") if isinstance(value, (bytes, bytearray)) else value
 
 
 def _source_key(prefix: str, source: str) -> str:
+    """Build the Redis key for a source-to-document mapping."""
     return f"{prefix}:pdf:source:{source}"
 
 
 def _load_env_list(key: str) -> List[str]:
+    """Parse a comma-delimited environment variable into a list of values."""
     raw = os.getenv(key, "").strip()
     if not raw:
         return []
@@ -64,10 +68,12 @@ def _load_env_list(key: str) -> List[str]:
 
 
 def _normalize_events(events: Iterable[str]) -> List[str]:
+    """Normalize MinIO event names by stripping whitespace and dropping blanks."""
     return [event.strip() for event in events if event and event.strip()]
 
 
 def _get_redis_client(redis_url: str):
+    """Return a Redis client when configured, otherwise None."""
     if not redis_url:
         return None
     try:
@@ -78,6 +84,7 @@ def _get_redis_client(redis_url: str):
 
 
 def _source_doc_ids(redis_client, redis_prefix: str, source: str) -> List[str]:
+    """Look up document ids in Redis for a given source file."""
     source_key = _source_key(redis_prefix, source)
     if hasattr(redis_client, "smembers"):
         raw_members = redis_client.smembers(source_key)
@@ -93,6 +100,7 @@ def _source_doc_ids(redis_client, redis_prefix: str, source: str) -> List[str]:
 
 
 def _remove_source_mapping(redis_client, redis_prefix: str, source: str, doc_id: str) -> None:
+    """Remove a doc id from the Redis source mapping and clean up empty sets."""
     source_key = _source_key(redis_prefix, source)
     if hasattr(redis_client, "srem"):
         redis_client.srem(source_key, doc_id)
@@ -107,6 +115,7 @@ def process_object_from_env(
     object_name: str,
     version_id: str | None = None,
 ) -> None:
+    """Ingest a single MinIO object using configuration from environment variables."""
     load_dotenv(Path(".env"))
 
     endpoint = os.getenv("MINIO_ENDPOINT", "localhost:9000")
@@ -165,6 +174,7 @@ def _delete_from_qdrant(
     object_name: str,
     version_id: str | None = None,
 ) -> int:
+    """Delete Qdrant points for a MinIO object and return delete count."""
     if not client.collection_exists(bucket):
         logger.info("Skipping delete for %s/%s (collection missing)", bucket, object_name)
         return 0
@@ -183,6 +193,7 @@ def delete_object_from_env(
     object_name: str,
     version_id: str | None = None,
 ) -> None:
+    """Delete Qdrant/Redis references for a MinIO object using env settings."""
     load_dotenv(Path(".env"))
 
     redis_url = os.getenv("REDIS_URL", "")
@@ -201,6 +212,7 @@ def delete_object_from_env(
 
 
 class MinioIngestor:
+    """Ingest PDFs from MinIO into Qdrant and optionally Redis."""
     def __init__(
         self,
         minio_client: Minio,
@@ -218,6 +230,7 @@ class MinioIngestor:
         languages: List[str] | None,
         skip_existing: bool,
     ) -> None:
+        """Initialize a MinIO ingestor with Qdrant and Redis dependencies."""
         self.minio_client = minio_client
         self.qdrant_client = qdrant_client
         self.dense_model = dense_model
@@ -237,6 +250,7 @@ class MinioIngestor:
         self._unstructured_client = None
 
     def _ensure_collection(self, collection: str) -> None:
+        """Create the target Qdrant collection once per ingestor lifecycle."""
         if collection in self._collections_ready:
             return
         dense_dim = len(next(iter(self.dense_model.embed(["dimension probe"]))))
@@ -244,6 +258,7 @@ class MinioIngestor:
         self._collections_ready.add(collection)
 
     def _load_chunks_from_redis(self, doc_id: str) -> List[dict] | None:
+        """Load previously processed chunks from Redis for a document id."""
         if not self.redis_client:
             return None
         chunks_key = _redis_key(self.redis_prefix, doc_id, "chunks")
@@ -255,12 +270,14 @@ class MinioIngestor:
         return payload if isinstance(payload, list) else None
 
     def _collection_mapping_exists(self, doc_id: str, collection: str) -> bool:
+        """Check whether a document id is already mapped to a collection in Redis."""
         if not self.redis_client:
             return False
         collections_key = f"{self.redis_prefix}:pdf:{doc_id}:collections"
         return bool(self.redis_client.sismember(collections_key, collection))
 
     def _get_unstructured_client(self):
+        """Create or reuse the Unstructured client for PDF partitioning."""
         if not self.unstructured_api_key:
             raise RuntimeError("UNSTRUCTURED_API_KEY is required to partition files")
         if self._unstructured_client is None:
@@ -275,6 +292,7 @@ class MinioIngestor:
         return self._unstructured_client
 
     def _partition_bytes(self, object_name: str, file_bytes: bytes) -> List[dict]:
+        """Partition raw PDF bytes using the Unstructured API."""
         client = self._get_unstructured_client()
         elements = partition_pdf(
             client,
@@ -289,6 +307,7 @@ class MinioIngestor:
         return [element.to_dict() if hasattr(element, "to_dict") else element for element in elements]
 
     def process_object(self, bucket: str, object_name: str, version_id: str | None = None) -> None:
+        """Ingest a MinIO PDF object into Redis and Qdrant."""
         object_name = unquote_plus(object_name)
         if not object_name:
             return
@@ -404,6 +423,7 @@ class MinioIngestor:
         logger.info("Upserted %d chunks into '%s'", len(chunk_items), bucket)
 
     def delete_object(self, bucket: str, object_name: str, version_id: str | None = None) -> None:
+        """Remove Redis/Qdrant data for a MinIO object."""
         object_name = unquote_plus(object_name)
         if not object_name:
             return
@@ -425,6 +445,7 @@ def _listen_bucket(
     events: List[str],
     enqueue_celery: bool,
 ) -> None:
+    """Listen for MinIO events and dispatch ingest/delete operations."""
     logger.info("Listening for %s in bucket %s", events, bucket)
     try:
         for event in minio_client.listen_bucket_notification(
@@ -486,6 +507,7 @@ def _listen_bucket(
 
 
 def main() -> None:
+    """Run the MinIO ingest listener with environment-configured defaults."""
     load_dotenv(Path(".env"))
 
     parser = argparse.ArgumentParser(
@@ -584,6 +606,7 @@ def main() -> None:
     lock = threading.Lock()
 
     def start_listener(bucket_name: str) -> None:
+        """Start a MinIO notification listener thread for a bucket."""
         client = _get_minio_client(endpoint, access_key, secret_key, secure)
         thread = threading.Thread(
             target=_listen_bucket,
@@ -593,6 +616,7 @@ def main() -> None:
         thread.start()
 
     def ensure_listeners(bucket_names: Iterable[str]) -> None:
+        """Ensure listeners are running for each bucket."""
         with lock:
             for bucket_name in bucket_names:
                 if bucket_name in active_buckets:

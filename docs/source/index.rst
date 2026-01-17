@@ -1,5 +1,5 @@
 mcp-research
-===========
+============
 
 FastMCP server plus ingestion and hybrid search helpers.
 

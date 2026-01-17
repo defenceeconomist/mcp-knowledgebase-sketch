@@ -4,6 +4,7 @@ from celery import Celery
 
 
 def _env_int(key: str, default: int) -> int:
+    """Parse an integer from the environment with a default fallback."""
     raw = os.getenv(key)
     if not raw:
         return default
@@ -14,6 +15,7 @@ def _env_int(key: str, default: int) -> int:
 
 
 def make_celery() -> Celery:
+    """Configure and return the Celery application instance."""
     broker = os.getenv("CELERY_BROKER_URL") or os.getenv("REDIS_URL", "redis://redis:6379/0")
     backend = os.getenv("CELERY_RESULT_BACKEND") or broker
     app = Celery(

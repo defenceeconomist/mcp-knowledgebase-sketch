@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 
 def load_dotenv(path: Path) -> None:
+    """Load a .env file into the process environment if present."""
     if not path.is_file():
         return
     for raw_line in path.read_text(encoding="utf-8").splitlines():
@@ -39,10 +40,12 @@ def load_dotenv(path: Path) -> None:
 
 
 def _to_list(x) -> List[float]:
+    """Convert embeddings to plain Python lists."""
     return x.tolist() if hasattr(x, "tolist") else list(x)
 
 
 def ensure_collection(client: QdrantClient, name: str, dense_dim: int) -> None:
+    """Ensure a Qdrant collection exists with dense+sparse vector config."""
     if client.collection_exists(name):
         return
     client.create_collection(
@@ -62,11 +65,13 @@ def ensure_collection(client: QdrantClient, name: str, dense_dim: int) -> None:
 
 
 def batched(items: List[dict], batch_size: int) -> Iterable[List[dict]]:
+    """Yield items in fixed-size batches."""
     for idx in range(0, len(items), batch_size):
         yield items[idx : idx + batch_size]
 
 
 def _get_redis_client(redis_url: str):
+    """Return a Redis client for upsert bookkeeping."""
     if not redis_url:
         return None
     if redis is None:
@@ -75,12 +80,14 @@ def _get_redis_client(redis_url: str):
 
 
 def _decode_redis_value(value):
+    """Decode Redis bytes payloads into strings when needed."""
     if value is None:
         return None
     return value.decode("utf-8") if isinstance(value, (bytes, bytearray)) else value
 
 
 def load_chunk_items(chunks_dir: Path) -> List[dict]:
+    """Load chunk payloads from JSON files on disk."""
     items: List[dict] = []
     for chunk_file in sorted(chunks_dir.glob("*.json")):
         payload = json.loads(chunk_file.read_text(encoding="utf-8"))
@@ -102,6 +109,7 @@ def load_chunk_items_from_redis(
     prefix: str,
     doc_ids: List[str] | None,
 ) -> List[dict]:
+    """Load chunk payloads from Redis for the specified document ids."""
     items: List[dict] = []
     if doc_ids:
         ids = doc_ids
@@ -140,6 +148,7 @@ def upsert_items(
     sparse_model: SparseTextEmbedding,
     batch_size: int,
 ) -> int:
+    """Upsert chunk items into Qdrant and return the number written."""
     if not items:
         return 0
 
@@ -189,6 +198,7 @@ def upsert_items(
 
 
 def main() -> None:
+    """CLI entry point to upsert chunks into Qdrant."""
     load_dotenv(Path(".env"))
 
     parser = argparse.ArgumentParser(

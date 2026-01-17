@@ -25,12 +25,14 @@ app = FastAPI(title="Citation Link Resolver", version="0.1.0")
 
 
 def _decode_redis_value(value):
+    """Convert Redis bytes payloads into UTF-8 strings when needed."""
     if value is None:
         return None
     return value.decode("utf-8") if isinstance(value, (bytes, bytearray)) else value
 
 
 def _load_env_bool(key: str, default: bool = False) -> bool:
+    """Parse a boolean environment variable with a default fallback."""
     raw = os.getenv(key)
     if raw is None:
         return default
@@ -38,6 +40,7 @@ def _load_env_bool(key: str, default: bool = False) -> bool:
 
 
 def _load_env_list(key: str) -> List[str]:
+    """Parse a comma-separated environment variable into a list."""
     raw = os.getenv(key, "").strip()
     if not raw:
         return []
@@ -45,6 +48,7 @@ def _load_env_list(key: str) -> List[str]:
 
 
 def _get_redis_client() -> Tuple[object | None, str | None]:
+    """Return a Redis client and optional error message."""
     redis_url = os.getenv("REDIS_URL", "")
     if not redis_url or redis is None:
         message = None if redis_url else "REDIS_URL is required for Redis status"
@@ -58,6 +62,7 @@ def _get_redis_client() -> Tuple[object | None, str | None]:
 
 
 def _get_minio_client() -> Tuple[Any | None, str | None]:
+    """Return a MinIO client and optional error message."""
     if Minio is None:
         return None, "minio package is required to list MinIO objects"
     endpoint = os.getenv("MINIO_ENDPOINT", "localhost:9000")
@@ -73,6 +78,7 @@ def _get_minio_client() -> Tuple[Any | None, str | None]:
 
 
 def _get_qdrant_client() -> QdrantClient | None:
+    """Create a Qdrant client using env defaults."""
     qdrant_url = os.getenv("QDRANT_URL")
     if not qdrant_url:
         qdrant_host = os.getenv("QDRANT_HOST", "localhost")
@@ -82,6 +88,7 @@ def _get_qdrant_client() -> QdrantClient | None:
 
 
 def _load_partition_count(redis_client, partitions_key: str) -> int:
+    """Return the number of partitions stored in Redis for a document."""
     raw = _decode_redis_value(redis_client.get(partitions_key))
     if not raw:
         return 0
@@ -93,6 +100,7 @@ def _load_partition_count(redis_client, partitions_key: str) -> int:
 
 
 def _load_chunk_count(redis_client, chunks_key: str) -> int:
+    """Return the number of chunks stored in Redis for a document."""
     raw = _decode_redis_value(redis_client.get(chunks_key))
     if not raw:
         return 0
@@ -113,6 +121,7 @@ def _qdrant_uploaded(
     errors: List[str] | None = None,
     error_cache: dict | None = None,
 ) -> str:
+    """Check whether a document appears in a Qdrant collection."""
     if not client:
         return "unknown"
     try:
@@ -149,6 +158,7 @@ def _qdrant_uploaded(
 
 
 def _source_doc_ids(redis_client, redis_prefix: str, source: str) -> List[str]:
+    """Look up document ids for a source path in Redis."""
     source_key = f"{redis_prefix}:pdf:source:{source}"
     if hasattr(redis_client, "smembers"):
         raw_members = redis_client.smembers(source_key)
@@ -164,6 +174,7 @@ def _source_doc_ids(redis_client, redis_prefix: str, source: str) -> List[str]:
 
 
 def _resolve_minio_buckets(minio_client: Any | None) -> Tuple[List[str], str | None]:
+    """Resolve the list of MinIO buckets to scan from env settings."""
     if not minio_client:
         return [], "MinIO client is not configured"
     buckets = _load_env_list("MINIO_BUCKETS")
@@ -183,6 +194,7 @@ def _resolve_minio_buckets(minio_client: Any | None) -> Tuple[List[str], str | N
 
 
 def _list_minio_objects(minio_client: Any, bucket: str, prefix: str, suffix: str) -> List[str]:
+    """List object names in a bucket filtered by prefix/suffix."""
     object_names = []
     for entry in minio_client.list_objects(bucket, prefix=prefix, recursive=True):
         if getattr(entry, "is_dir", False):
@@ -195,6 +207,7 @@ def _list_minio_objects(minio_client: Any, bucket: str, prefix: str, suffix: str
 
 
 def _build_minio_index(minio_client: Any | None, errors: List[str]) -> Dict[str, set]:
+    """Build an in-memory index of MinIO objects by bucket."""
     if not minio_client:
         return {}
     minio_prefix = os.getenv("MINIO_PREFIX", "").strip()
@@ -215,6 +228,7 @@ def _build_minio_index(minio_client: Any | None, errors: List[str]) -> Dict[str,
 
 
 def _split_source(source: str) -> Tuple[str | None, str | None]:
+    """Split a source string into bucket and key components."""
     if not source or "/" not in source:
         return None, None
     bucket, key = source.split("/", 1)
@@ -224,6 +238,7 @@ def _split_source(source: str) -> Tuple[str | None, str | None]:
 
 
 def _minio_has_source(minio_index: Dict[str, set], source: str, minio_client: Any | None) -> str:
+    """Check whether a MinIO index contains a source object."""
     if not minio_client:
         return "unknown"
     bucket, key = _split_source(source)
@@ -235,6 +250,7 @@ def _minio_has_source(minio_index: Dict[str, set], source: str, minio_client: An
 
 
 def _find_missing_minio_objects() -> Tuple[List[Tuple[str, str]], List[str]]:
+    """Find MinIO objects that are missing Redis ingestion records."""
     errors: List[str] = []
     minio_client, minio_error = _get_minio_client()
     if minio_error:
@@ -266,6 +282,7 @@ def _find_missing_minio_objects() -> Tuple[List[Tuple[str, str]], List[str]]:
 
 
 def _enqueue_missing_ingests(missing: List[Tuple[str, str]]) -> int:
+    """Enqueue Celery tasks to ingest missing MinIO objects."""
     if not missing:
         return 0
     from mcp_research.celery_app import celery_app
@@ -279,6 +296,7 @@ def _enqueue_missing_ingests(missing: List[Tuple[str, str]]) -> int:
 
 
 def _redis_has_doc(redis_client, redis_prefix: str, doc_id: str | None, source: str | None) -> str:
+    """Check whether Redis contains metadata for a document or source."""
     if not redis_client:
         return "unknown"
     if doc_id:
@@ -297,6 +315,7 @@ def _redis_has_doc(redis_client, redis_prefix: str, doc_id: str | None, source: 
 
 
 def _build_redis_source_index(redis_client, redis_prefix: str) -> Dict[str, str]:
+    """Build a document_id -> source index from Redis metadata."""
     index: Dict[str, str] = {}
     if not redis_client:
         return index
@@ -313,6 +332,7 @@ def _build_redis_source_index(redis_client, redis_prefix: str) -> Dict[str, str]
 
 
 def _load_qdrant_inventory() -> Tuple[List[dict], List[str]]:
+    """Load an inventory of Qdrant points with Redis/MinIO status."""
     errors: List[str] = []
     minio_client, minio_error = _get_minio_client()
     if minio_error:
@@ -392,6 +412,7 @@ def _load_qdrant_inventory() -> Tuple[List[dict], List[str]]:
 
 
 def _render_qdrant_dashboard(entries: List[dict], errors: List[str]) -> str:
+    """Render the HTML dashboard for Qdrant inventory status."""
     body = []
     for error in errors:
         body.append(f"<div class='notice'>{escape(error)}</div>")
@@ -426,6 +447,7 @@ def _render_qdrant_dashboard(entries: List[dict], errors: List[str]) -> str:
 
 
 def _load_redis_inventory() -> Tuple[List[dict], List[str]]:
+    """Load Redis inventory with MinIO and Qdrant status checks."""
     errors: List[str] = []
     minio_client, minio_error = _get_minio_client()
     if minio_error:
@@ -483,6 +505,7 @@ def _load_redis_inventory() -> Tuple[List[dict], List[str]]:
 
 
 def _render_redis_dashboard(entries: List[dict], errors: List[str]) -> str:
+    """Render the HTML dashboard for Redis inventory."""
     body = []
     for error in errors:
         body.append(f"<div class='notice'>{escape(error)}</div>")
@@ -517,6 +540,7 @@ def _render_redis_dashboard(entries: List[dict], errors: List[str]) -> str:
 
 
 def _load_inventory() -> Tuple[Dict[str, List[dict]], List[str]]:
+    """Load combined MinIO/Redis/Qdrant inventory data."""
     errors: List[str] = []
     minio_client, minio_error = _get_minio_client()
     if minio_error:
@@ -593,6 +617,7 @@ def _load_inventory() -> Tuple[Dict[str, List[dict]], List[str]]:
 
 
 def _render_page(title: str, subtitle: str, content: str, active_tab: str, actions_html: str = "") -> str:
+    """Render the full HTML page with tabs and action controls."""
     tab_inventory = "active" if active_tab == "inventory" else ""
     tab_redis = "active" if active_tab == "redis" else ""
     tab_qdrant = "active" if active_tab == "qdrant" else ""
@@ -801,6 +826,7 @@ def _render_page(title: str, subtitle: str, content: str, active_tab: str, actio
 
 
 def _render_dashboard(buckets: Dict[str, List[dict]], errors: List[str], infos: List[str] | None = None) -> str:
+    """Render the MinIO inventory dashboard HTML."""
     body = []
     for info in infos or []:
         body.append(f"<div class='info'>{escape(info)}</div>")
@@ -905,6 +931,7 @@ def resolve_doc_json(
 
 @app.get("/ui")
 def inventory_ui(notice: Optional[str] = Query(default=None)):
+    """Render the inventory dashboard UI."""
     buckets, errors = _load_inventory()
     infos = [notice] if notice else None
     html = _render_dashboard(buckets, errors, infos=infos)
@@ -913,6 +940,7 @@ def inventory_ui(notice: Optional[str] = Query(default=None)):
 
 @app.post("/ui/ingest-missing")
 def ingest_missing_ui():
+    """Enqueue missing ingests and return the refreshed dashboard."""
     missing, enqueue_errors = _find_missing_minio_objects()
     count = _enqueue_missing_ingests(missing)
     buckets, errors = _load_inventory()
@@ -924,6 +952,7 @@ def ingest_missing_ui():
 
 @app.get("/ui/redis")
 def redis_inventory_ui():
+    """Render the Redis inventory UI."""
     entries, errors = _load_redis_inventory()
     html = _render_redis_dashboard(entries, errors)
     return HTMLResponse(content=html)
@@ -931,12 +960,14 @@ def redis_inventory_ui():
 
 @app.get("/ui/qdrant")
 def qdrant_inventory_ui():
+    """Render the Qdrant inventory UI."""
     entries, errors = _load_qdrant_inventory()
     html = _render_qdrant_dashboard(entries, errors)
     return HTMLResponse(content=html)
 
 
 def main() -> None:
+    """CLI entry point for the resolver API server."""
     host = os.getenv("RESOLVER_HOST", "0.0.0.0")
     port = int(os.getenv("RESOLVER_PORT", "8080"))
     import uvicorn

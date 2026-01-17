@@ -6,11 +6,13 @@ from mcp_research.resolver_app import _enqueue_missing_ingests, _find_missing_mi
 
 
 def _print_errors(errors: List[str]) -> None:
+    """Print error messages to stderr."""
     for error in errors:
         print(f"error: {error}", file=sys.stderr)
 
 
 def main() -> None:
+    """CLI entry point for finding and enqueuing missing MinIO ingests."""
     parser = argparse.ArgumentParser(
         description="Enqueue Celery ingest tasks for MinIO files missing from Redis.",
     )

@@ -25,6 +25,7 @@ def _upload_pair(
     doc_id: str | None,
     source: str | None,
 ) -> None:
+    """Upload one partition+chunk JSON pair into Redis."""
     upload_json_files_to_redis(
         redis_client=redis_client,
         partitions_path=partitions_path,
@@ -42,6 +43,7 @@ def _upload_directory(
     redis_prefix: str,
     strict: bool,
 ) -> int:
+    """Upload all matching partition/chunk JSON pairs from directories."""
     total = 0
     for chunk_path in sorted(chunks_dir.glob("*.json")):
         partitions_path = partitions_dir / f"{chunk_path.stem}.json"
@@ -64,6 +66,7 @@ def _upload_directory(
 
 
 def main() -> None:
+    """CLI entry point for uploading JSON payloads into Redis."""
     load_dotenv(Path(".env"))
 
     parser = argparse.ArgumentParser(

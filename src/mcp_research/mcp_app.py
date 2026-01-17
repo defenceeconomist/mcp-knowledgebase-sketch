@@ -27,6 +27,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def load_dotenv(path: str = ".env") -> None:
+    """Load a .env file into the process environment if present."""
     if not os.path.isfile(path):
         return
     with open(path, "r", encoding="utf-8") as handle:
@@ -60,6 +61,7 @@ _redis_client = None
 
 
 def _get_qdrant_client() -> QdrantClient:
+    """Return a cached Qdrant client."""
     global _qdrant_client
     if _qdrant_client is None:
         _qdrant_client = QdrantClient(url=QDRANT_URL)
@@ -67,6 +69,7 @@ def _get_qdrant_client() -> QdrantClient:
 
 
 def _get_models() -> tuple[TextEmbedding, SparseTextEmbedding]:
+    """Return cached dense and sparse embedding models."""
     global _dense_model, _sparse_model
     if _dense_model is None:
         _dense_model = TextEmbedding(model_name=DENSE_MODEL)
@@ -76,6 +79,7 @@ def _get_models() -> tuple[TextEmbedding, SparseTextEmbedding]:
 
 
 def _get_redis_client():
+    """Return a cached Redis client when configured."""
     global _redis_client
     if not REDIS_URL:
         return None
@@ -88,24 +92,29 @@ def _get_redis_client():
 
 
 def _default_collection_key() -> str:
+    """Return the Redis key used for storing the default collection name."""
     return f"{REDIS_PREFIX}:qdrant:default_collection"
 
 
 def _redis_key(prefix: str, doc_id: str, suffix: str) -> str:
+    """Build a Redis key for document metadata."""
     return f"{prefix}:pdf:{doc_id}:{suffix}"
 
 
 def _source_key(prefix: str, source: str) -> str:
+    """Build a Redis key for a source-to-document mapping."""
     return f"{prefix}:pdf:source:{source}"
 
 
 def _decode_redis_value(value):
+    """Convert Redis bytes payloads into UTF-8 strings when needed."""
     if value is None:
         return None
     return value.decode("utf-8") if isinstance(value, (bytes, bytearray)) else value
 
 
 def _get_default_collection() -> str | None:
+    """Fetch the default collection name from Redis, if set."""
     client = _get_redis_client()
     if not client:
         return None
@@ -113,12 +122,14 @@ def _get_default_collection() -> str | None:
 
 
 def _pages_to_range(pages: List[int]) -> tuple[Optional[int], Optional[int]]:
+    """Convert a list of page numbers to a min/max range."""
     if not pages:
         return None, None
     return min(pages), max(pages)
 
 
 def _source_ref_from_payload(payload: Dict[str, Any]) -> Optional[str]:
+    """Construct a source_ref from payload fields or existing source_ref."""
     source_ref = payload.get("source_ref")
     if source_ref:
         return source_ref
@@ -140,6 +151,7 @@ def _source_ref_from_payload(payload: Dict[str, Any]) -> Optional[str]:
 
 
 def _coerce_qdrant_offset(offset: str | None):
+    """Coerce a Qdrant scroll offset to int when possible."""
     if offset is None:
         return None
     if offset.isdigit():
@@ -148,6 +160,7 @@ def _coerce_qdrant_offset(offset: str | None):
 
 
 def _file_identity(payload: Dict[str, Any]) -> Optional[tuple[str, Dict[str, Any]]]:
+    """Derive a stable identity key and metadata from a Qdrant payload."""
     document_id = payload.get("document_id")
     source = payload.get("source")
     bucket = payload.get("bucket")
@@ -170,11 +183,22 @@ def _file_identity(payload: Dict[str, Any]) -> Optional[tuple[str, Dict[str, Any
 # --------------------------------------------------------------------
 # Auth (GitHub OAuth for ChatGPT UI)
 # --------------------------------------------------------------------
-auth = GitHubProvider(
-    client_id=os.environ["FASTMCP_SERVER_AUTH_GITHUB_CLIENT_ID"],
-    client_secret=os.environ["FASTMCP_SERVER_AUTH_GITHUB_CLIENT_SECRET"],
-    base_url=os.environ["FASTMCP_SERVER_AUTH_GITHUB_BASE_URL"],
-)
+def _build_auth() -> GitHubProvider | None:
+    """Create the GitHub OAuth provider when required env vars are present."""
+    client_id = os.getenv("FASTMCP_SERVER_AUTH_GITHUB_CLIENT_ID")
+    client_secret = os.getenv("FASTMCP_SERVER_AUTH_GITHUB_CLIENT_SECRET")
+    base_url = os.getenv("FASTMCP_SERVER_AUTH_GITHUB_BASE_URL")
+    if not client_id or not client_secret or not base_url:
+        logger.warning("GitHub OAuth env vars missing; starting without auth.")
+        return None
+    return GitHubProvider(
+        client_id=client_id,
+        client_secret=client_secret,
+        base_url=base_url,
+    )
+
+
+auth = _build_auth()
 
 mcp = FastMCP(name="My GitHub-OAuth MCP Server", auth=auth)
 
@@ -474,6 +498,7 @@ def fetch_document_chunks(
     }
 
 def main() -> None:
+    """Run the FastMCP server with HTTP transport."""
     # Remote deployment uses HTTP transport; default MCP path is /mcp
     mcp.run(transport="http", host="0.0.0.0", port=8000)
 

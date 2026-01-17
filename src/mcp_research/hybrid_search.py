@@ -10,6 +10,7 @@ from qdrant_client import QdrantClient, models
 
 
 def load_dotenv(path: Path) -> None:
+    """Load a .env file into the process environment if present."""
     if not path.is_file():
         return
     for raw_line in path.read_text(encoding="utf-8").splitlines():
@@ -24,6 +25,7 @@ def load_dotenv(path: Path) -> None:
 
 
 def _to_list(x) -> List[float]:
+    """Convert embeddings to plain Python lists."""
     # FastEmbed may return numpy arrays; keep it dependency-light.
     return x.tolist() if hasattr(x, "tolist") else list(x)
 
@@ -54,6 +56,7 @@ def ensure_collection(client: QdrantClient, collection_name: str, dense_dim: int
 
 
 def recreate_collection(client: QdrantClient, collection_name: str, dense_dim: int) -> None:
+    """Drop and recreate a Qdrant collection for a fresh index."""
     if client.collection_exists(collection_name):
         client.delete_collection(collection_name)
     ensure_collection(client, collection_name, dense_dim)
@@ -64,6 +67,7 @@ def embed_corpus(
     sparse_model: SparseTextEmbedding,
     docs: Iterable[str],
 ) -> Tuple[List[List[float]], List[models.SparseVector]]:
+    """Embed a corpus into dense and sparse vectors."""
     dense_vectors: List[List[float]] = []
     sparse_vectors: List[models.SparseVector] = []
 
@@ -86,6 +90,7 @@ def upsert_docs(
     dense_vectors: List[List[float]],
     sparse_vectors: List[models.SparseVector],
 ) -> None:
+    """Upsert demo documents with precomputed vectors into Qdrant."""
     points = []
     for i, (text, dv, sv) in enumerate(zip(docs, dense_vectors, sparse_vectors)):
         points.append(
@@ -111,6 +116,7 @@ def hybrid_search(
     top_k: int,
     prefetch_k: int,
 ):
+    """Run a hybrid dense+sparse query with reciprocal rank fusion."""
     q_dense = _to_list(next(iter(dense_model.embed([query_text]))))
     q_sparse_emb = next(iter(sparse_model.embed([query_text])))
     q_sparse = models.SparseVector(
@@ -134,6 +140,7 @@ def hybrid_search(
 
 
 def main():
+    """CLI entry point for running hybrid search demo queries."""
     load_dotenv(Path(".env"))
 
     parser = argparse.ArgumentParser(description="Hybrid (dense+sparse) search with Qdrant (local).")

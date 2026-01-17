@@ -13,6 +13,7 @@ def build_source_ref(
     page_end: Optional[int] = None,
     version_id: Optional[str] = None,
 ) -> str:
+    """Build a doc:// source reference for a bucket/key with optional page range."""
     if not bucket:
         raise ValueError("bucket is required to build source_ref")
     if not key:
@@ -34,6 +35,7 @@ def build_source_ref(
 
 
 def _normalize_source_ref(source_ref: str) -> str:
+    """Normalize incoming source references from URLs or encoded strings."""
     if not source_ref:
         return source_ref
     raw = source_ref.strip()
@@ -51,6 +53,7 @@ def _normalize_source_ref(source_ref: str) -> str:
 
 
 def parse_source_ref(source_ref: str) -> dict:
+    """Parse a doc:// source reference into its component parts."""
     normalized = _normalize_source_ref(source_ref)
     parsed = urlparse(normalized)
     if parsed.scheme != "doc":
@@ -96,6 +99,7 @@ def build_citation_url(
     base_url: Optional[str] = None,
     ref_path: Optional[str] = None,
 ) -> Optional[str]:
+    """Build a citation portal URL that wraps a source reference."""
     base = base_url or os.getenv("CITATION_BASE_URL") or os.getenv("DOCS_BASE_URL")
     if not base:
         return None
@@ -108,6 +112,7 @@ def build_citation_url(
 
 
 def _get_minio_client() -> Minio:
+    """Create a MinIO client for generating presigned URLs."""
     endpoint = os.getenv("MINIO_PRESIGN_ENDPOINT") or os.getenv("MINIO_ENDPOINT", "localhost:9000")
     access_key = os.getenv("MINIO_ACCESS_KEY") or os.getenv("MINIO_ROOT_USER")
     secret_key = os.getenv("MINIO_SECRET_KEY") or os.getenv("MINIO_ROOT_PASSWORD")
@@ -137,6 +142,7 @@ def resolve_link(
     page: Optional[int] = None,
     mode: Optional[str] = None,
 ) -> dict:
+    """Resolve a source reference into a portal, CDN, or presigned URL."""
     if source_ref:
         parts = parse_source_ref(source_ref)
         bucket = bucket or parts.get("bucket")

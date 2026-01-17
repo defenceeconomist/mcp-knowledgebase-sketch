@@ -39,6 +39,7 @@ def load_dotenv(path: Path) -> None:
 
 
 def load_env_int(key: str, default: int) -> int:
+    """Parse an integer from the environment with a default fallback."""
     raw = os.getenv(key)
     if not raw:
         return default
@@ -50,6 +51,7 @@ def load_env_int(key: str, default: int) -> int:
 
 
 def load_env_bool(key: str, default: bool = False) -> bool:
+    """Parse a boolean from the environment with a default fallback."""
     raw = os.getenv(key)
     if raw is None:
         return default
@@ -68,15 +70,18 @@ def collect_pdfs(target: Path) -> List[Path]:
 
 
 def _write_json(path: Path, payload) -> None:
+    """Write JSON to disk using UTF-8 and ASCII-safe encoding."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, indent=2, ensure_ascii=True), encoding="utf-8")
 
 
 def _hash_bytes(data: bytes) -> str:
+    """Compute a deterministic SHA-256 hash for binary payloads."""
     return hashlib.sha256(data).hexdigest()
 
 
 def _get_redis_client(redis_url: str):
+    """Return a Redis client when available and configured."""
     if not redis_url:
         return None
     if redis is None:
@@ -86,14 +91,17 @@ def _get_redis_client(redis_url: str):
 
 
 def _redis_key(prefix: str, doc_id: str, suffix: str) -> str:
+    """Build a Redis key for a document and suffix."""
     return f"{prefix}:pdf:{doc_id}:{suffix}"
 
 
 def _collections_key(prefix: str, doc_id: str) -> str:
+    """Build a Redis key for the document collection set."""
     return f"{prefix}:pdf:{doc_id}:collections"
 
 
 def _source_key(prefix: str, source: str) -> str:
+    """Build a Redis key for a source-to-document mapping."""
     return f"{prefix}:pdf:source:{source}"
 
 
@@ -103,6 +111,7 @@ def record_collection_mapping(
     collection: str,
     prefix: str = "unstructured",
 ) -> str | None:
+    """Record that a document id appears in a Qdrant collection."""
     if not redis_client or not collection:
         return None
     collections_key = _collections_key(prefix, doc_id)
@@ -314,6 +323,7 @@ def ingest_pdfs(
     total = len(pdfs)
 
     def emit_progress(payload: dict) -> None:
+        """Send progress updates to the caller if provided."""
         if not on_progress:
             return
         try:
@@ -493,6 +503,7 @@ def ingest_pdfs(
 
 
 def parse_languages(raw: str | None) -> List[str] | None:
+    """Parse a comma-separated language string for Unstructured."""
     if not raw:
         return None
     langs = [lang.strip() for lang in raw.split(",")]
@@ -504,6 +515,7 @@ def run_from_env(
     data_dir_override: str | None = None,
     on_progress: Callable[[dict], None] | None = None,
 ) -> List[dict]:
+    """Run PDF ingestion using configuration sourced from environment variables."""
     load_dotenv(Path(".env"))
     data_dir = Path(data_dir_override or os.getenv("DATA_DIR", "data-raw")).expanduser()
     pdf_path_env = os.getenv("PDF_PATH")
@@ -565,6 +577,7 @@ def run_from_env(
 
 
 def main() -> None:
+    """CLI entry point for Unstructured PDF ingestion."""
     results = run_from_env()
     summary = json.dumps(results, indent=2)
     logger.info("Ingestion complete:\n%s", summary)
