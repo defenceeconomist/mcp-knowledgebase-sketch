@@ -26,7 +26,7 @@ Set these in your shell or a local `.env` (keep secrets out of version control):
 - `FASTMCP_SERVER_AUTH_GITHUB_CLIENT_ID` – OAuth app client ID
 - `FASTMCP_SERVER_AUTH_GITHUB_CLIENT_SECRET` – OAuth app client secret
 - `FASTMCP_SERVER_AUTH_GITHUB_BASE_URL` – Public base URL where `/auth` is reachable (e.g. your tunnel host)
-- `CF_TUNNEL_TOKEN` – Only needed when running the Cloudflare Tunnel sidecar
+- `CF_TUNNEL_TOKEN` – Only needed when running the Cloudflare Tunnel sidecar (single tunnel for all services)
 
 ## Run Locally
 To test locally with GitHub OAuth, you need a public callback URL (e.g. your Cloudflare Tunnel host). Set `FASTMCP_SERVER_AUTH_GITHUB_BASE_URL` to the host root (no `/mcp` suffix), and configure your GitHub OAuth app callback to `<base_url>/auth/callback`.
@@ -42,7 +42,7 @@ Build and start the stack (FastMCP server + optional Cloudflare Tunnel):
 docker compose up --build
 ```
 - `mcp` service: serves HTTP MCP on port 8000.
-- `cloudflared` service: starts a tunnel using `CF_TUNNEL_TOKEN` so the OAuth callback is reachable from GitHub.
+- `cloudflared` service: starts a single tunnel using `CF_TUNNEL_TOKEN` so the OAuth callback is reachable from GitHub (and can route other services too).
 - `minio` service: S3-compatible object storage with a web console on port 9001.
 
 Test the running server from your terminal (requires OAuth login in a browser). Use the public tunnel URL when auth is enabled:
@@ -98,6 +98,21 @@ Redis mapping keys:
 ## Notes
 - Configure your GitHub OAuth app callback to `<base_url>/auth/callback`, where `<base_url>` is `FASTMCP_SERVER_AUTH_GITHUB_BASE_URL`.
 - Do not commit real OAuth secrets or tunnel tokens. Use a local `.env` only for development.
+
+## Cloudflare Tunnel (single tunnel, multiple hostnames)
+Use one Cloudflare Tunnel and map multiple public hostnames to internal services via the Zero Trust dashboard.
+
+Suggested hostnames:
+- `mcp.yourdomain.com` -> `http://mcp:8000`
+- `minio.yourdomain.com` -> `http://minio:9000`
+- `minio-console.yourdomain.com` -> `http://minio:9001`
+- `resolver.yourdomain.com` -> `http://resolver:8080`
+
+Steps:
+1. Create a single tunnel in Cloudflare Zero Trust and copy its token.
+2. Set `CF_TUNNEL_TOKEN` in your `.env`.
+3. Add Public Hostnames for each service above (or whichever you need). Point each to the corresponding `http://<service>:<port>` origin.
+4. Set `FASTMCP_SERVER_AUTH_GITHUB_BASE_URL` to `https://mcp.yourdomain.com`.
 
 ## PDF -> Qdrant ingestion
 Use `ingest_pdfs.py` to extract text from PDFs with PyMuPDF, chunk it, embed with SentenceTransformers, and push vectors to the local Qdrant instance.

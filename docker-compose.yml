@@ -176,17 +176,7 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:latest
     command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}
-    depends_on: [mcp]
-    restart: unless-stopped
-  cloudflared2:
-    image: cloudflare/cloudflared:latest
-    command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN2}
-    depends_on: [minio]
-    restart: unless-stopped
-  cloudflared_resolver:
-    image: cloudflare/cloudflared:latest
-    command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN_RESOLVER}
-    depends_on: [resolver]
+    depends_on: [mcp, minio, resolver]
     restart: unless-stopped
 
 volumes:
