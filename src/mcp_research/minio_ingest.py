@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 from typing import Iterable, List
 from urllib.parse import unquote_plus
+from contextlib import contextmanager
 
 from fastembed import SparseTextEmbedding, TextEmbedding
 from minio import Minio
@@ -35,6 +36,71 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+_DENSE_MODEL: TextEmbedding | None = None
+_SPARSE_MODEL: SparseTextEmbedding | None = None
+
+
+def _ensure_writable_dir(path: Path) -> bool:
+    """Create a directory if needed and verify it's writable."""
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return False
+    return os.access(path, os.W_OK)
+
+
+def _prepare_fastembed_cache() -> Path:
+    """Select a writable cache directory for FastEmbed downloads."""
+    env_value = os.getenv("FASTEMBED_CACHE_DIR", "").strip()
+    candidate = Path(env_value) if env_value else Path("/app/data/fastembed")
+    if not _ensure_writable_dir(candidate):
+        candidate = Path("/tmp/fastembed")
+        _ensure_writable_dir(candidate)
+    os.environ["FASTEMBED_CACHE_DIR"] = str(candidate)
+    return candidate
+
+
+@contextmanager
+def _fastembed_download_lock(cache_dir: Path, timeout: int = 600):
+    """Lock FastEmbed downloads to avoid concurrent writes across worker processes."""
+    lock_path = cache_dir / ".fastembed.lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(lock_path, "a+", encoding="utf-8") as lock_file:
+        try:
+            import fcntl  # pylint: disable=import-outside-toplevel
+        except ImportError:
+            yield
+            return
+        start = time.monotonic()
+        while True:
+            try:
+                fcntl.flock(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if time.monotonic() - start > timeout:
+                    raise TimeoutError("Timed out waiting for FastEmbed model download lock")
+                time.sleep(1)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock_file, fcntl.LOCK_UN)
+
+
+def _get_embedding_models() -> tuple[TextEmbedding, SparseTextEmbedding]:
+    """Load (and cache) embedding models with a shared download lock."""
+    global _DENSE_MODEL, _SPARSE_MODEL
+    if _DENSE_MODEL is not None and _SPARSE_MODEL is not None:
+        return _DENSE_MODEL, _SPARSE_MODEL
+    cache_dir = _prepare_fastembed_cache()
+    dense_name = os.getenv("DENSE_MODEL", "BAAI/bge-small-en-v1.5")
+    sparse_name = os.getenv("SPARSE_MODEL", "Qdrant/bm25")
+    with _fastembed_download_lock(cache_dir):
+        if _DENSE_MODEL is None:
+            _DENSE_MODEL = TextEmbedding(model_name=dense_name)
+        if _SPARSE_MODEL is None:
+            _SPARSE_MODEL = SparseTextEmbedding(model_name=sparse_name)
+    return _DENSE_MODEL, _SPARSE_MODEL
 
 
 def _get_minio_client(endpoint: str, access_key: str, secret_key: str, secure: bool) -> Minio:
@@ -133,8 +199,7 @@ def process_object_from_env(
     redis_client = _get_redis_client(redis_url) if redis_url else None
 
     qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
-    dense_model = TextEmbedding(model_name=os.getenv("DENSE_MODEL", "BAAI/bge-small-en-v1.5"))
-    sparse_model = SparseTextEmbedding(model_name=os.getenv("SPARSE_MODEL", "Qdrant/bm25"))
+    dense_model, sparse_model = _get_embedding_models()
     qdrant_client = QdrantClient(url=qdrant_url)
 
     unstructured_api_key = os.getenv("UNSTRUCTURED_API_KEY", "")
@@ -568,8 +633,7 @@ def main() -> None:
         redis_client = _get_redis_client(redis_url) if redis_url else None
 
         qdrant_url = os.getenv("QDRANT_URL", "http://localhost:6333")
-        dense_model = TextEmbedding(model_name=os.getenv("DENSE_MODEL", "BAAI/bge-small-en-v1.5"))
-        sparse_model = SparseTextEmbedding(model_name=os.getenv("SPARSE_MODEL", "Qdrant/bm25"))
+        dense_model, sparse_model = _get_embedding_models()
         qdrant_client = QdrantClient(url=qdrant_url)
 
         unstructured_api_key = os.getenv("UNSTRUCTURED_API_KEY", "")
