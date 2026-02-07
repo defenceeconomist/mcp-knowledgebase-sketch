@@ -882,6 +882,7 @@ def resolve_doc(
     page: Optional[int] = Query(default=None),
     page_start: Optional[int] = Query(default=None),
     page_end: Optional[int] = Query(default=None),
+    highlight: Optional[str] = Query(default=None),
     mode: Optional[str] = Query(default=None),
 ):
     """Resolve a citation reference to a target URL."""
@@ -894,6 +895,7 @@ def resolve_doc(
             page=page,
             page_start=page_start,
             page_end=page_end,
+            highlight=highlight,
             mode=mode,
         )
     except (ValueError, RuntimeError) as exc:
@@ -910,6 +912,7 @@ def resolve_doc_json(
     page: Optional[int] = Query(default=None),
     page_start: Optional[int] = Query(default=None),
     page_end: Optional[int] = Query(default=None),
+    highlight: Optional[str] = Query(default=None),
     mode: Optional[str] = Query(default=None),
 ):
     """Resolve a citation reference and return JSON instead of redirecting."""
@@ -922,6 +925,7 @@ def resolve_doc_json(
             page=page,
             page_start=page_start,
             page_end=page_end,
+            highlight=highlight,
             mode=mode,
         )
     except (ValueError, RuntimeError) as exc:

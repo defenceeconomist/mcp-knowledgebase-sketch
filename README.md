@@ -1,11 +1,10 @@
-# GitHub OAuth MCP Server
+# Local MCP Research Server
 
-FastMCP server that authenticates users via GitHub OAuth and exposes two tools (`whoami`, `ping`). It can run locally or via Docker, and includes an optional Cloudflare Tunnel sidecar for exposing the service publicly.
+FastMCP server for local retrieval and citation tooling backed by Qdrant, Redis, and MinIO. The MCP server runs without GitHub OAuth or Cloudflare.
 
 ## Requirements
 - Python 3.12+
-- Docker + Docker Compose (optional, for containerized runs)
-- GitHub OAuth app credentials and a public callback URL (tunnel or other)
+- Docker + Docker Compose (optional)
 
 ## Install
 Create a virtualenv and install dependencies:
@@ -15,40 +14,40 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-(Optional) install the package in editable mode to avoid `PYTHONPATH`/`sys.path` tweaks:
+(Optional) install the package in editable mode:
 ```bash
 pip install -e .
 ```
 
 ## Environment Variables
-Set these in your shell or a local `.env` (keep secrets out of version control):
-- `FASTMCP_SERVER_AUTH=fastmcp.server.auth.providers.github.GitHubProvider`
-- `FASTMCP_SERVER_AUTH_GITHUB_CLIENT_ID` – OAuth app client ID
-- `FASTMCP_SERVER_AUTH_GITHUB_CLIENT_SECRET` – OAuth app client secret
-- `FASTMCP_SERVER_AUTH_GITHUB_BASE_URL` – Public base URL where `/auth` is reachable (e.g. your tunnel host)
-- `CF_TUNNEL_TOKEN` – Only needed when running the Cloudflare Tunnel sidecar (single tunnel for all services)
+Set these in your shell or a local `.env`:
+- `QDRANT_URL` (default `http://localhost:6333`)
+- `QDRANT_COLLECTION` (default `pdf_chunks`)
+- `REDIS_URL` (default `redis://localhost:6379/0`)
+- `REDIS_PREFIX` (default `unstructured`)
+- `CITATION_BASE_URL` (default `http://localhost:8080`)
+- `CITATION_REF_PATH` (default `/r/doc`)
 
 ## Run Locally
-To test locally with GitHub OAuth, you need a public callback URL (e.g. your Cloudflare Tunnel host). Set `FASTMCP_SERVER_AUTH_GITHUB_BASE_URL` to the host root (no `/mcp` suffix), and configure your GitHub OAuth app callback to `<base_url>/auth/callback`.
-
 ```bash
 python mcp_app.py
 ```
-The server listens on `http://0.0.0.0:8000`. OAuth callbacks resolve via `FASTMCP_SERVER_AUTH_GITHUB_BASE_URL`.
+The server listens on `http://localhost:8000` and serves MCP at `http://localhost:8000/mcp`.
 
 ## Run with Docker
-Build and start the stack (FastMCP server + optional Cloudflare Tunnel):
+Build and start local services:
 ```bash
 docker compose up --build
 ```
-- `mcp` service: serves HTTP MCP on port 8000.
-- `cloudflared` service: starts a single tunnel using `CF_TUNNEL_TOKEN` so the OAuth callback is reachable from GitHub (and can route other services too).
-- `minio` service: S3-compatible object storage with a web console on port 9001.
+- `mcp` service: HTTP MCP on port 8000.
+- `resolver` service: citation resolver API on port 8080.
+- `minio` service: object storage with console on port 9001.
 
-Test the running server from your terminal (requires OAuth login in a browser). Use the public tunnel URL when auth is enabled:
-```bash
-python examples/ping_mcp.py --url https://mcp.heley.uk/mcp
-```
+## Exposed Tools
+- `ping`: health check returning `"pong"`.
+- `list_collections`, `set_default_collection`, `list_collection_files`
+- `search`, `fetch`
+- `resolve_citation`, `fetch_document_chunks`
 
 ## MinIO buckets and uploads (UI)
 The compose stack includes MinIO with a web console so you can create multiple buckets and upload files through a UI.
@@ -90,29 +89,6 @@ Redis mapping keys:
 - `src/mcp_research/` – core Python modules.
 - Top-level scripts (`mcp_app.py`, `hybrid_search.py`, `ingest_unstructured.py`, `upsert_chunks.py`) are thin wrappers for local CLI use.
 - `docs/` – Sphinx documentation sources.
-
-## Exposed Tools
-- `whoami`: returns authenticated GitHub user info (`login`, `name`, `email`).
-- `ping`: health check returning `"pong"`.
-
-## Notes
-- Configure your GitHub OAuth app callback to `<base_url>/auth/callback`, where `<base_url>` is `FASTMCP_SERVER_AUTH_GITHUB_BASE_URL`.
-- Do not commit real OAuth secrets or tunnel tokens. Use a local `.env` only for development.
-
-## Cloudflare Tunnel (single tunnel, multiple hostnames)
-Use one Cloudflare Tunnel and map multiple public hostnames to internal services via the Zero Trust dashboard.
-
-Suggested hostnames:
-- `mcp.yourdomain.com` -> `http://mcp:8000`
-- `minio.yourdomain.com` -> `http://minio:9000`
-- `minio-console.yourdomain.com` -> `http://minio:9001`
-- `resolver.yourdomain.com` -> `http://resolver:8080`
-
-Steps:
-1. Create a single tunnel in Cloudflare Zero Trust and copy its token.
-2. Set `CF_TUNNEL_TOKEN` in your `.env`.
-3. Add Public Hostnames for each service above (or whichever you need). Point each to the corresponding `http://<service>:<port>` origin.
-4. Set `FASTMCP_SERVER_AUTH_GITHUB_BASE_URL` to `https://mcp.yourdomain.com`.
 
 ## PDF -> Qdrant ingestion
 Use `ingest_pdfs.py` to extract text from PDFs with PyMuPDF, chunk it, embed with SentenceTransformers, and push vectors to the local Qdrant instance.
@@ -156,7 +132,7 @@ Key environment:
 - `REDIS_SKIP_PROCESSED` – skip PDFs already in Redis (`1`/`0`, default `1`).
 - `STORE_PARTITIONS_DISK` / `STORE_CHUNKS_DISK` – also write JSON to disk (`1`/`0`, default `0`).
 - `MINIO_PRESIGN_ENDPOINT` – public hostname for presigned MinIO URLs (defaults to `MINIO_ENDPOINT`).
-- `MINIO_PRESIGN_SECURE` – set to `1` for HTTPS presigned URLs (defaults to `MINIO_SECURE`).
+- `MINIO_PRESIGN_SECURE` – set to `0` for local HTTP MinIO (compose default), `1` for HTTPS.
 
 Run locally (directory ingest, default output paths):
 ```bash

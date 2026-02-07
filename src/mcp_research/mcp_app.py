@@ -4,8 +4,6 @@ import os
 from typing import Any, Dict, List, Optional
 
 from fastmcp import FastMCP
-from fastmcp.server.auth.providers.github import GitHubProvider
-from fastmcp.server.dependencies import get_access_token
 from fastembed import SparseTextEmbedding, TextEmbedding
 from qdrant_client import QdrantClient
 
@@ -180,39 +178,7 @@ def _file_identity(payload: Dict[str, Any]) -> Optional[tuple[str, Dict[str, Any
         "key": key,
     }
 
-# --------------------------------------------------------------------
-# Auth (GitHub OAuth for ChatGPT UI)
-# --------------------------------------------------------------------
-def _build_auth() -> GitHubProvider | None:
-    """Create the GitHub OAuth provider when required env vars are present."""
-    client_id = os.getenv("FASTMCP_SERVER_AUTH_GITHUB_CLIENT_ID")
-    client_secret = os.getenv("FASTMCP_SERVER_AUTH_GITHUB_CLIENT_SECRET")
-    base_url = os.getenv("FASTMCP_SERVER_AUTH_GITHUB_BASE_URL")
-    if not client_id or not client_secret or not base_url:
-        logger.warning("GitHub OAuth env vars missing; starting without auth.")
-        return None
-    return GitHubProvider(
-        client_id=client_id,
-        client_secret=client_secret,
-        base_url=base_url,
-    )
-
-
-auth = _build_auth()
-
-mcp = FastMCP(name="My GitHub-OAuth MCP Server", auth=auth)
-
-@mcp.tool
-async def whoami() -> dict:
-    """Return info about the authenticated GitHub user."""
-    token = get_access_token()
-    # Be defensive in case there is some misconfiguration
-    claims = getattr(token, "claims", {}) or {}
-    return {
-        "login": claims.get("login"),
-        "name": claims.get("name"),
-        "email": claims.get("email"),
-    }
+mcp = FastMCP(name="Local MCP Server", auth=None)
 
 
 @mcp.tool
@@ -407,6 +373,7 @@ def resolve_citation(
     page: int | None = None,
     page_start: int | None = None,
     page_end: int | None = None,
+    highlight: str | None = None,
     mode: str | None = None,
 ) -> Dict[str, Any]:
     """Resolve a citation to a stable portal URL or a presigned MinIO URL."""
@@ -418,6 +385,7 @@ def resolve_citation(
         page=page,
         page_start=page_start,
         page_end=page_end,
+        highlight=highlight,
         mode=mode,
     )
 

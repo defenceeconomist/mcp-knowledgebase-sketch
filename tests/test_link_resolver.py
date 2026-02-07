@@ -63,12 +63,16 @@ class LinkResolverTests(unittest.TestCase):
 
         self.assertEqual(url, "https://docs.example/refs/doc?ref=doc%3A%2F%2Fbucket%2Ffile.txt")
 
-    def test_resolve_link_portal_requires_base(self):
+    def test_resolve_link_portal_defaults_to_local_base(self):
         os.environ.pop("CITATION_BASE_URL", None)
         os.environ.pop("DOCS_BASE_URL", None)
 
-        with self.assertRaises(RuntimeError):
-            link_resolver.resolve_link(bucket="bucket", key="file.txt")
+        result = link_resolver.resolve_link(bucket="bucket", key="file.txt")
+        self.assertEqual(
+            result["url"],
+            "http://localhost:8080/r/doc?ref=doc%3A%2F%2Fbucket%2Ffile.txt",
+        )
+        self.assertEqual(result["mode"], "portal")
 
     def test_resolve_link_cdn_builds_url(self):
         os.environ["CDN_BASE_URL"] = "https://cdn.example"
@@ -107,6 +111,42 @@ class LinkResolverTests(unittest.TestCase):
             version_id="v1",
         )
 
+    def test_resolve_link_presign_appends_page_fragment_from_source_ref(self):
+        minio_client = mock.Mock()
+        minio_client.presigned_get_object.return_value = "https://signed.example/object?sig=abc"
+
+        with mock.patch(
+            "mcp_research.link_resolver._get_minio_client",
+            return_value=minio_client,
+        ):
+            result = link_resolver.resolve_link(
+                source_ref="doc://bucket/path/file.pdf#page=10",
+                mode="presign",
+            )
+
+        self.assertEqual(result["url"], "https://signed.example/object?sig=abc#page=10")
+
+    def test_resolve_link_presign_appends_highlight_fragment(self):
+        minio_client = mock.Mock()
+        minio_client.presigned_get_object.return_value = "https://signed.example/object?sig=abc"
+
+        with mock.patch(
+            "mcp_research.link_resolver._get_minio_client",
+            return_value=minio_client,
+        ):
+            result = link_resolver.resolve_link(
+                bucket="bucket",
+                key="path/file.pdf",
+                page=7,
+                highlight="transfer pricing",
+                mode="presign",
+            )
+
+        self.assertEqual(
+            result["url"],
+            "https://signed.example/object?sig=abc#page=7&search=transfer%20pricing",
+        )
+
 
 class ResolverAppTests(unittest.TestCase):
     def setUp(self):
@@ -116,15 +156,26 @@ class ResolverAppTests(unittest.TestCase):
         with mock.patch(
             "mcp_research.resolver_app.resolve_link",
             return_value={"url": "https://example.test/target"},
-        ):
+        ) as resolve_link_mock:
             response = self.client.get(
                 "/r/doc",
-                params={"ref": "doc://bucket/file.txt"},
+                params={"ref": "doc://bucket/file.txt", "highlight": "transfer pricing"},
                 follow_redirects=False,
             )
 
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.headers.get("location"), "https://example.test/target")
+        resolve_link_mock.assert_called_once_with(
+            source_ref="doc://bucket/file.txt",
+            bucket=None,
+            key=None,
+            version_id=None,
+            page=None,
+            page_start=None,
+            page_end=None,
+            highlight="transfer pricing",
+            mode=None,
+        )
 
     def test_resolve_doc_json_returns_payload(self):
         payload = {"source_ref": "doc://bucket/file.txt", "url": "https://example.test/target"}

@@ -35,10 +35,6 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - FASTMCP_SERVER_AUTH=${FASTMCP_SERVER_AUTH}
-      - FASTMCP_SERVER_AUTH_GITHUB_CLIENT_ID=${FASTMCP_SERVER_AUTH_GITHUB_CLIENT_ID}
-      - FASTMCP_SERVER_AUTH_GITHUB_CLIENT_SECRET=${FASTMCP_SERVER_AUTH_GITHUB_CLIENT_SECRET}
-      - FASTMCP_SERVER_AUTH_GITHUB_BASE_URL=${FASTMCP_SERVER_AUTH_GITHUB_BASE_URL}
       - DATA_DIR=/app/data
       - PDF_PATH=${PDF_PATH:-}
       - QDRANT_HOST=qdrant
@@ -59,7 +55,7 @@ services:
       - UNSTRUCTURED_STRATEGY=${UNSTRUCTURED_STRATEGY:-hi_res}
       - UNSTRUCTURED_CHUNKING_STRATEGY=${UNSTRUCTURED_CHUNKING_STRATEGY:-basic}
       - UNSTRUCTURED_LANGUAGES=${UNSTRUCTURED_LANGUAGES:-}
-      - CITATION_BASE_URL=${CITATION_BASE_URL:-}
+      - CITATION_BASE_URL=${CITATION_BASE_URL:-http://localhost:8080}
       - CITATION_REF_PATH=${CITATION_REF_PATH:-/r/doc}
     volumes:
       - ./data:/app/data:ro
@@ -77,13 +73,13 @@ services:
       - RESOLVER_HOST=0.0.0.0
       - RESOLVER_PORT=8080
       - LINK_RESOLVER_MODE=${LINK_RESOLVER_MODE:-presign}
-      - CITATION_BASE_URL=${CITATION_BASE_URL:-}
+      - CITATION_BASE_URL=${CITATION_BASE_URL:-http://localhost:8080}
       - CITATION_REF_PATH=${CITATION_REF_PATH:-/r/doc}
       - CDN_BASE_URL=${CDN_BASE_URL:-}
       - MINIO_ALL_BUCKETS=true
       - MINIO_ENDPOINT=minio:9000
-      - MINIO_PRESIGN_ENDPOINT=${MINIO_PRESIGN_ENDPOINT:-minio.heley.uk}
-      - MINIO_PRESIGN_SECURE=${MINIO_PRESIGN_SECURE:-1}
+      - MINIO_PRESIGN_ENDPOINT=${MINIO_PRESIGN_ENDPOINT:-localhost:9000}
+      - MINIO_PRESIGN_SECURE=${MINIO_PRESIGN_SECURE:-0}
       - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
       - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
       - MINIO_SECURE=0
@@ -173,13 +169,14 @@ services:
     ports:
       - "5555:5555"
     command: -m celery -A mcp_research.celery_app flower --port=5555
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}
-    depends_on: [mcp, minio, resolver]
-    restart: unless-stopped
 
 volumes:
   qdrant_storage:
+    external: true
+    name: mcp-research_qdrant_storage
   redis_data:
+    external: true
+    name: mcp-research_redis_data
   minio_data:
+    external: true
+    name: mcp-research_minio_data

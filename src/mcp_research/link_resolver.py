@@ -100,9 +100,12 @@ def build_citation_url(
     ref_path: Optional[str] = None,
 ) -> Optional[str]:
     """Build a citation portal URL that wraps a source reference."""
-    base = base_url or os.getenv("CITATION_BASE_URL") or os.getenv("DOCS_BASE_URL")
-    if not base:
-        return None
+    base = (
+        base_url
+        or os.getenv("CITATION_BASE_URL")
+        or os.getenv("DOCS_BASE_URL")
+        or "http://localhost:8080"
+    )
     path = ref_path or os.getenv("CITATION_REF_PATH", "/r/doc")
     base = base.rstrip("/")
     if not path.startswith("/"):
@@ -132,6 +135,37 @@ def _get_minio_client() -> Minio:
     )
 
 
+def _build_pdf_fragment(page_start: Optional[int], page_end: Optional[int], highlight: Optional[str]) -> str:
+    """Build a PDF URL fragment with page targeting and optional text search."""
+    fragment_parts = []
+    if page_start is None and page_end is not None:
+        page_start = page_end
+    if page_start is not None:
+        page = page_start if page_end is None else min(page_start, page_end)
+        fragment_parts.append(f"page={page}")
+
+    text = (highlight or "").strip()
+    if text:
+        fragment_parts.append(f"search={quote(text, safe='')}")
+
+    return "&".join(fragment_parts)
+
+
+def _append_url_fragment(url: str, fragment: str) -> str:
+    """Append or merge a URL fragment while preserving existing URL parts."""
+    if not fragment:
+        return url
+
+    parsed = urlparse(url)
+    if not parsed.fragment:
+        return parsed._replace(fragment=fragment).geturl()
+
+    existing_parts = [part for part in parsed.fragment.split("&") if part]
+    extra_parts = [part for part in fragment.split("&") if part and part not in existing_parts]
+    merged = "&".join(existing_parts + extra_parts)
+    return parsed._replace(fragment=merged).geturl()
+
+
 def resolve_link(
     source_ref: Optional[str] = None,
     bucket: Optional[str] = None,
@@ -140,6 +174,7 @@ def resolve_link(
     page_start: Optional[int] = None,
     page_end: Optional[int] = None,
     page: Optional[int] = None,
+    highlight: Optional[str] = None,
     mode: Optional[str] = None,
 ) -> dict:
     """Resolve a source reference into a portal, CDN, or presigned URL."""
@@ -175,13 +210,15 @@ def resolve_link(
             expires=timedelta(seconds=expiry),
             version_id=version_id,
         )
+        url = _append_url_fragment(url, _build_pdf_fragment(page_start, page_end, highlight))
         return {"source_ref": source_ref, "url": url, "mode": resolved_mode}
     if resolved_mode == "cdn":
         base = os.getenv("CDN_BASE_URL", "").rstrip("/")
         if not base:
             raise RuntimeError("CDN_BASE_URL is required for CDN link resolution")
         safe_key = quote(key.lstrip("/"), safe="/")
-        return {"source_ref": source_ref, "url": f"{base}/{safe_key}", "mode": resolved_mode}
+        url = _append_url_fragment(f"{base}/{safe_key}", _build_pdf_fragment(page_start, page_end, highlight))
+        return {"source_ref": source_ref, "url": url, "mode": resolved_mode}
 
     url = build_citation_url(source_ref)
     if not url:
