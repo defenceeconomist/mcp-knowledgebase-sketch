@@ -108,6 +108,27 @@ services:
       - CITATION_BASE_URL=${CITATION_BASE_URL:-http://localhost:8080}
       - CITATION_REF_PATH=${CITATION_REF_PATH:-/r/doc}
     command: -m mcp_research.dashboard_app
+  bibtex_ui:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    depends_on:
+      - minio
+      - redis
+    environment:
+      - PYTHONPATH=/app/src
+      - BIBTEX_UI_HOST=0.0.0.0
+      - BIBTEX_UI_PORT=8003
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - BIBTEX_REDIS_PREFIX=${BIBTEX_REDIS_PREFIX:-bibtex}
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
+      - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
+      - MINIO_SECURE=0
+      - BIBTEX_MINIO_ALL_BUCKETS=${BIBTEX_MINIO_ALL_BUCKETS:-1}
+      - BIBTEX_MINIO_SUFFIX=${BIBTEX_MINIO_SUFFIX:-.pdf}
+    command: -m mcp_research.bibtex_ui_app
   minio_ingest:
     build: .
     restart: unless-stopped

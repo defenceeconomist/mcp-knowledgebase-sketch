@@ -1,0 +1,1664 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BibTeX Metadata Workspace</title>
+    <style>
+      :root {
+        --bg: #f4f0e8;
+        --bg-accent: #efe4d2;
+        --panel: #fffdf8;
+        --panel-alt: #f8f3ea;
+        --ink: #2c2a24;
+        --muted: #6f6a5f;
+        --line: #d8cfbe;
+        --brand: #a8432b;
+        --brand-soft: #f6d9cf;
+        --ok: #2e7a57;
+        --radius: 14px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Space Grotesk", "Avenir Next", "Trebuchet MS", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 0% 0%, rgba(168, 67, 43, 0.14), transparent 40%),
+          radial-gradient(circle at 100% 100%, rgba(30, 130, 107, 0.12), transparent 44%),
+          linear-gradient(150deg, var(--bg), var(--bg-accent));
+      }
+
+      .app-shell {
+        display: grid;
+        grid-template-columns: 260px 1fr 360px;
+        gap: 14px;
+        padding: 14px;
+        height: 100vh;
+      }
+
+      .pane {
+        background: color-mix(in oklab, var(--panel) 88%, white 12%);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        overflow: hidden;
+        min-height: 0;
+        box-shadow: 0 10px 30px rgba(44, 42, 36, 0.07);
+      }
+
+      .pane-header {
+        padding: 14px 16px 10px;
+        border-bottom: 1px solid var(--line);
+        background: linear-gradient(180deg, color-mix(in oklab, var(--panel-alt) 92%, white 8%), var(--panel));
+      }
+
+      .pane-title {
+        margin: 0;
+        font-family: "Fraunces", "Iowan Old Style", "Times New Roman", serif;
+        font-size: 19px;
+        line-height: 1.1;
+        letter-spacing: 0.2px;
+      }
+
+      .pane-subtitle {
+        margin-top: 5px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .left-pane-content {
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .bucket-btn {
+        border: 1px solid var(--line);
+        background: var(--panel-alt);
+        color: var(--ink);
+        border-radius: 11px;
+        cursor: pointer;
+        padding: 10px 12px;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        transition: 140ms ease;
+      }
+
+      .bucket-btn:hover {
+        border-color: color-mix(in oklab, var(--brand) 35%, var(--line));
+        transform: translateX(2px);
+      }
+
+      .bucket-btn.active {
+        border-color: var(--brand);
+        background: var(--brand-soft);
+      }
+
+      .bucket-name {
+        font-size: 13px;
+        font-weight: 600;
+        word-break: break-word;
+      }
+
+      .bucket-count {
+        font-size: 11px;
+        color: var(--muted);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 2px 7px;
+        background: var(--panel);
+      }
+
+      .main-pane-body {
+        display: flex;
+        flex-direction: column;
+        height: calc(100% - 70px);
+      }
+
+      .table-wrap {
+        padding: 10px;
+        overflow: auto;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 690px;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 9px 8px;
+        font-size: 13px;
+        vertical-align: top;
+      }
+
+      th {
+        text-align: left;
+        color: var(--muted);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        position: sticky;
+        top: 0;
+        background: color-mix(in oklab, var(--panel) 94%, white 6%);
+      }
+
+      .sort-btn {
+        border: none;
+        background: transparent;
+        color: inherit;
+        font: inherit;
+        text-transform: inherit;
+        letter-spacing: inherit;
+        cursor: pointer;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .sort-btn.active {
+        color: color-mix(in oklab, var(--brand) 72%, var(--muted));
+      }
+
+      .sort-indicator {
+        font-size: 10px;
+        line-height: 1;
+      }
+
+      .file-link {
+        color: color-mix(in oklab, var(--brand) 70%, #1f5a4d);
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .file-link:hover {
+        text-decoration: underline;
+      }
+
+      .redis-stats {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 9px;
+        background: color-mix(in oklab, var(--panel-alt) 76%, white 24%);
+      }
+
+      .redis-stats-title {
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .redis-stats-grid {
+        margin-top: 7px;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .redis-stat-btn {
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        padding: 8px 9px;
+        text-align: left;
+        background: var(--panel);
+        color: var(--ink);
+        font: inherit;
+        cursor: pointer;
+      }
+
+      .redis-stat-btn:hover {
+        border-color: color-mix(in oklab, var(--brand) 40%, var(--line));
+      }
+
+      .redis-stat-btn[disabled] {
+        opacity: 0.58;
+        cursor: not-allowed;
+      }
+
+      .redis-stat-count {
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 1.1;
+      }
+
+      .redis-stat-label {
+        margin-top: 2px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .redis-stats-meta {
+        margin-top: 7px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      tbody tr {
+        cursor: pointer;
+      }
+
+      tbody tr.active {
+        background: color-mix(in oklab, var(--brand-soft) 62%, white 38%);
+      }
+
+      .file-name {
+        font-weight: 600;
+        font-size: 12px;
+      }
+
+      .table-input {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 7px 8px;
+        font: inherit;
+        background: var(--panel);
+        color: var(--ink);
+      }
+
+      .table-input:focus,
+      .editor-input:focus,
+      .editor-textarea:focus,
+      .editor-select:focus {
+        border-color: color-mix(in oklab, var(--brand) 55%, var(--line));
+        box-shadow: 0 0 0 3px rgba(168, 67, 43, 0.13);
+        outline: none;
+      }
+
+      .main-footer {
+        margin-top: auto;
+        border-top: 1px solid var(--line);
+        padding: 10px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--ok);
+        display: inline-block;
+        margin-right: 6px;
+      }
+
+      .right-pane-content {
+        padding: 12px;
+        height: calc(100% - 70px);
+        overflow: auto;
+      }
+
+      .editor-empty {
+        border: 1px dashed var(--line);
+        border-radius: 12px;
+        padding: 22px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 13px;
+        margin-top: 10px;
+      }
+
+      .editor-head {
+        border: 1px solid var(--line);
+        background: var(--panel-alt);
+        border-radius: 12px;
+        padding: 10px 11px;
+        margin-bottom: 11px;
+      }
+
+      .editor-file {
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+
+      .editor-title {
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      .field-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .field-label {
+        display: block;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 5px;
+      }
+
+      .editor-input,
+      .editor-select,
+      .editor-textarea {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        padding: 8px 9px;
+        font: inherit;
+        background: var(--panel);
+        color: var(--ink);
+      }
+
+      .editor-textarea {
+        min-height: 78px;
+        resize: vertical;
+      }
+
+      .field-hint {
+        margin-top: 4px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .recommended-summary {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 8px 9px;
+        font-size: 12px;
+        color: var(--muted);
+        background: color-mix(in oklab, var(--panel-alt) 78%, white 22%);
+      }
+
+      .field-wrap {
+        border: 1px solid transparent;
+        border-radius: 10px;
+        padding: 7px;
+      }
+
+      .field-wrap.recommended {
+        border-color: color-mix(in oklab, var(--brand) 45%, var(--line));
+        background: color-mix(in oklab, var(--brand-soft) 35%, white 65%);
+      }
+
+      .recommended-badge {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid color-mix(in oklab, var(--brand) 45%, var(--line));
+        border-radius: 999px;
+        padding: 2px 7px;
+        margin-left: 6px;
+        font-size: 10px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: color-mix(in oklab, var(--brand) 75%, #5f2c1f);
+        background: color-mix(in oklab, var(--brand-soft) 78%, white 22%);
+      }
+
+      .authors-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .author-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 8px;
+      }
+
+      .author-row button {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel-alt);
+        color: var(--ink);
+        font: inherit;
+        cursor: pointer;
+        padding: 0 9px;
+      }
+
+      .author-row button:hover,
+      .author-add-btn:hover {
+        border-color: color-mix(in oklab, var(--brand) 40%, var(--line));
+      }
+
+      .author-add-btn {
+        margin-top: 8px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: var(--panel-alt);
+        color: var(--ink);
+        font: inherit;
+        font-size: 12px;
+        cursor: pointer;
+        padding: 7px 10px;
+      }
+
+      .apa-preview {
+        margin-top: 8px;
+        border: 1px dashed var(--line);
+        border-radius: 9px;
+        padding: 8px 9px;
+        font-size: 12px;
+        color: var(--muted);
+        background: color-mix(in oklab, var(--panel-alt) 75%, white 25%);
+      }
+
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(24, 20, 14, 0.46);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 18px;
+        z-index: 50;
+      }
+
+      .modal-backdrop[hidden] {
+        display: none !important;
+      }
+
+      .modal-card {
+        width: min(920px, 100%);
+        max-height: calc(100vh - 36px);
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--panel);
+        box-shadow: 0 18px 40px rgba(44, 42, 36, 0.20);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .modal-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 11px 12px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .modal-title {
+        margin: 0;
+        font-family: "Fraunces", "Iowan Old Style", "Times New Roman", serif;
+        font-size: 18px;
+      }
+
+      .modal-close {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel-alt);
+        color: var(--ink);
+        font: inherit;
+        cursor: pointer;
+        padding: 5px 8px;
+      }
+
+      .modal-body {
+        padding: 10px 12px 14px;
+        overflow: auto;
+      }
+
+      .modal-note {
+        color: var(--muted);
+        font-size: 12px;
+        margin-bottom: 8px;
+      }
+
+      .modal-item {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 8px 9px;
+        margin-bottom: 8px;
+        background: color-mix(in oklab, var(--panel-alt) 73%, white 27%);
+      }
+
+      .modal-item-label {
+        font-size: 11px;
+        color: var(--muted);
+        margin-bottom: 5px;
+      }
+
+      .modal-item-text {
+        margin: 0;
+        font-size: 12px;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      @media (max-width: 1220px) {
+        .app-shell {
+          grid-template-columns: 220px 1fr;
+          grid-template-rows: 1fr 1fr;
+        }
+        .right-pane {
+          grid-column: 1 / -1;
+        }
+      }
+
+      @media (max-width: 860px) {
+        .app-shell {
+          grid-template-columns: 1fr;
+          grid-template-rows: auto auto auto;
+          height: auto;
+          min-height: 100vh;
+        }
+        .pane {
+          min-height: 280px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="pane left-pane">
+        <div class="pane-header">
+          <h1 class="pane-title">Buckets</h1>
+          <div class="pane-subtitle">Choose a collection of files</div>
+        </div>
+        <div class="left-pane-content" id="bucketList"></div>
+      </aside>
+
+      <main class="pane main-pane">
+        <div class="pane-header">
+          <h2 class="pane-title" id="tableTitle">Files</h2>
+          <div class="pane-subtitle">Table shows title, year, author, and original file link. If title is empty, filename is used.</div>
+        </div>
+        <div class="main-pane-body">
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 40%">
+                    <button class="sort-btn" type="button" data-sort-key="title">
+                      Title
+                      <span class="sort-indicator"></span>
+                    </button>
+                  </th>
+                  <th style="width: 12%">
+                    <button class="sort-btn" type="button" data-sort-key="year">
+                      Year
+                      <span class="sort-indicator"></span>
+                    </button>
+                  </th>
+                  <th style="width: 32%">
+                    <button class="sort-btn" type="button" data-sort-key="authors">
+                      Authors
+                      <span class="sort-indicator"></span>
+                    </button>
+                  </th>
+                  <th style="width: 16%">Original File</th>
+                </tr>
+              </thead>
+              <tbody id="fileTableBody"></tbody>
+            </table>
+          </div>
+          <div class="main-footer">
+            <div><span class="dot"></span>BibTeX metadata autosaves to Redis (prefix: bibtex)</div>
+            <div id="selectionHint">Select a file to edit extra BibTeX fields</div>
+          </div>
+        </div>
+      </main>
+
+      <aside class="pane right-pane">
+        <div class="pane-header">
+          <h2 class="pane-title">BibTeX Fields</h2>
+          <div class="pane-subtitle">Edit title, year, structured authors, and other metadata for the selected file</div>
+        </div>
+        <div class="right-pane-content" id="editorPane"></div>
+      </aside>
+    </div>
+
+    <div class="modal-backdrop" id="dataModal" hidden>
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="dataModalTitle">
+        <div class="modal-head">
+          <h3 class="modal-title" id="dataModalTitle">Redis Data</h3>
+          <button type="button" class="modal-close" id="dataModalClose">Close</button>
+        </div>
+        <div class="modal-body" id="dataModalBody"></div>
+      </div>
+    </div>
+
+    <script>
+      const fieldConfig = [
+        { key: "citationKey", label: "Citation Key", type: "text" },
+        {
+          key: "entryType",
+          label: "Entry Type",
+          type: "select",
+          options: ["article", "inproceedings", "book", "misc", "techreport"],
+        },
+        { key: "journal", label: "Journal", type: "text" },
+        { key: "booktitle", label: "Booktitle", type: "text" },
+        { key: "volume", label: "Volume", type: "text" },
+        { key: "number", label: "Number", type: "text" },
+        { key: "pages", label: "Pages", type: "text" },
+        { key: "doi", label: "DOI", type: "text" },
+        { key: "url", label: "URL", type: "text" },
+        { key: "keywords", label: "Keywords", type: "text" },
+        { key: "abstract", label: "Abstract", type: "textarea" },
+        { key: "note", label: "Note", type: "textarea" },
+      ];
+
+      const persistFieldKeys = [
+        "citationKey",
+        "entryType",
+        "title",
+        "year",
+        "authors",
+        "journal",
+        "booktitle",
+        "volume",
+        "number",
+        "pages",
+        "doi",
+        "url",
+        "keywords",
+        "abstract",
+        "note",
+      ];
+
+      const recommendedFieldsByType = {
+        article: ["journal", "volume", "number", "pages", "doi"],
+        inproceedings: ["booktitle", "pages", "doi", "url"],
+        book: ["volume", "number", "url", "note"],
+        misc: ["url", "note", "keywords"],
+        techreport: ["number", "url", "doi", "note"],
+      };
+
+      const alwaysRecommendedFields = ["citationKey", "entryType", "title", "authors", "year"];
+
+      const defaultFileFields = {
+        citationKey: "",
+        entryType: "article",
+        title: "",
+        year: "",
+        authors: [],
+        journal: "",
+        booktitle: "",
+        volume: "",
+        number: "",
+        pages: "",
+        doi: "",
+        url: "",
+        keywords: "",
+        abstract: "",
+        note: "",
+      };
+
+      const saveTimers = new Map();
+
+      const state = {
+        buckets: [],
+        activeBucketId: null,
+        activeFileId: null,
+        loadingBuckets: false,
+        bucketsError: "",
+        sort: { key: "title", direction: "asc" },
+        saveState: "idle",
+        saveFileId: null,
+        saveError: "",
+        redisSummaryByFile: {},
+        redisDetailCache: {},
+        modal: {
+          open: false,
+          fileId: null,
+          loading: false,
+          error: "",
+          items: [],
+          totalAvailable: 0,
+        },
+      };
+
+      function bucketById(bucketId) {
+        return state.buckets.find((bucket) => bucket.id === bucketId) || null;
+      }
+
+      function getActiveBucket() {
+        return bucketById(state.activeBucketId);
+      }
+
+      function getActiveFile() {
+        const bucket = getActiveBucket();
+        if (!bucket) return null;
+        return bucket.files.find((file) => file.id === state.activeFileId) || null;
+      }
+
+      function findFileById(fileId) {
+        if (!fileId) return null;
+        for (const bucket of state.buckets) {
+          const file = bucket.files.find((entry) => entry.id === fileId);
+          if (file) return file;
+        }
+        return null;
+      }
+
+      function recommendedSetForEntryType(entryType) {
+        const set = new Set(alwaysRecommendedFields);
+        for (const key of recommendedFieldsByType[entryType] || []) {
+          set.add(key);
+        }
+        return set;
+      }
+
+      function createFieldLabel(text, recommended) {
+        const label = document.createElement("label");
+        label.className = "field-label";
+        label.textContent = text;
+        if (recommended) {
+          const badge = document.createElement("span");
+          badge.className = "recommended-badge";
+          badge.textContent = "Recommended";
+          label.append(badge);
+        }
+        return label;
+      }
+
+      function coerceAuthors(file) {
+        if (!Array.isArray(file.authors)) {
+          if (typeof file.authors === "string" && file.authors.trim()) {
+            const parts = file.authors
+              .split(",")
+              .map((entry) => entry.trim())
+              .filter(Boolean);
+            file.authors = parts.map((lastName) => ({ firstName: "", lastName }));
+          } else {
+            file.authors = [];
+          }
+        }
+
+        file.authors = file.authors.map((author) => ({
+          firstName: typeof author?.firstName === "string" ? author.firstName : "",
+          lastName: typeof author?.lastName === "string" ? author.lastName : "",
+        }));
+        return file.authors;
+      }
+
+      function initialsFromFirstName(firstName) {
+        const parts = String(firstName || "")
+          .trim()
+          .split(/\s+/)
+          .filter(Boolean);
+        return parts
+          .map((part) =>
+            part
+              .split("-")
+              .filter(Boolean)
+              .map((subpart) => `${subpart.charAt(0).toUpperCase()}.`)
+              .join("-")
+          )
+          .join(" ");
+      }
+
+      function formatAuthorApa(author) {
+        const lastName = String(author?.lastName || "").trim();
+        const initials = initialsFromFirstName(author?.firstName || "");
+        if (lastName && initials) return `${lastName}, ${initials}`;
+        if (lastName) return lastName;
+        if (initials) return initials;
+        return "";
+      }
+
+      function formatAuthorsApa(authors) {
+        const formatted = authors.map(formatAuthorApa).filter(Boolean);
+        if (formatted.length === 0) return "";
+        if (formatted.length === 1) return formatted[0];
+        if (formatted.length === 2) return `${formatted[0]} & ${formatted[1]}`;
+        return `${formatted.slice(0, -1).join(", ")}, & ${formatted[formatted.length - 1]}`;
+      }
+
+      function displayTitle(file) {
+        return String(file?.title || "").trim() || String(file?.fileName || "").trim() || "—";
+      }
+
+      function normalizeFileRecord(raw) {
+        const file = { ...defaultFileFields, ...(raw || {}) };
+        file.bucket = String(file.bucket || "");
+        file.objectName = String(file.objectName || "");
+        file.fileName = String(file.fileName || file.objectName.split("/").pop() || "unknown");
+        file.id = String(file.id || `${file.bucket}/${file.objectName}` || file.fileName);
+        file.entryType = recommendedFieldsByType[file.entryType] ? file.entryType : "article";
+        for (const key of Object.keys(defaultFileFields)) {
+          if (key === "authors") continue;
+          file[key] = file[key] == null ? "" : String(file[key]);
+        }
+        coerceAuthors(file);
+        return file;
+      }
+
+      async function apiRequest(path, options = {}) {
+        const requestOptions = {
+          ...options,
+          headers: {
+            "Content-Type": "application/json",
+            ...(options.headers || {}),
+          },
+        };
+        const response = await fetch(path, requestOptions);
+        const text = await response.text();
+        let payload = null;
+        if (text) {
+          try {
+            payload = JSON.parse(text);
+          } catch (_err) {
+            payload = null;
+          }
+        }
+        if (!response.ok) {
+          const detail = payload?.detail || text || `HTTP ${response.status}`;
+          throw new Error(detail);
+        }
+        return payload || {};
+      }
+
+      function encodeObjectPath(objectName) {
+        return String(objectName)
+          .split("/")
+          .map((part) => encodeURIComponent(part))
+          .join("/");
+      }
+
+      function sortValueForFile(file, key) {
+        if (key === "authors") {
+          return formatAuthorsApa(coerceAuthors(file));
+        }
+        if (key === "title") {
+          return displayTitle(file);
+        }
+        const value = file[key];
+        return value == null ? "" : String(value);
+      }
+
+      function compareSortValues(left, right, key) {
+        if (key === "year") {
+          const leftNum = Number.parseInt(left, 10);
+          const rightNum = Number.parseInt(right, 10);
+          const leftIsNum = Number.isFinite(leftNum);
+          const rightIsNum = Number.isFinite(rightNum);
+          if (leftIsNum && rightIsNum) {
+            return leftNum - rightNum;
+          }
+          if (leftIsNum) return -1;
+          if (rightIsNum) return 1;
+        }
+        return left.localeCompare(right, undefined, { numeric: true, sensitivity: "base" });
+      }
+
+      function sortFiles(files) {
+        const { key, direction } = state.sort;
+        const sorted = [...files].sort((leftFile, rightFile) => {
+          const left = sortValueForFile(leftFile, key);
+          const right = sortValueForFile(rightFile, key);
+          let result = compareSortValues(left, right, key);
+          if (result === 0) {
+            result = sortValueForFile(leftFile, "fileName").localeCompare(
+              sortValueForFile(rightFile, "fileName"),
+              undefined,
+              { numeric: true, sensitivity: "base" }
+            );
+          }
+          return direction === "asc" ? result : -result;
+        });
+        return sorted;
+      }
+
+      function updateSortIndicators() {
+        const buttons = document.querySelectorAll(".sort-btn");
+        for (const button of buttons) {
+          const key = button.dataset.sortKey;
+          const active = key === state.sort.key;
+          button.classList.toggle("active", active);
+          const indicator = button.querySelector(".sort-indicator");
+          if (!indicator) continue;
+          indicator.textContent = active ? (state.sort.direction === "asc" ? "▲" : "▼") : "↕";
+        }
+      }
+
+      function setSort(key) {
+        if (state.sort.key === key) {
+          state.sort.direction = state.sort.direction === "asc" ? "desc" : "asc";
+        } else {
+          state.sort.key = key;
+          state.sort.direction = "asc";
+        }
+        renderTable();
+      }
+
+      function initSortControls() {
+        const buttons = document.querySelectorAll(".sort-btn");
+        for (const button of buttons) {
+          button.addEventListener("click", () => {
+            setSort(button.dataset.sortKey);
+          });
+        }
+      }
+
+      function redisSummaryForFile(file) {
+        if (!file) return null;
+        return state.redisSummaryByFile[file.id] || null;
+      }
+
+      async function ensureRedisSummary(file) {
+        if (!file || !file.bucket || !file.objectName) return;
+        const existing = redisSummaryForFile(file);
+        if (existing && (existing.status === "loading" || existing.status === "loaded")) {
+          return;
+        }
+
+        state.redisSummaryByFile[file.id] = {
+          status: "loading",
+          partitionCount: 0,
+          docIds: [],
+          sourcePrefix: "",
+          error: "",
+        };
+
+        try {
+          const data = await apiRequest(
+            `/api/buckets/${encodeURIComponent(file.bucket)}/files/${encodeObjectPath(file.objectName)}/redis-summary`
+          );
+          state.redisSummaryByFile[file.id] = {
+            status: "loaded",
+            partitionCount: Number(data.partition_count || 0),
+            docIds: Array.isArray(data.doc_ids) ? data.doc_ids : [],
+            sourcePrefix: String(data.source_prefix || ""),
+            error: "",
+          };
+        } catch (error) {
+          state.redisSummaryByFile[file.id] = {
+            status: "error",
+            partitionCount: 0,
+            docIds: [],
+            sourcePrefix: "",
+            error: String(error.message || error),
+          };
+        }
+        renderAll();
+      }
+
+      function modalCacheKey(file) {
+        return file.id;
+      }
+
+      async function openRedisModal(file) {
+        if (!file || !file.bucket || !file.objectName) return;
+
+        state.modal.open = true;
+        state.modal.fileId = file.id;
+        state.modal.loading = true;
+        state.modal.error = "";
+        state.modal.items = [];
+        state.modal.totalAvailable = 0;
+        renderModal();
+
+        const cacheKey = modalCacheKey(file);
+        if (state.redisDetailCache[cacheKey]) {
+          const cached = state.redisDetailCache[cacheKey];
+          state.modal.loading = false;
+          state.modal.error = "";
+          state.modal.items = cached.items || [];
+          state.modal.totalAvailable = Number(cached.totalAvailable || 0);
+          renderModal();
+          return;
+        }
+
+        try {
+          const data = await apiRequest(
+            `/api/buckets/${encodeURIComponent(file.bucket)}/files/${encodeObjectPath(file.objectName)}/redis-data?kind=partitions&limit=250`
+          );
+          const payload = {
+            items: Array.isArray(data.items) ? data.items : [],
+            totalAvailable: Number(data.total_available || 0),
+          };
+          state.redisDetailCache[cacheKey] = payload;
+          state.modal.loading = false;
+          state.modal.error = "";
+          state.modal.items = payload.items;
+          state.modal.totalAvailable = payload.totalAvailable;
+        } catch (error) {
+          state.modal.loading = false;
+          state.modal.error = String(error.message || error);
+          state.modal.items = [];
+          state.modal.totalAvailable = 0;
+        }
+        renderModal();
+      }
+
+      function closeDataModal() {
+        state.modal.open = false;
+        state.modal.loading = false;
+        state.modal.error = "";
+        state.modal.items = [];
+        state.modal.totalAvailable = 0;
+        renderModal();
+      }
+
+      function renderModal() {
+        const modal = document.getElementById("dataModal");
+        const modalTitle = document.getElementById("dataModalTitle");
+        const modalBody = document.getElementById("dataModalBody");
+        if (!modal || !modalTitle || !modalBody) return;
+
+        if (!state.modal.open) {
+          modal.hidden = true;
+          modalBody.innerHTML = "";
+          return;
+        }
+
+        const file = findFileById(state.modal.fileId) || getActiveFile();
+        const fileLabel = file ? file.fileName : "File";
+        modalTitle.textContent = `Partition Text - ${fileLabel}`;
+        modal.hidden = false;
+        modalBody.innerHTML = "";
+
+        const note = document.createElement("div");
+        note.className = "modal-note";
+        modalBody.append(note);
+
+        if (state.modal.loading) {
+          note.textContent = "Loading Redis data...";
+          return;
+        }
+
+        if (state.modal.error) {
+          note.textContent = `Error: ${state.modal.error}`;
+          return;
+        }
+
+        const loadedCount = state.modal.items.length;
+        note.textContent = `Loaded ${loadedCount} item(s)` +
+          (state.modal.totalAvailable > loadedCount ? ` of ${state.modal.totalAvailable} (lazy loaded)` : "") +
+          ".";
+
+        if (loadedCount === 0) {
+          const empty = document.createElement("div");
+          empty.className = "modal-note";
+          empty.textContent = "No text entries found for this file.";
+          modalBody.append(empty);
+          return;
+        }
+
+        for (const item of state.modal.items) {
+          const wrap = document.createElement("div");
+          wrap.className = "modal-item";
+
+          const label = document.createElement("div");
+          label.className = "modal-item-label";
+          label.textContent = item.label || "Entry";
+
+          const text = document.createElement("pre");
+          text.className = "modal-item-text";
+          text.textContent = item.text || "";
+
+          wrap.append(label, text);
+          modalBody.append(wrap);
+        }
+      }
+
+      function initModalControls() {
+        const modal = document.getElementById("dataModal");
+        const closeBtn = document.getElementById("dataModalClose");
+        if (closeBtn) {
+          closeBtn.addEventListener("click", closeDataModal);
+        }
+        if (modal) {
+          modal.addEventListener("click", (event) => {
+            if (event.target === modal) {
+              closeDataModal();
+            }
+          });
+        }
+      }
+
+      async function loadBuckets() {
+        state.loadingBuckets = true;
+        state.bucketsError = "";
+        renderAll();
+        try {
+          const data = await apiRequest("/api/buckets");
+          const names = Array.isArray(data.buckets) ? data.buckets : [];
+          state.buckets = names.map((name) => ({
+            id: name,
+            name,
+            files: [],
+            loaded: false,
+            loading: false,
+            error: "",
+          }));
+          if (!state.buckets.some((bucket) => bucket.id === state.activeBucketId)) {
+            state.activeBucketId = state.buckets.length > 0 ? state.buckets[0].id : null;
+            state.activeFileId = null;
+          }
+          renderAll();
+          if (state.buckets.length > 0) {
+            await Promise.allSettled(state.buckets.map((bucket) => ensureBucketLoaded(bucket.id)));
+          }
+        } catch (error) {
+          state.buckets = [];
+          state.activeBucketId = null;
+          state.activeFileId = null;
+          state.bucketsError = String(error.message || error);
+          renderAll();
+        } finally {
+          state.loadingBuckets = false;
+          renderBuckets();
+        }
+      }
+
+      async function ensureBucketLoaded(bucketId) {
+        const bucket = bucketById(bucketId);
+        if (!bucket || bucket.loaded || bucket.loading) {
+          return;
+        }
+        bucket.loading = true;
+        bucket.error = "";
+        renderAll();
+        try {
+          const data = await apiRequest(`/api/buckets/${encodeURIComponent(bucketId)}/files`);
+          const files = Array.isArray(data.files) ? data.files : [];
+          bucket.files = files.map(normalizeFileRecord);
+          bucket.loaded = true;
+          if (state.activeBucketId === bucketId) {
+            const hasActive = bucket.files.some((file) => file.id === state.activeFileId);
+            if (!hasActive) {
+              state.activeFileId = bucket.files.length > 0 ? bucket.files[0].id : null;
+            }
+          }
+        } catch (error) {
+          bucket.loaded = true;
+          bucket.files = [];
+          bucket.error = String(error.message || error);
+          if (state.activeBucketId === bucketId) {
+            state.activeFileId = null;
+          }
+        } finally {
+          bucket.loading = false;
+          renderAll();
+        }
+      }
+
+      function selectBucket(bucketId) {
+        state.activeBucketId = bucketId;
+        state.activeFileId = null;
+        renderAll();
+        ensureBucketLoaded(bucketId);
+      }
+
+      function selectFile(fileId) {
+        state.activeFileId = fileId;
+        renderAll();
+      }
+
+      function buildSavePayload(file) {
+        const payload = {};
+        for (const key of persistFieldKeys) {
+          if (key === "authors") {
+            payload[key] = coerceAuthors(file);
+          } else {
+            payload[key] = file[key] == null ? "" : file[key];
+          }
+        }
+        return payload;
+      }
+
+      async function saveFile(file) {
+        if (!file || !file.bucket || !file.objectName) {
+          return;
+        }
+        state.saveState = "saving";
+        state.saveFileId = file.id;
+        state.saveError = "";
+        renderTable();
+        try {
+          const data = await apiRequest(
+            `/api/buckets/${encodeURIComponent(file.bucket)}/files/${encodeObjectPath(file.objectName)}/bibtex`,
+            {
+              method: "PUT",
+              body: JSON.stringify(buildSavePayload(file)),
+            }
+          );
+          const saved = normalizeFileRecord(data.file || {});
+          Object.assign(file, saved);
+          state.saveState = "saved";
+          state.saveFileId = file.id;
+          state.saveError = "";
+        } catch (error) {
+          state.saveState = "error";
+          state.saveFileId = file.id;
+          state.saveError = String(error.message || error);
+        }
+        renderAll();
+      }
+
+      function scheduleSave(file) {
+        if (!file) return;
+        state.saveState = "pending";
+        state.saveFileId = file.id;
+        state.saveError = "";
+        renderTable();
+        const existingTimer = saveTimers.get(file.id);
+        if (existingTimer) {
+          clearTimeout(existingTimer);
+        }
+        const timer = setTimeout(() => {
+          saveTimers.delete(file.id);
+          saveFile(file);
+        }, 500);
+        saveTimers.set(file.id, timer);
+      }
+
+      function renderBuckets() {
+        const bucketList = document.getElementById("bucketList");
+        bucketList.innerHTML = "";
+
+        if (state.loadingBuckets && state.buckets.length === 0) {
+          const loading = document.createElement("div");
+          loading.className = "pane-subtitle";
+          loading.textContent = "Loading buckets...";
+          bucketList.append(loading);
+          return;
+        }
+
+        if (state.bucketsError) {
+          const error = document.createElement("div");
+          error.className = "pane-subtitle";
+          error.textContent = `Error: ${state.bucketsError}`;
+          bucketList.append(error);
+        }
+
+        if (state.buckets.length === 0 && !state.bucketsError) {
+          const empty = document.createElement("div");
+          empty.className = "pane-subtitle";
+          empty.textContent = "No buckets configured.";
+          bucketList.append(empty);
+          return;
+        }
+
+        for (const bucket of state.buckets) {
+          const button = document.createElement("button");
+          button.className = "bucket-btn" + (bucket.id === state.activeBucketId ? " active" : "");
+          button.type = "button";
+          button.addEventListener("click", () => selectBucket(bucket.id));
+
+          const name = document.createElement("span");
+          name.className = "bucket-name";
+          name.textContent = bucket.name;
+
+          const count = document.createElement("span");
+          count.className = "bucket-count";
+          count.textContent = bucket.loading ? "..." : String(bucket.files.length);
+
+          button.append(name, count);
+          bucketList.append(button);
+        }
+      }
+
+      function selectionHintText(activeFile) {
+        if (!activeFile) {
+          return "Select a file to edit metadata";
+        }
+        let text = `Selected: ${activeFile.fileName}`;
+        if (state.saveFileId === activeFile.id) {
+          if (state.saveState === "pending") text += " • Save queued...";
+          if (state.saveState === "saving") text += " • Saving to Redis...";
+          if (state.saveState === "saved") text += " • Saved to Redis";
+          if (state.saveState === "error") text += ` • Save failed: ${state.saveError}`;
+        }
+        return text;
+      }
+
+      function renderTable() {
+        const activeBucket = getActiveBucket();
+        const activeFile = getActiveFile();
+        const title = document.getElementById("tableTitle");
+        const hint = document.getElementById("selectionHint");
+        const body = document.getElementById("fileTableBody");
+        updateSortIndicators();
+
+        if (state.loadingBuckets && state.buckets.length === 0) {
+          title.textContent = "Files";
+          hint.textContent = "Loading buckets...";
+          body.innerHTML = '<tr><td colspan="4">Loading buckets...</td></tr>';
+          return;
+        }
+
+        if (state.bucketsError) {
+          title.textContent = "Files";
+          hint.textContent = "Unable to load data";
+          body.innerHTML = `<tr><td colspan="4">Error: ${state.bucketsError}</td></tr>`;
+          return;
+        }
+
+        if (!activeBucket) {
+          title.textContent = "Files";
+          hint.textContent = "No bucket selected";
+          body.innerHTML = '<tr><td colspan="4">No files available.</td></tr>';
+          return;
+        }
+
+        title.textContent = `Files in ${activeBucket.name}`;
+        hint.textContent = selectionHintText(activeFile);
+        body.innerHTML = "";
+
+        if (activeBucket.loading) {
+          body.innerHTML = '<tr><td colspan="4">Loading files...</td></tr>';
+          return;
+        }
+
+        if (activeBucket.error) {
+          body.innerHTML = `<tr><td colspan="4">Error: ${activeBucket.error}</td></tr>`;
+          return;
+        }
+
+        if (activeBucket.files.length === 0) {
+          body.innerHTML = '<tr><td colspan="4">No matching files in this bucket.</td></tr>';
+          return;
+        }
+
+        const sortedFiles = sortFiles(activeBucket.files);
+        for (const file of sortedFiles) {
+          const row = document.createElement("tr");
+          if (file.id === state.activeFileId) {
+            row.classList.add("active");
+          }
+          row.addEventListener("click", () => selectFile(file.id));
+
+          const titleCell = document.createElement("td");
+          titleCell.className = "file-name";
+          titleCell.textContent = displayTitle(file);
+          row.append(titleCell);
+
+          const yearCell = document.createElement("td");
+          yearCell.textContent = file.year || "—";
+          row.append(yearCell);
+
+          const authorsCell = document.createElement("td");
+          const authors = coerceAuthors(file);
+          authorsCell.textContent = formatAuthorsApa(authors) || "—";
+          row.append(authorsCell);
+
+          const linkCell = document.createElement("td");
+          if (file.originalFileUrl) {
+            const link = document.createElement("a");
+            link.href = file.originalFileUrl;
+            link.className = "file-link";
+            link.textContent = "Open";
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            link.addEventListener("click", (event) => event.stopPropagation());
+            linkCell.append(link);
+          } else {
+            linkCell.textContent = "—";
+          }
+          row.append(linkCell);
+
+          body.append(row);
+        }
+      }
+
+      function renderEditor() {
+        const pane = document.getElementById("editorPane");
+        const file = getActiveFile();
+        if (!file) {
+          pane.innerHTML = '<div class="editor-empty">Select a file row to edit BibTeX metadata fields.</div>';
+          return;
+        }
+
+        pane.innerHTML = "";
+
+        const header = document.createElement("div");
+        header.className = "editor-head";
+
+        const fileTag = document.createElement("div");
+        fileTag.className = "editor-file";
+        fileTag.textContent = file.fileName;
+
+        const headerTitle = document.createElement("div");
+        headerTitle.className = "editor-title";
+        headerTitle.textContent = file.title || "Untitled";
+        header.append(fileTag, headerTitle);
+        pane.append(header);
+
+        ensureRedisSummary(file);
+        const summary = redisSummaryForFile(file);
+        const stats = document.createElement("div");
+        stats.className = "redis-stats";
+
+        const statsTitle = document.createElement("div");
+        statsTitle.className = "redis-stats-title";
+        statsTitle.textContent = "Redis Partition Data";
+        stats.append(statsTitle);
+
+        const statsGrid = document.createElement("div");
+        statsGrid.className = "redis-stats-grid";
+
+        const partitionBtn = document.createElement("button");
+        partitionBtn.type = "button";
+        partitionBtn.className = "redis-stat-btn";
+        const partitionCount = summary?.partitionCount ?? 0;
+        partitionBtn.innerHTML = `<div class="redis-stat-count">${partitionCount}</div><div class="redis-stat-label">Partitions</div>`;
+        partitionBtn.disabled = !summary || summary.status !== "loaded" || partitionCount === 0;
+        partitionBtn.addEventListener("click", () => openRedisModal(file));
+        statsGrid.append(partitionBtn);
+
+        stats.append(statsGrid);
+
+        const statsMeta = document.createElement("div");
+        statsMeta.className = "redis-stats-meta";
+        if (!summary || summary.status === "loading") {
+          statsMeta.textContent = "Loading counts...";
+        } else if (summary.status === "error") {
+          statsMeta.textContent = `Unable to load Redis counts: ${summary.error}`;
+        } else if (summary.docIds.length === 0) {
+          statsMeta.textContent = "No source mapping found in Redis.";
+        } else {
+          statsMeta.textContent = `From ${summary.docIds.length} document id(s) in ${summary.sourcePrefix}. Click to lazy load partition text.`;
+        }
+        stats.append(statsMeta);
+
+        pane.append(stats);
+
+        const grid = document.createElement("div");
+        grid.className = "field-grid";
+
+        const recommendedSet = recommendedSetForEntryType(file.entryType);
+
+        const recommendedSummary = document.createElement("div");
+        recommendedSummary.className = "recommended-summary";
+        recommendedSummary.textContent = `Recommended fields for ${file.entryType}: marked below.`;
+        grid.append(recommendedSummary);
+
+        const titleWrap = document.createElement("div");
+        titleWrap.className = "field-wrap";
+        if (recommendedSet.has("title")) titleWrap.classList.add("recommended");
+        const titleLabel = createFieldLabel("Title", recommendedSet.has("title"));
+        const titleInput = document.createElement("input");
+        titleInput.className = "editor-input";
+        titleInput.value = file.title || "";
+        titleInput.addEventListener("input", () => {
+          file.title = titleInput.value;
+          headerTitle.textContent = file.title || "Untitled";
+          renderTable();
+          scheduleSave(file);
+        });
+        titleWrap.append(titleLabel, titleInput);
+        grid.append(titleWrap);
+
+        const yearWrap = document.createElement("div");
+        yearWrap.className = "field-wrap";
+        if (recommendedSet.has("year")) yearWrap.classList.add("recommended");
+        const yearLabel = createFieldLabel("Year", recommendedSet.has("year"));
+        const yearInput = document.createElement("input");
+        yearInput.className = "editor-input";
+        yearInput.value = file.year || "";
+        yearInput.addEventListener("input", () => {
+          file.year = yearInput.value;
+          renderTable();
+          scheduleSave(file);
+        });
+        yearWrap.append(yearLabel, yearInput);
+        grid.append(yearWrap);
+
+        const authorsWrap = document.createElement("div");
+        authorsWrap.className = "field-wrap";
+        if (recommendedSet.has("authors")) authorsWrap.classList.add("recommended");
+        const authorsLabel = createFieldLabel("Authors", recommendedSet.has("authors"));
+        authorsWrap.append(authorsLabel);
+
+        const authorsHint = document.createElement("div");
+        authorsHint.className = "field-hint";
+        authorsHint.textContent = "Each author uses first and last name. Display is formatted as APA-style names.";
+        authorsWrap.append(authorsHint);
+
+        const authorsList = document.createElement("div");
+        authorsList.className = "authors-list";
+        authorsWrap.append(authorsList);
+
+        const authors = coerceAuthors(file);
+        for (const author of authors) {
+          const row = document.createElement("div");
+          row.className = "author-row";
+
+          const firstNameInput = document.createElement("input");
+          firstNameInput.className = "editor-input";
+          firstNameInput.placeholder = "First name";
+          firstNameInput.value = author.firstName || "";
+          firstNameInput.addEventListener("input", () => {
+            author.firstName = firstNameInput.value;
+            apaPreview.textContent = formatAuthorsApa(authors) || "—";
+            renderTable();
+            scheduleSave(file);
+          });
+
+          const lastNameInput = document.createElement("input");
+          lastNameInput.className = "editor-input";
+          lastNameInput.placeholder = "Last name";
+          lastNameInput.value = author.lastName || "";
+          lastNameInput.addEventListener("input", () => {
+            author.lastName = lastNameInput.value;
+            apaPreview.textContent = formatAuthorsApa(authors) || "—";
+            renderTable();
+            scheduleSave(file);
+          });
+
+          const removeBtn = document.createElement("button");
+          removeBtn.type = "button";
+          removeBtn.textContent = "Remove";
+          removeBtn.addEventListener("click", () => {
+            const idx = authors.indexOf(author);
+            if (idx >= 0) {
+              authors.splice(idx, 1);
+              renderEditor();
+              renderTable();
+              scheduleSave(file);
+            }
+          });
+
+          row.append(firstNameInput, lastNameInput, removeBtn);
+          authorsList.append(row);
+        }
+
+        const addAuthorBtn = document.createElement("button");
+        addAuthorBtn.type = "button";
+        addAuthorBtn.className = "author-add-btn";
+        addAuthorBtn.textContent = "+ Add author";
+        addAuthorBtn.addEventListener("click", () => {
+          authors.push({ firstName: "", lastName: "" });
+          renderEditor();
+          renderTable();
+          scheduleSave(file);
+        });
+        authorsWrap.append(addAuthorBtn);
+
+        const apaPreview = document.createElement("div");
+        apaPreview.className = "apa-preview";
+        apaPreview.textContent = formatAuthorsApa(authors) || "—";
+        authorsWrap.append(apaPreview);
+
+        grid.append(authorsWrap);
+
+        for (const field of fieldConfig) {
+          const wrap = document.createElement("div");
+          wrap.className = "field-wrap";
+          if (recommendedSet.has(field.key)) wrap.classList.add("recommended");
+          const label = createFieldLabel(field.label, recommendedSet.has(field.key));
+          wrap.append(label);
+
+          if (field.type === "textarea") {
+            const textarea = document.createElement("textarea");
+            textarea.className = "editor-textarea";
+            textarea.value = file[field.key] || "";
+            textarea.addEventListener("input", () => {
+              file[field.key] = textarea.value;
+              scheduleSave(file);
+            });
+            wrap.append(textarea);
+          } else if (field.type === "select") {
+            const select = document.createElement("select");
+            select.className = "editor-select";
+            for (const optionValue of field.options) {
+              const option = document.createElement("option");
+              option.value = optionValue;
+              option.textContent = optionValue;
+              if (optionValue === file[field.key]) {
+                option.selected = true;
+              }
+              select.append(option);
+            }
+            select.addEventListener("change", () => {
+              file[field.key] = select.value;
+              scheduleSave(file);
+              if (field.key === "entryType") {
+                renderEditor();
+                renderTable();
+                return;
+              }
+            });
+            wrap.append(select);
+          } else {
+            const input = document.createElement("input");
+            input.className = "editor-input";
+            input.value = file[field.key] || "";
+            input.addEventListener("input", () => {
+              file[field.key] = input.value;
+              if (field.key === "citationKey") {
+                renderTable();
+              }
+              scheduleSave(file);
+            });
+            wrap.append(input);
+          }
+
+          grid.append(wrap);
+        }
+
+        pane.append(grid);
+      }
+
+      function renderAll() {
+        renderBuckets();
+        renderTable();
+        renderEditor();
+        renderModal();
+      }
+
+      initSortControls();
+      initModalControls();
+      loadBuckets();
+    </script>
+  </body>
+</html>

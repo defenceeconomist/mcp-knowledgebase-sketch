@@ -32,3 +32,4 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "mcp_research.dashboard_static" = ["*.html"]
+"mcp_research.bibtex_ui_static" = ["*.html"]
