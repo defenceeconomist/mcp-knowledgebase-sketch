@@ -25,6 +25,15 @@ python mcp_app.py
 ```
 Server listens on `http://localhost:8000` and serves MCP at `http://localhost:8000/mcp`.
 
+## 3b) Run the dashboard (optional)
+The dashboard shows Qdrant collections (used as buckets) and per-file metadata from Qdrant + Redis.
+
+Run locally:
+```bash
+python -m mcp_research.dashboard_app
+```
+Open `http://localhost:8002`.
+
 ## 4) Run Qdrant (optional)
 ```bash
 docker compose up qdrant

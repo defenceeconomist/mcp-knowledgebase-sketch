@@ -42,6 +42,9 @@ docker compose up --build
 - `mcp` service: HTTP MCP on port 8000.
 - `resolver` service: citation resolver API on port 8080.
 - `minio` service: object storage with console on port 9001.
+- `dashboard` service: bucket/file dashboard on port 8002.
+
+Open the dashboard at `http://localhost:8002` to browse Qdrant collections (buckets) and see per-file metadata from Qdrant + Redis.
 
 ## Exposed Tools
 - `ping`: health check returning `"pong"`.

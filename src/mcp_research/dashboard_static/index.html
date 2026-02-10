@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MCP Research Dashboard</title>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --panel: #101a33;
+        --panel2: #0f1730;
+        --text: #e7ecff;
+        --muted: #aab3d6;
+        --border: rgba(255, 255, 255, 0.12);
+        --accent: #7aa2ff;
+        --bad: #ff6b6b;
+        --warn: #ffd166;
+        --good: #06d6a0;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+        background: linear-gradient(180deg, var(--bg), #070a14);
+        color: var(--text);
+      }
+      a { color: var(--accent); text-decoration: none; }
+      .layout { display: grid; grid-template-columns: 280px 1fr; height: 100vh; }
+      .sidebar {
+        border-right: 1px solid var(--border);
+        background: rgba(16, 26, 51, 0.72);
+        backdrop-filter: blur(10px);
+        padding: 14px 12px;
+        overflow: auto;
+      }
+      .main { padding: 16px 18px; overflow: auto; }
+      .brand { font-weight: 700; letter-spacing: 0.2px; }
+      .subtitle { color: var(--muted); font-size: 12px; margin-top: 2px; }
+      .row { display: flex; gap: 8px; align-items: center; }
+      .grow { flex: 1; }
+      .btn {
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text);
+        padding: 8px 10px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .btn:hover { background: rgba(255, 255, 255, 0.10); }
+      .input {
+        border: 1px solid var(--border);
+        background: rgba(0, 0, 0, 0.22);
+        color: var(--text);
+        padding: 8px 10px;
+        border-radius: 10px;
+        font-size: 13px;
+        outline: none;
+        width: 100%;
+      }
+      .bucket-list { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+      .bucket {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 8px 10px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.18);
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .bucket:hover { background: rgba(255, 255, 255, 0.06); }
+      .bucket.active { border-color: rgba(122, 162, 255, 0.5); background: rgba(122, 162, 255, 0.10); }
+      .pill { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted); }
+      .panel {
+        border: 1px solid var(--border);
+        background: rgba(16, 26, 51, 0.55);
+        border-radius: 16px;
+        padding: 12px;
+      }
+      .header { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
+      .h1 { font-size: 18px; font-weight: 700; margin: 0; }
+      .meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
+      table { width: 100%; border-collapse: separate; border-spacing: 0; overflow: hidden; }
+      th, td { text-align: left; padding: 10px 10px; font-size: 12.5px; border-bottom: 1px solid var(--border); vertical-align: top; }
+      th { position: sticky; top: 0; background: rgba(15, 23, 48, 0.92); backdrop-filter: blur(8px); z-index: 2; color: var(--muted); font-weight: 600; }
+      tr:hover td { background: rgba(255, 255, 255, 0.04); }
+      .summary-row { cursor: pointer; }
+      .summary-row.open td { background: rgba(122, 162, 255, 0.08); }
+      .details-row { display: none; }
+      .details-row.open { display: table-row; }
+      .details-cell { padding: 10px; background: rgba(0, 0, 0, 0.22); }
+      .details-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+      .detail-section {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: rgba(16, 26, 51, 0.45);
+        overflow: hidden;
+      }
+      .detail-section > summary {
+        cursor: pointer;
+        padding: 10px 12px;
+        font-size: 12px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        list-style: none;
+      }
+      .detail-section > summary::-webkit-details-marker { display: none; }
+      .detail-body { padding: 0 12px 12px 12px; }
+      .detail-json { margin: 0; white-space: pre-wrap; word-break: break-word; font-size: 12px; }
+      .partition-group {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.20);
+        margin-top: 10px;
+        overflow: hidden;
+      }
+      .partition-group > summary {
+        cursor: pointer;
+        padding: 10px;
+        font-size: 12px;
+        color: var(--muted);
+        list-style: none;
+      }
+      .partition-group > summary::-webkit-details-marker { display: none; }
+      .partition-body { padding: 0 10px 10px 10px; }
+      .partition-header { font-size: 12px; color: var(--muted); }
+      .chunk-item {
+        border-top: 1px solid var(--border);
+        padding-top: 8px;
+        margin-top: 8px;
+      }
+      .chunk-item:first-child {
+        border-top: none;
+        padding-top: 0;
+        margin-top: 0;
+      }
+      .chunk-meta { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+      .chunk-text {
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        background: rgba(0, 0, 0, 0.22);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 8px;
+        font-size: 12px;
+        max-height: 220px;
+        overflow: auto;
+      }
+      .expander {
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text);
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-right: 8px;
+        padding: 0;
+        line-height: 1;
+      }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+      .status { display: inline-flex; gap: 6px; align-items: center; }
+      .dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; background: var(--muted); }
+      .dot.good { background: var(--good); }
+      .dot.bad { background: var(--bad); }
+      .dot.warn { background: var(--warn); }
+      .small { font-size: 12px; color: var(--muted); }
+      .source-link {
+        color: var(--muted);
+        text-decoration: none;
+      }
+      .source-link:hover {
+        text-decoration: underline;
+      }
+      .source-link-icon {
+        margin-left: 6px;
+        opacity: 0.9;
+      }
+      .right { text-align: right; }
+      .nowrap { white-space: nowrap; }
+      .topbar { display: grid; grid-template-columns: 1fr 220px 140px auto; gap: 8px; margin-top: 10px; }
+      .spacer { height: 10px; }
+      .footerbar { display: flex; gap: 10px; align-items: center; justify-content: space-between; margin-top: 10px; }
+      @media (max-width: 980px) {
+        .layout { grid-template-columns: 1fr; }
+        .sidebar { height: auto; border-right: none; border-bottom: 1px solid var(--border); }
+        .topbar { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="row">
+          <div class="grow">
+            <div class="brand">MCP Research</div>
+            <div class="subtitle">Buckets (Qdrant collections)</div>
+          </div>
+          <button class="btn" id="refreshBuckets">Refresh</button>
+        </div>
+        <div class="spacer"></div>
+        <input class="input" id="bucketFilter" placeholder="Filter buckets…" />
+        <div class="bucket-list" id="bucketList"></div>
+        <div class="spacer"></div>
+        <div class="small">
+          Uses <span class="mono">QDRANT_URL</span>, <span class="mono">REDIS_URL</span>, <span class="mono">REDIS_PREFIX</span>.
+        </div>
+      </aside>
+
+      <main class="main">
+        <div class="panel">
+          <div class="header">
+            <div>
+              <h1 class="h1" id="title">Select a bucket</h1>
+              <div class="meta" id="subtitle">—</div>
+            </div>
+            <div class="status">
+              <span class="dot" id="redisDot"></span>
+              <span class="small" id="redisStatus">Redis: unknown</span>
+            </div>
+          </div>
+
+          <div class="topbar">
+            <input class="input" id="search" placeholder="Search key/source/document_id…" />
+            <input class="input" id="limit" type="number" min="1" max="2000" value="200" />
+            <button class="btn" id="reload">Load</button>
+            <button class="btn" id="loadMore" disabled>Load more</button>
+          </div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="panel">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 62%;">File</th>
+                <th class="right nowrap">Partitions</th>
+                <th class="right nowrap">Chunks</th>
+              </tr>
+            </thead>
+            <tbody id="rows">
+              <tr><td colspan="3" class="small">No data loaded.</td></tr>
+            </tbody>
+          </table>
+          <div class="footerbar">
+            <div class="small" id="footerLeft">—</div>
+            <div class="small" id="footerRight">—</div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      const state = {
+        buckets: [],
+        bucket: null,
+        offset: null,
+        truncated: false,
+        files: [],
+        lastFetch: null,
+        visibleFiles: [],
+        chunkDetails: {},
+        partitionChunks: {},
+        openDetails: {},
+        openPartitions: {},
+      };
+
+      function el(id) { return document.getElementById(id); }
+      function esc(s) { return (s ?? "").toString().replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;"); }
+      function escAttr(s) {
+        return (s ?? "")
+          .toString()
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+      function fmt(n) { return (n === null || n === undefined) ? "—" : n.toString(); }
+
+      function setRedisStatus(files) {
+        // heuristic: if any row has redis_meta_key, assume redis is connected
+        const hasRedis = files.some(f => f.redis_chunks !== undefined || f.redis_partitions !== undefined || f.redis_meta_key);
+        const dot = el("redisDot");
+        const label = el("redisStatus");
+        if (!state.bucket) {
+          dot.className = "dot";
+          label.textContent = "Redis: unknown";
+          return;
+        }
+        if (hasRedis) {
+          dot.className = "dot good";
+          label.textContent = "Redis: connected";
+        } else {
+          dot.className = "dot warn";
+          label.textContent = "Redis: not configured / no matches";
+        }
+      }
+
+      function renderBuckets() {
+        const filter = (el("bucketFilter").value || "").toLowerCase();
+        const list = el("bucketList");
+        list.innerHTML = "";
+        const buckets = state.buckets.filter(b => b.toLowerCase().includes(filter));
+        if (!buckets.length) {
+          list.innerHTML = `<div class="small">No buckets found.</div>`;
+          return;
+        }
+        for (const b of buckets) {
+          const div = document.createElement("div");
+          div.className = "bucket" + (b === state.bucket ? " active" : "");
+          div.innerHTML = `<span class="mono">${esc(b)}</span><span class="pill">Qdrant</span>`;
+          div.onclick = () => selectBucket(b);
+          list.appendChild(div);
+        }
+      }
+
+      function pagesLabel(file) {
+        if (file.page_start !== undefined && file.page_start !== null) {
+          const end = (file.page_end !== undefined && file.page_end !== null) ? file.page_end : file.page_start;
+          return `${file.page_start}-${end}`;
+        }
+        if (Array.isArray(file.pages) && file.pages.length) {
+          const min = Math.min(...file.pages);
+          const max = Math.max(...file.pages);
+          return `${min}-${max}`;
+        }
+        return "—";
+      }
+
+      function fileLabel(file) {
+        if (file.key) return file.key;
+        if (file.source) return file.source;
+        if (file.document_id) return file.document_id;
+        return "—";
+      }
+
+      function sourceLabel(file) {
+        if (file.source) return file.source;
+        if (file.bucket || file.key) return (file.bucket || state.bucket || "") + (file.key ? "/" + file.key : "");
+        return "—";
+      }
+
+      function fileIdentityKey(file) {
+        if (file.document_id) return `doc:${file.document_id}`;
+        if (file.source) return `source:${file.source}`;
+        return `object:${file.bucket || state.bucket || ""}/${file.key || ""}`;
+      }
+
+      function detailsCacheKey(file) {
+        return `${state.bucket || ""}|${fileIdentityKey(file)}`;
+      }
+
+      function partitionChunkCacheKey(file, partitionIndex) {
+        return `${detailsCacheKey(file)}|partition:${partitionIndex}`;
+      }
+
+      function updateVisibleRowsByCacheKey(cacheKey) {
+        for (let idx = 0; idx < state.visibleFiles.length; idx += 1) {
+          const file = state.visibleFiles[idx];
+          if (detailsCacheKey(file) !== cacheKey) continue;
+          const summaryRow = el(`summary-${idx}`);
+          const detailsRow = el(`details-${idx}`);
+          if (!summaryRow || !detailsRow) continue;
+          const cells = summaryRow.querySelectorAll("td");
+          if (cells.length >= 3) {
+            cells[1].textContent = fmt(topLevelPartitions(file));
+            cells[2].textContent = fmt(topLevelChunks(file));
+          }
+          const detailsCell = detailsRow.querySelector(".details-cell");
+          if (detailsCell) {
+            detailsCell.innerHTML = detailSectionsHtml(file);
+          }
+        }
+      }
+
+      function findFileByCacheKey(cacheKey) {
+        return state.visibleFiles.find((file) => detailsCacheKey(file) === cacheKey)
+          || state.files.find((file) => detailsCacheKey(file) === cacheKey)
+          || null;
+      }
+
+      function updatePartitionBodies(fileKey, partitionIndex) {
+        const file = findFileByCacheKey(fileKey);
+        if (!file) return;
+        const html = partitionChunksHtml(file, partitionIndex);
+        const nodes = document.querySelectorAll(".partition-body");
+        for (const node of nodes) {
+          const element = node;
+          const nodeFileKey = element.getAttribute("data-file-key") || "";
+          const nodePartitionIndex = parseInt(element.getAttribute("data-partition-index") || "", 10);
+          if (nodeFileKey === fileKey && nodePartitionIndex === partitionIndex) {
+            element.innerHTML = html;
+          }
+        }
+      }
+
+      function chunkPagesLabel(chunk) {
+        if (chunk.page_start !== null && chunk.page_start !== undefined) {
+          const end = (chunk.page_end !== null && chunk.page_end !== undefined) ? chunk.page_end : chunk.page_start;
+          return end === chunk.page_start ? `Page ${chunk.page_start}` : `Pages ${chunk.page_start}-${end}`;
+        }
+        if (Array.isArray(chunk.pages) && chunk.pages.length) {
+          const min = Math.min(...chunk.pages);
+          const max = Math.max(...chunk.pages);
+          return min === max ? `Page ${min}` : `Pages ${min}-${max}`;
+        }
+        return "Unknown pages";
+      }
+
+      function matchesSearch(file, q) {
+        if (!q) return true;
+        const hay = [
+          file.key, file.source, file.document_id,
+          (file.redis_doc_ids || []).join(","),
+        ].filter(Boolean).join(" ").toLowerCase();
+        return hay.includes(q);
+      }
+
+      function compareBySource(a, b) {
+        const aSource = sourceLabel(a).toLowerCase();
+        const bSource = sourceLabel(b).toLowerCase();
+        return aSource.localeCompare(bSource);
+      }
+
+      function detailJson(value) {
+        if (!value || (typeof value === "object" && !Array.isArray(value) && Object.keys(value).length === 0)) {
+          return "No metadata available.";
+        }
+        return JSON.stringify(value, null, 2);
+      }
+
+      function mergedRedisMetadata(file) {
+        return file.redis_metadata || {};
+      }
+
+      function mergedQdrantMetadata(file) {
+        const base = {
+          qdrant_chunks: file.qdrant_chunks ?? null,
+          bucket: file.bucket || state.bucket || null,
+          key: file.key || null,
+          source: file.source || null,
+          document_id: file.document_id || null,
+          version_id: file.version_id || null,
+          pages: pagesLabel(file),
+        };
+        return Object.assign(base, file.qdrant_metadata || {});
+      }
+
+      function topLevelChunks(file) {
+        return file.qdrant_chunks ?? file.redis_chunks ?? null;
+      }
+
+      function topLevelPartitions(file) {
+        return file.qdrant_partitions ?? file.redis_partitions ?? null;
+      }
+
+      function chunkDetailsHtml(file) {
+        const cache = state.chunkDetails[detailsCacheKey(file)];
+        if (!cache) return `<div class="small">Expand to load chunk text grouped by partition.</div>`;
+        if (cache.loading) return `<div class="small">Loading chunk details…</div>`;
+        if (cache.error) return `<div class="small">Failed to load chunk details: ${esc(cache.error)}</div>`;
+        const partitions = cache.data?.partitions || [];
+        if (!partitions.length) return `<div class="small">No chunk data found.</div>`;
+
+        const fileKey = detailsCacheKey(file);
+        return partitions.map((partition) => {
+          const partitionTitle = `Partition ${partition.partition_index} · ${partition.label} · ${partition.chunk_count} chunks`;
+          const partitionCacheKey = partitionChunkCacheKey(file, partition.partition_index);
+          const isOpen = !!state.openPartitions[partitionCacheKey];
+          return `
+            <details
+              class="partition-group"
+              data-file-key="${escAttr(fileKey)}"
+              data-partition-index="${partition.partition_index}"
+              ${isOpen ? "open" : ""}
+              ontoggle="togglePartition(event)"
+            >
+              <summary><span class="partition-header">${esc(partitionTitle)}</span></summary>
+              <div class="partition-body" data-file-key="${escAttr(fileKey)}" data-partition-index="${partition.partition_index}">
+                ${partitionChunksHtml(file, partition.partition_index)}
+              </div>
+            </details>
+          `;
+        }).join("");
+      }
+
+      function partitionChunksHtml(file, partitionIndex) {
+        const cache = state.partitionChunks[partitionChunkCacheKey(file, partitionIndex)];
+        if (!cache) return `<div class="small">Expand partition to load chunks.</div>`;
+        if (cache.loading) return `<div class="small">Loading chunks…</div>`;
+        if (cache.error) return `<div class="small">Failed to load chunks: ${esc(cache.error)}</div>`;
+        const chunks = cache.data?.partition?.chunks || [];
+        if (!chunks.length) return `<div class="small">No chunks found.</div>`;
+        return chunks.map((chunk) => `
+          <div class="chunk-item">
+            <div class="chunk-meta">Chunk ${fmt(chunk.chunk_index)} · ${esc(chunkPagesLabel(chunk))}</div>
+            <pre class="chunk-text mono">${esc(chunk.text || "")}</pre>
+          </div>
+        `).join("");
+      }
+
+      function detailSectionsHtml(file) {
+        const redisJson = esc(detailJson(mergedRedisMetadata(file)));
+        const qdrantJson = esc(detailJson(mergedQdrantMetadata(file)));
+        return `
+          <div class="details-grid">
+            <details class="detail-section">
+              <summary>Redis metadata</summary>
+              <div class="detail-body">
+                <pre class="detail-json mono">${redisJson}</pre>
+              </div>
+            </details>
+            <details class="detail-section">
+              <summary>Qdrant metadata</summary>
+              <div class="detail-body">
+                <pre class="detail-json mono">${qdrantJson}</pre>
+              </div>
+            </details>
+            <details class="detail-section" open>
+              <summary>Chunk text by partition</summary>
+              <div class="detail-body">
+                ${chunkDetailsHtml(file)}
+              </div>
+            </details>
+          </div>
+        `;
+      }
+
+      async function loadChunkDetails(file) {
+        if (!state.bucket) return;
+        const cacheKey = detailsCacheKey(file);
+        const cache = state.chunkDetails[cacheKey];
+        if (cache && (cache.loading || cache.data || cache.error)) return;
+
+        state.chunkDetails[cacheKey] = { loading: true };
+        updateVisibleRowsByCacheKey(cacheKey);
+        try {
+          const url = new URL(`/api/buckets/${encodeURIComponent(state.bucket)}/files/partitions`, window.location.origin);
+          if (file.document_id) {
+            url.searchParams.set("document_id", file.document_id);
+          } else if (file.source) {
+            url.searchParams.set("source", file.source);
+          } else if (file.key) {
+            url.searchParams.set("key", file.key);
+          } else {
+            throw new Error("Missing file identity");
+          }
+          const res = await fetch(url.toString());
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `HTTP ${res.status}`);
+          }
+          const data = await res.json();
+          state.chunkDetails[cacheKey] = { loading: false, data };
+        } catch (e) {
+          state.chunkDetails[cacheKey] = { loading: false, error: e.message || String(e) };
+        }
+        updateVisibleRowsByCacheKey(cacheKey);
+      }
+
+      async function loadPartitionChunks(file, partitionIndex) {
+        if (!state.bucket) return;
+        const fileKey = detailsCacheKey(file);
+        const cacheKey = partitionChunkCacheKey(file, partitionIndex);
+        const cache = state.partitionChunks[cacheKey];
+        if (cache && (cache.loading || cache.data || cache.error)) return;
+
+        state.partitionChunks[cacheKey] = { loading: true };
+        updatePartitionBodies(fileKey, partitionIndex);
+        try {
+          const url = new URL(
+            `/api/buckets/${encodeURIComponent(state.bucket)}/files/partitions/${partitionIndex}/chunks`,
+            window.location.origin,
+          );
+          if (file.document_id) {
+            url.searchParams.set("document_id", file.document_id);
+          } else if (file.source) {
+            url.searchParams.set("source", file.source);
+          } else if (file.key) {
+            url.searchParams.set("key", file.key);
+          } else {
+            throw new Error("Missing file identity");
+          }
+          const res = await fetch(url.toString());
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `HTTP ${res.status}`);
+          }
+          const data = await res.json();
+          state.partitionChunks[cacheKey] = { loading: false, data };
+        } catch (e) {
+          state.partitionChunks[cacheKey] = { loading: false, error: e.message || String(e) };
+        }
+        if (state.openPartitions[cacheKey]) {
+          updatePartitionBodies(fileKey, partitionIndex);
+        }
+      }
+
+      function togglePartition(event) {
+        const details = event.currentTarget;
+        const fileKey = details.getAttribute("data-file-key") || "";
+        const partitionIndex = parseInt(details.getAttribute("data-partition-index") || "", 10);
+        if (!fileKey || !partitionIndex) return;
+        const file = findFileByCacheKey(fileKey);
+        if (!file) return;
+        const partitionKey = partitionChunkCacheKey(file, partitionIndex);
+        if (details.open) {
+          state.openPartitions[partitionKey] = true;
+          loadPartitionChunks(file, partitionIndex);
+        } else {
+          delete state.openPartitions[partitionKey];
+        }
+      }
+
+      function toggleDetails(idx) {
+        const file = state.visibleFiles[idx];
+        const summary = el(`summary-${idx}`);
+        const details = el(`details-${idx}`);
+        const toggle = el(`toggle-${idx}`);
+        if (!summary || !details || !toggle || !file) return;
+        const open = !details.classList.contains("open");
+        details.classList.toggle("open", open);
+        summary.classList.toggle("open", open);
+        toggle.textContent = open ? "▾" : "▸";
+        toggle.setAttribute("aria-expanded", open ? "true" : "false");
+        const key = detailsCacheKey(file);
+        if (open) {
+          state.openDetails[key] = true;
+        } else {
+          delete state.openDetails[key];
+        }
+        if (open) {
+          loadChunkDetails(file);
+        }
+      }
+
+      function renderRows() {
+        const q = (el("search").value || "").toLowerCase();
+        const rows = el("rows");
+        const shown = state.files
+          .filter(f => matchesSearch(f, q))
+          .slice()
+          .sort(compareBySource);
+        state.visibleFiles = shown;
+        if (!shown.length) {
+          rows.innerHTML = `<tr><td colspan="3" class="small">No matching files.</td></tr>`;
+          return;
+        }
+        rows.innerHTML = shown.map((f, idx) => {
+          const redisMissing = (f.redis_chunks === null || f.redis_chunks === undefined) && (f.redis_partitions === null || f.redis_partitions === undefined);
+          const rowStyle = redisMissing ? `style="border-left: 3px solid rgba(255, 209, 102, 0.55);"` : "";
+          const open = !!state.openDetails[detailsCacheKey(f)];
+          const rowClass = open ? "summary-row open" : "summary-row";
+          const detailClass = open ? "details-row open" : "details-row";
+          const chevron = open ? "▾" : "▸";
+          const expanded = open ? "true" : "false";
+          const sourceText = sourceLabel(f);
+          const sourceHtml = f.original_file_url
+            ? `<a class="source-link mono" href="${escAttr(f.original_file_url)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${esc(sourceText)}<span class="source-link-icon" aria-hidden="true">🔗</span></a>`
+            : `<span class="small mono">${esc(sourceText)}</span>`;
+          return `
+            <tr id="summary-${idx}" class="${rowClass}" ${rowStyle} onclick="toggleDetails(${idx})">
+              <td>
+                <button id="toggle-${idx}" class="expander" type="button" onclick="event.stopPropagation(); toggleDetails(${idx});" aria-expanded="${expanded}" aria-label="Toggle metadata details">${chevron}</button>
+                <span class="mono">${esc(fileLabel(f))}</span>
+                <div class="small">${sourceHtml}</div>
+              </td>
+              <td class="right mono">${fmt(topLevelPartitions(f))}</td>
+              <td class="right mono">${fmt(topLevelChunks(f))}</td>
+            </tr>
+            <tr id="details-${idx}" class="${detailClass}">
+              <td colspan="3" class="details-cell">
+                ${detailSectionsHtml(f)}
+              </td>
+            </tr>
+          `;
+        }).join("");
+      }
+
+      async function loadBuckets() {
+        const res = await fetch("/api/buckets");
+        const data = await res.json();
+        state.buckets = data.buckets || [];
+        renderBuckets();
+      }
+
+      async function loadFiles({ reset }) {
+        if (!state.bucket) return;
+        const limit = parseInt(el("limit").value || "200", 10);
+        const offset = reset ? null : state.offset;
+        if (reset) {
+          state.openDetails = {};
+          state.chunkDetails = {};
+          state.partitionChunks = {};
+          state.openPartitions = {};
+        }
+        el("reload").disabled = true;
+        el("loadMore").disabled = true;
+        el("subtitle").textContent = "Loading…";
+        try {
+          const url = new URL(`/api/buckets/${encodeURIComponent(state.bucket)}/files`, window.location.origin);
+          url.searchParams.set("limit", String(limit));
+          if (offset) url.searchParams.set("offset", String(offset));
+          const res = await fetch(url.toString());
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.detail || `HTTP ${res.status}`);
+          }
+          const data = await res.json();
+          state.offset = data.next_offset || null;
+          state.truncated = !!data.truncated;
+          const newFiles = data.files || [];
+          if (reset) {
+            state.files = newFiles;
+          } else {
+            const merged = state.files.slice();
+            const seen = new Set(merged.map((file) => detailsCacheKey(file)));
+            for (const file of newFiles) {
+              const key = detailsCacheKey(file);
+              if (seen.has(key)) continue;
+              merged.push(file);
+              seen.add(key);
+            }
+            state.files = merged;
+          }
+          state.lastFetch = data;
+          el("subtitle").textContent = `${fmt(data.count)} unique files (scanned ${fmt(data.scanned_points)} points)`;
+          setRedisStatus(state.files);
+          renderRows();
+          el("loadMore").disabled = !state.truncated || !state.offset;
+          el("footerLeft").textContent = state.truncated ? `More available (next offset: ${state.offset})` : "End of list";
+          el("footerRight").textContent = `Showing ${state.files.length} rows`;
+        } catch (e) {
+          el("subtitle").textContent = `Error: ${e.message || e}`;
+          el("rows").innerHTML = `<tr><td colspan="3" class="small">Failed to load files.</td></tr>`;
+          el("footerLeft").textContent = "—";
+          el("footerRight").textContent = "—";
+        } finally {
+          el("reload").disabled = false;
+        }
+      }
+
+      function selectBucket(bucket) {
+        state.bucket = bucket;
+        state.offset = null;
+        state.truncated = false;
+        state.files = [];
+        state.visibleFiles = [];
+        state.openDetails = {};
+        state.chunkDetails = {};
+        state.partitionChunks = {};
+        state.openPartitions = {};
+        el("title").textContent = `Bucket: ${bucket}`;
+        renderBuckets();
+        loadFiles({ reset: true });
+      }
+
+      el("refreshBuckets").onclick = () => loadBuckets();
+      el("bucketFilter").oninput = () => renderBuckets();
+      el("reload").onclick = () => loadFiles({ reset: true });
+      el("loadMore").onclick = () => loadFiles({ reset: false });
+      el("search").oninput = () => renderRows();
+
+      loadBuckets();
+    </script>
+  </body>
+</html>
