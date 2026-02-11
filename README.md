@@ -43,8 +43,10 @@ docker compose up --build
 - `resolver` service: citation resolver API on port 8080.
 - `minio` service: object storage with console on port 9001.
 - `dashboard` service: bucket/file dashboard on port 8002.
+- `search_ui` service: MCP-powered Qdrant search UI on port 8004.
 
 Open the dashboard at `http://localhost:8002` to browse Qdrant collections (buckets) and see per-file metadata from Qdrant + Redis.
+Open the search UI at `http://localhost:8004` to run `search` + `fetch` MCP tool calls interactively against your collections.
 
 ## Automatic BibTeX enrichment (Crossref)
 Use `bibtex_autofill.py` to batch-populate BibTeX metadata for PDFs using:

@@ -298,6 +298,7 @@ class BibtexAutofillTests(unittest.TestCase):
             "title": ["A Chapter Title"],
             "type": "book-chapter",
             "author": [{"given": "Ada", "family": "Lovelace"}],
+            "editor": [{"given": "John", "family": "Smith"}],
             "container-title": ["Collected Works of Computing"],
             "publisher": "Springer",
             "issued": {"date-parts": [[2022, 8, 12]]},
@@ -310,6 +311,17 @@ class BibtexAutofillTests(unittest.TestCase):
         self.assertEqual(converted["booktitle"], "Collected Works of Computing")
         self.assertEqual(converted["publisher"], "Springer")
         self.assertEqual(converted["journal"], "")
+        self.assertEqual(converted["editors"], "John Smith")
+
+    def test_normalize_authors_accepts_crossref_style_author_dicts(self):
+        normalized = bibtex_autofill._normalize_authors(
+            [
+                {"given": "Ada", "family": "Lovelace"},
+                {"literal": "OpenAI Research"},
+            ]
+        )
+        self.assertEqual(normalized[0], {"firstName": "Ada", "lastName": "Lovelace"})
+        self.assertEqual(normalized[1], {"firstName": "OpenAI", "lastName": "Research"})
 
 
 if __name__ == "__main__":

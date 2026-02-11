@@ -129,6 +129,24 @@ services:
       - BIBTEX_MINIO_ALL_BUCKETS=${BIBTEX_MINIO_ALL_BUCKETS:-1}
       - BIBTEX_MINIO_SUFFIX=${BIBTEX_MINIO_SUFFIX:-.pdf}
     command: -m mcp_research.bibtex_ui_app
+  search_ui:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8004:8004"
+    depends_on:
+      - qdrant
+    environment:
+      - PYTHONPATH=/app/src
+      - SEARCH_UI_HOST=0.0.0.0
+      - SEARCH_UI_PORT=8004
+      - QDRANT_URL=${QDRANT_URL:-http://qdrant:6333}
+      - QDRANT_COLLECTION=${QDRANT_COLLECTION:-pdf_chunks}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - REDIS_PREFIX=${REDIS_PREFIX:-unstructured}
+      - CITATION_BASE_URL=${CITATION_BASE_URL:-http://localhost:8080}
+      - CITATION_REF_PATH=${CITATION_REF_PATH:-/r/doc}
+    command: -m mcp_research.search_ui_app
   minio_ingest:
     build: .
     restart: unless-stopped

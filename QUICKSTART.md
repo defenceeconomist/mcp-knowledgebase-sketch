@@ -34,6 +34,15 @@ python -m mcp_research.dashboard_app
 ```
 Open `http://localhost:8002`.
 
+## 3c) Run the search UI (optional)
+The search UI runs MCP `search` + `fetch` tools against Qdrant collections.
+
+Run locally:
+```bash
+python -m mcp_research.search_ui_app
+```
+Open `http://localhost:8004`.
+
 ## 4) Run Qdrant (optional)
 ```bash
 docker compose up qdrant

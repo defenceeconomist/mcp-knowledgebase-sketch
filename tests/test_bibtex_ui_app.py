@@ -148,6 +148,7 @@ class BibtexUiAppTests(unittest.TestCase):
                         "year": "2025",
                         "citationKey": "alpha2025updated",
                         "entryType": "incollection",
+                        "editors": "John Editor; Jane Editor",
                         "publisher": "ACM Press",
                         "authors": [
                             {"firstName": "Ada", "lastName": "Lovelace"},
@@ -161,11 +162,13 @@ class BibtexUiAppTests(unittest.TestCase):
         self.assertEqual(body["redis_key"], "bibtex:file:bucket-a/folder/alpha.pdf")
         self.assertEqual(body["file"]["title"], "Updated Alpha")
         self.assertEqual(body["file"]["entryType"], "incollection")
+        self.assertEqual(body["file"]["editors"], "John Editor; Jane Editor")
         self.assertEqual(body["file"]["publisher"], "ACM Press")
         self.assertIn("bucket-a/folder/alpha.pdf", fake_redis.sets.get("bibtex:files", set()))
 
         stored = json.loads(fake_redis.get("bibtex:file:bucket-a/folder/alpha.pdf"))
         self.assertEqual(stored["year"], "2025")
+        self.assertEqual(stored["editors"], "John Editor; Jane Editor")
         self.assertEqual(stored["authors"][1]["lastName"], "Hopper")
 
     def test_api_file_redis_summary_counts_partitions_and_chunks(self):
@@ -319,6 +322,93 @@ class BibtexUiAppTests(unittest.TestCase):
         self.assertEqual(stored["title"], "CrossRef Title")
         self.assertEqual(stored["doi"], "10.1000/testdoi")
 
+    def test_api_file_lookup_by_doi_keeps_existing_authors_when_crossref_has_no_author(self):
+        if bibtex_ui_app.bibtex_autofill is None:
+            self.skipTest("bibtex_autofill module unavailable")
+
+        fake_redis = _FakeRedis()
+        fake_redis.set(
+            "bibtex:file:bucket-a/folder/alpha.pdf",
+            json.dumps(
+                {
+                    "title": "Existing",
+                    "doi": "10.1111/old",
+                    "citationKey": "oldkey",
+                    "entryType": "article",
+                    "authors": [{"firstName": "Existing", "lastName": "Author"}],
+                }
+            ),
+        )
+
+        class _FakeCrossrefClient:
+            def lookup_by_doi(self, doi):
+                self.last_doi = doi
+                return {
+                    "DOI": "10.1000/noauthors",
+                    "title": ["CrossRef Without Author"],
+                    "issued": {"date-parts": [[2024]]},
+                    "type": "journal-article",
+                    "container-title": ["Journal of Testing"],
+                    "URL": "https://doi.org/10.1000/noauthors",
+                }
+
+        fake_crossref = _FakeCrossrefClient()
+        with mock.patch.object(bibtex_ui_app, "_get_redis_client", return_value=(fake_redis, None)):
+            with mock.patch.object(bibtex_ui_app, "_crossref_client_from_env", return_value=fake_crossref):
+                with mock.patch.dict(os.environ, {"BIBTEX_REDIS_PREFIX": "bibtex"}, clear=False):
+                    response = self.client.post(
+                        "/api/buckets/bucket-a/files/folder%2Falpha.pdf/lookup-by-doi",
+                        json={"doi": "10.1000/noauthors", "overwrite": True},
+                    )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["file"]["authors"][0]["firstName"], "Existing")
+        self.assertEqual(body["file"]["authors"][0]["lastName"], "Author")
+
+    def test_api_file_lookup_by_doi_uses_parent_doi_authors_for_chapter_doi(self):
+        if bibtex_ui_app.bibtex_autofill is None:
+            self.skipTest("bibtex_autofill module unavailable")
+
+        fake_redis = _FakeRedis()
+
+        class _FakeCrossrefClient:
+            def lookup_by_doi(self, doi):
+                if doi == "10.4324/9780203392300-11":
+                    return {
+                        "DOI": "10.4324/9780203392300-11",
+                        "title": ["Using procurement offsets as an economic development strategy"],
+                        "type": "book-chapter",
+                        "container-title": ["Arms Trade and Economic Development"],
+                        "issued": {"date-parts": [[2004]]},
+                        "URL": "https://doi.org/10.4324/9780203392300-11",
+                    }
+                if doi == "10.4324/9780203392300":
+                    return {
+                        "DOI": "10.4324/9780203392300",
+                        "title": ["Arms Trade and Economic Development"],
+                        "type": "monograph",
+                        "author": [
+                            {"given": "Jurgen", "family": "Brauer"},
+                            {"given": "Paul", "family": "Dunne"},
+                        ],
+                    }
+                return None
+
+        fake_crossref = _FakeCrossrefClient()
+        with mock.patch.object(bibtex_ui_app, "_get_redis_client", return_value=(fake_redis, None)):
+            with mock.patch.object(bibtex_ui_app, "_crossref_client_from_env", return_value=fake_crossref):
+                with mock.patch.dict(os.environ, {"BIBTEX_REDIS_PREFIX": "bibtex"}, clear=False):
+                    response = self.client.post(
+                        "/api/buckets/bucket-a/files/folder%2Falpha.pdf/lookup-by-doi",
+                        json={"doi": "10.4324/9780203392300-11", "overwrite": True},
+                    )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["file"]["authors"][0]["lastName"], "Brauer")
+        self.assertEqual(body["file"]["authors"][1]["lastName"], "Dunne")
+
     def test_api_file_lookup_by_doi_requires_valid_doi(self):
         if bibtex_ui_app.bibtex_autofill is None:
             self.skipTest("bibtex_autofill module unavailable")
@@ -332,6 +422,67 @@ class BibtexUiAppTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertIn("valid DOI", response.json().get("detail", ""))
+
+    def test_api_save_file_bibtex_accepts_extended_entry_types_and_fields(self):
+        fake_redis = _FakeRedis()
+        with mock.patch.object(bibtex_ui_app, "_get_redis_client", return_value=(fake_redis, None)):
+            with mock.patch.dict(os.environ, {"BIBTEX_REDIS_PREFIX": "bibtex"}, clear=False):
+                response = self.client.put(
+                    "/api/buckets/bucket-a/files/folder%2Fthesis.pdf/bibtex",
+                    json={
+                        "citationKey": "examplethesis2026",
+                        "entryType": "phdthesis",
+                        "title": "An Example Dissertation",
+                        "year": "2026",
+                        "authors": [{"firstName": "Ada", "lastName": "Lovelace"}],
+                        "school": "Example University",
+                        "address": "Boston",
+                        "month": "jan",
+                        "type": "PhD dissertation",
+                        "annote": "Extended notes",
+                    },
+                )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["file"]["entryType"], "phdthesis")
+        self.assertEqual(body["file"]["school"], "Example University")
+        self.assertEqual(body["file"]["address"], "Boston")
+        self.assertEqual(body["file"]["type"], "PhD dissertation")
+        self.assertEqual(body["file"]["annote"], "Extended notes")
+
+    def test_api_file_lookup_by_doi_handles_literal_author_payload(self):
+        if bibtex_ui_app.bibtex_autofill is None:
+            self.skipTest("bibtex_autofill module unavailable")
+
+        fake_redis = _FakeRedis()
+
+        class _FakeCrossrefClient:
+            def lookup_by_doi(self, doi):
+                self.last_doi = doi
+                return {
+                    "DOI": "10.1000/literal",
+                    "title": ["CrossRef Literal Author"],
+                    "author": [{"literal": "OpenAI Research"}],
+                    "issued": {"date-parts": [[2026]]},
+                    "type": "journal-article",
+                    "container-title": ["Journal of Testing"],
+                    "URL": "https://doi.org/10.1000/literal",
+                }
+
+        fake_crossref = _FakeCrossrefClient()
+        with mock.patch.object(bibtex_ui_app, "_get_redis_client", return_value=(fake_redis, None)):
+            with mock.patch.object(bibtex_ui_app, "_crossref_client_from_env", return_value=fake_crossref):
+                with mock.patch.dict(os.environ, {"BIBTEX_REDIS_PREFIX": "bibtex"}, clear=False):
+                    response = self.client.post(
+                        "/api/buckets/bucket-a/files/folder%2Falpha.pdf/lookup-by-doi",
+                        json={"doi": "10.1000/literal", "overwrite": True},
+                    )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["file"]["authors"][0]["firstName"], "OpenAI")
+        self.assertEqual(payload["file"]["authors"][0]["lastName"], "Research")
 
 
 if __name__ == "__main__":

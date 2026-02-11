@@ -58,7 +58,22 @@ MINIO_DOI_KEYS = {
     "prism-doi",
 }
 
-ALLOWED_ENTRY_TYPES = {"article", "inproceedings", "inbook", "incollection", "book", "misc", "techreport"}
+ALLOWED_ENTRY_TYPES = {
+    "article",
+    "book",
+    "booklet",
+    "conference",
+    "inbook",
+    "incollection",
+    "inproceedings",
+    "manual",
+    "mastersthesis",
+    "misc",
+    "phdthesis",
+    "proceedings",
+    "techreport",
+    "unpublished",
+}
 
 
 def load_dotenv(path: Path) -> None:
@@ -114,9 +129,23 @@ def _default_bibtex_metadata(object_name: str) -> Dict[str, Any]:
         "title": "",
         "year": "",
         "authors": [],
+        "editors": "",
+        "address": "",
+        "annote": "",
+        "chapter": "",
+        "crossref": "",
+        "edition": "",
+        "howpublished": "",
+        "institution": "",
+        "key": "",
+        "month": "",
         "journal": "",
         "booktitle": "",
+        "organization": "",
         "publisher": "",
+        "school": "",
+        "series": "",
+        "type": "",
         "volume": "",
         "number": "",
         "pages": "",
@@ -133,10 +162,9 @@ def _normalize_authors(value: Any) -> List[Dict[str, str]]:
     if isinstance(value, list):
         for item in value:
             if isinstance(item, dict):
-                first_name = _normalize_text(item.get("firstName"))
-                last_name = _normalize_text(item.get("lastName"))
-                if first_name or last_name:
-                    authors.append({"firstName": first_name, "lastName": last_name})
+                parsed = _author_dict_to_bibtex(item)
+                if parsed:
+                    authors.append(parsed)
             elif isinstance(item, str):
                 parsed = _parse_author_names(item)
                 for name in parsed:
@@ -156,9 +184,23 @@ def _normalize_bibtex_metadata(object_name: str, metadata: Dict[str, Any] | None
         "citationKey",
         "title",
         "year",
+        "editors",
+        "address",
+        "annote",
+        "chapter",
+        "crossref",
+        "edition",
+        "howpublished",
+        "institution",
+        "key",
+        "month",
         "journal",
         "booktitle",
+        "organization",
         "publisher",
+        "school",
+        "series",
+        "type",
         "volume",
         "number",
         "pages",
@@ -237,6 +279,28 @@ def _author_to_bibtex(name: str) -> Dict[str, str]:
     if len(parts) == 1:
         return {"firstName": "", "lastName": parts[0]}
     return {"firstName": " ".join(parts[:-1]), "lastName": parts[-1]}
+
+
+def _author_dict_to_bibtex(author: Dict[str, Any]) -> Dict[str, str] | None:
+    first_name = _normalize_text(
+        author.get("firstName")
+        or author.get("first_name")
+        or author.get("given")
+        or author.get("givenName")
+    )
+    last_name = _normalize_text(
+        author.get("lastName")
+        or author.get("last_name")
+        or author.get("family")
+        or author.get("familyName")
+    )
+    if first_name or last_name:
+        return {"firstName": first_name, "lastName": last_name}
+
+    full_name = _normalize_text(author.get("name") or author.get("literal"))
+    if full_name:
+        return _author_to_bibtex(full_name)
+    return None
 
 
 def _sanitize_doi(value: str) -> str:
@@ -614,18 +678,27 @@ def _candidate_quality(
     }
 
 
-def _crossref_authors(message: Dict[str, Any]) -> List[str]:
+def _crossref_contributors(message: Dict[str, Any], key: str) -> List[str]:
     out: List[str] = []
-    for author in message.get("author", []) or []:
-        if not isinstance(author, dict):
+    for contributor in message.get(key, []) or []:
+        if not isinstance(contributor, dict):
             continue
-        given = _normalize_text(author.get("given"))
-        family = _normalize_text(author.get("family"))
-        name = _normalize_text(author.get("name"))
-        full_name = " ".join(part for part in (given, family) if part).strip() or name
+        given = _normalize_text(contributor.get("given"))
+        family = _normalize_text(contributor.get("family"))
+        name = _normalize_text(contributor.get("name"))
+        literal = _normalize_text(contributor.get("literal"))
+        full_name = " ".join(part for part in (given, family) if part).strip() or name or literal
         if full_name:
             out.append(full_name)
     return out
+
+
+def _crossref_authors(message: Dict[str, Any]) -> List[str]:
+    return _crossref_contributors(message, "author")
+
+
+def _crossref_editors(message: Dict[str, Any]) -> List[str]:
+    return _crossref_contributors(message, "editor")
 
 
 def _crossref_title(message: Dict[str, Any]) -> str:
@@ -851,11 +924,18 @@ def _entry_type_from_crossref(crossref_type: str) -> str:
     mapping = {
         "journal-article": "article",
         "article-journal": "article",
+        "journal": "article",
         "proceedings-article": "inproceedings",
-        "proceedings": "inproceedings",
+        "proceedings": "proceedings",
         "book": "book",
         "book-chapter": "incollection",
+        "book-part": "inbook",
+        "book-section": "inbook",
         "report": "techreport",
+        "report-component": "techreport",
+        "dissertation": "phdthesis",
+        "reference-book": "book",
+        "monograph": "book",
     }
     return mapping.get(crossref_type.lower(), "misc")
 
@@ -886,6 +966,7 @@ def _build_citation_key(title: str, authors: List[Dict[str, str]], year: str, fa
 def _crossref_to_bibtex(message: Dict[str, Any], object_name: str) -> Dict[str, Any]:
     title = _crossref_title(message)
     authors = [_author_to_bibtex(name) for name in _crossref_authors(message)]
+    editors = _crossref_editors(message)
     year = _crossref_year(message)
     doi = _sanitize_doi(_normalize_text(message.get("DOI")))
     url = _normalize_text(message.get("URL"))
@@ -904,6 +985,7 @@ def _crossref_to_bibtex(message: Dict[str, Any], object_name: str) -> Dict[str, 
             "title": title,
             "year": year,
             "authors": authors,
+            "editors": "; ".join(editors),
             "volume": _normalize_text(message.get("volume")),
             "number": _normalize_text(message.get("issue")),
             "pages": _normalize_text(message.get("page")),

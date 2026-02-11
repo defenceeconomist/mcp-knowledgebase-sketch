@@ -735,6 +735,25 @@
         background: color-mix(in oklab, var(--brand-soft) 35%, white 65%);
       }
 
+      .field-wrap.required {
+        border-color: color-mix(in oklab, #b53c31 55%, var(--line));
+        background: color-mix(in oklab, #f6d4cd 62%, white 38%);
+      }
+
+      .required-badge {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid color-mix(in oklab, #b53c31 55%, var(--line));
+        border-radius: 999px;
+        padding: 2px 7px;
+        margin-left: 6px;
+        font-size: 10px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: color-mix(in oklab, #8a2a22 88%, var(--ink));
+        background: color-mix(in oklab, #f6d4cd 72%, white 28%);
+      }
+
       .recommended-badge {
         display: inline-flex;
         align-items: center;
@@ -999,7 +1018,7 @@
       <aside class="pane right-pane">
         <div class="pane-header">
           <h2 class="pane-title">BibTeX Fields</h2>
-          <div class="pane-subtitle">Edit title, year, structured authors, and other metadata for the selected file</div>
+          <div class="pane-subtitle">Edit title, year, structured authors, editors, and other metadata for the selected file</div>
         </div>
         <div class="right-pane-content" id="editorPane"></div>
       </aside>
@@ -1017,25 +1036,56 @@
 
     <script src="https://cdn.jsdelivr.net/npm/handsontable@14.5.0/dist/handsontable.full.min.js"></script>
     <script>
+      const entryTypeOptions = [
+        "article",
+        "book",
+        "booklet",
+        "conference",
+        "inbook",
+        "incollection",
+        "inproceedings",
+        "manual",
+        "mastersthesis",
+        "misc",
+        "phdthesis",
+        "proceedings",
+        "techreport",
+        "unpublished",
+      ];
+
       const fieldConfig = [
         { key: "citationKey", label: "Citation Key", type: "text" },
         {
           key: "entryType",
           label: "Entry Type",
           type: "select",
-          options: ["article", "inproceedings", "inbook", "incollection", "book", "misc", "techreport"],
+          options: entryTypeOptions,
         },
-        { key: "journal", label: "Journal", type: "text" },
+        { key: "address", label: "Address", type: "text" },
+        { key: "annote", label: "Annote", type: "textarea" },
         { key: "booktitle", label: "Booktitle", type: "text" },
-        { key: "publisher", label: "Publisher", type: "text" },
-        { key: "volume", label: "Volume", type: "text" },
-        { key: "number", label: "Number", type: "text" },
-        { key: "pages", label: "Pages", type: "text" },
+        { key: "chapter", label: "Chapter", type: "text" },
+        { key: "crossref", label: "Crossref", type: "text" },
         { key: "doi", label: "DOI", type: "text" },
+        { key: "edition", label: "Edition", type: "text" },
+        { key: "editors", label: "Editors", type: "text" },
+        { key: "howpublished", label: "How Published", type: "text" },
+        { key: "institution", label: "Institution", type: "text" },
+        { key: "journal", label: "Journal", type: "text" },
+        { key: "key", label: "Key", type: "text" },
+        { key: "month", label: "Month", type: "text" },
+        { key: "note", label: "Note", type: "textarea" },
+        { key: "number", label: "Number", type: "text" },
+        { key: "organization", label: "Organization", type: "text" },
+        { key: "pages", label: "Pages", type: "text" },
+        { key: "publisher", label: "Publisher", type: "text" },
+        { key: "school", label: "School", type: "text" },
+        { key: "series", label: "Series", type: "text" },
+        { key: "type", label: "Type", type: "text" },
         { key: "url", label: "URL", type: "text" },
+        { key: "volume", label: "Volume", type: "text" },
         { key: "keywords", label: "Keywords", type: "text" },
         { key: "abstract", label: "Abstract", type: "textarea" },
-        { key: "note", label: "Note", type: "textarea" },
       ];
 
       const persistFieldKeys = [
@@ -1044,9 +1094,23 @@
         "title",
         "year",
         "authors",
+        "address",
+        "annote",
+        "chapter",
+        "crossref",
+        "edition",
+        "editors",
+        "howpublished",
+        "institution",
         "journal",
+        "key",
+        "month",
         "booktitle",
+        "organization",
         "publisher",
+        "school",
+        "series",
+        "type",
         "volume",
         "number",
         "pages",
@@ -1057,17 +1121,80 @@
         "note",
       ];
 
-      const recommendedFieldsByType = {
-        article: ["journal", "volume", "number", "pages", "doi"],
-        inproceedings: ["booktitle", "pages", "doi", "url"],
-        inbook: ["booktitle", "pages", "doi", "url", "note"],
-        incollection: ["booktitle", "publisher", "pages", "volume", "number", "doi", "url"],
-        book: ["volume", "number", "url", "note"],
-        misc: ["url", "note", "keywords"],
-        techreport: ["number", "url", "doi", "note"],
+      const entryTypeRules = {
+        article: {
+          requiredAll: ["authors", "title", "journal", "year"],
+          requiredAny: [],
+          recommended: ["volume", "number", "pages", "month", "doi", "url"],
+        },
+        book: {
+          requiredAll: ["title", "publisher", "year"],
+          requiredAny: [["authors", "editors"]],
+          recommended: ["volume", "number", "series", "address", "edition", "month", "doi", "url"],
+        },
+        booklet: {
+          requiredAll: ["title"],
+          requiredAny: [],
+          recommended: ["authors", "howpublished", "address", "month", "year", "doi", "url", "note"],
+        },
+        conference: {
+          requiredAll: ["authors", "title", "booktitle", "year"],
+          requiredAny: [],
+          recommended: ["editors", "volume", "number", "series", "pages", "address", "month", "organization", "publisher", "doi", "url", "note"],
+        },
+        inbook: {
+          requiredAll: ["title", "publisher", "year"],
+          requiredAny: [["authors", "editors"], ["chapter", "pages"]],
+          recommended: ["volume", "number", "series", "type", "address", "edition", "month", "doi", "url", "note"],
+        },
+        incollection: {
+          requiredAll: ["authors", "title", "booktitle", "publisher", "year"],
+          requiredAny: [],
+          recommended: ["editors", "volume", "number", "series", "type", "chapter", "pages", "address", "edition", "month", "doi", "url", "note"],
+        },
+        inproceedings: {
+          requiredAll: ["authors", "title", "booktitle", "year"],
+          requiredAny: [],
+          recommended: ["editors", "volume", "number", "series", "pages", "address", "month", "organization", "publisher", "doi", "url", "note"],
+        },
+        manual: {
+          requiredAll: ["title"],
+          requiredAny: [],
+          recommended: ["authors", "organization", "address", "edition", "month", "year", "doi", "url", "note"],
+        },
+        mastersthesis: {
+          requiredAll: ["authors", "title", "school", "year"],
+          requiredAny: [],
+          recommended: ["type", "address", "month", "doi", "url", "note"],
+        },
+        misc: {
+          requiredAll: [],
+          requiredAny: [],
+          recommended: ["authors", "title", "howpublished", "month", "year", "doi", "url", "note"],
+        },
+        phdthesis: {
+          requiredAll: ["authors", "title", "school", "year"],
+          requiredAny: [],
+          recommended: ["type", "address", "month", "doi", "url", "note"],
+        },
+        proceedings: {
+          requiredAll: ["title", "year"],
+          requiredAny: [],
+          recommended: ["editors", "volume", "number", "series", "address", "month", "organization", "publisher", "doi", "url", "note"],
+        },
+        techreport: {
+          requiredAll: ["authors", "title", "institution", "year"],
+          requiredAny: [],
+          recommended: ["type", "number", "address", "month", "doi", "url", "note"],
+        },
+        unpublished: {
+          requiredAll: ["authors", "title", "note"],
+          requiredAny: [],
+          recommended: ["month", "year", "doi", "url"],
+        },
       };
 
-      const alwaysRecommendedFields = ["citationKey", "entryType", "title", "authors", "year"];
+      const appRequiredFields = ["citationKey", "entryType"];
 
       const defaultFileFields = {
         citationKey: "",
@@ -1075,9 +1202,23 @@
         title: "",
         year: "",
         authors: [],
+        address: "",
+        annote: "",
+        chapter: "",
+        crossref: "",
+        edition: "",
+        editors: "",
+        howpublished: "",
+        institution: "",
         journal: "",
+        key: "",
+        month: "",
         booktitle: "",
+        organization: "",
         publisher: "",
+        school: "",
+        series: "",
+        type: "",
         volume: "",
         number: "",
         pages: "",
@@ -1094,11 +1235,25 @@
         { key: "title", label: "Title" },
         { key: "year", label: "Year" },
         { key: "authors", label: "Authors" },
+        { key: "address", label: "Address" },
+        { key: "annote", label: "Annote" },
+        { key: "chapter", label: "Chapter" },
+        { key: "crossref", label: "Crossref" },
+        { key: "edition", label: "Edition" },
+        { key: "editors", label: "Editors" },
+        { key: "howpublished", label: "How Published" },
+        { key: "institution", label: "Institution" },
+        { key: "key", label: "Key" },
+        { key: "month", label: "Month" },
         { key: "doi", label: "DOI" },
         { key: "entryType", label: "Entry Type" },
         { key: "journal", label: "Journal" },
         { key: "booktitle", label: "Booktitle" },
+        { key: "organization", label: "Organization" },
         { key: "publisher", label: "Publisher" },
+        { key: "school", label: "School" },
+        { key: "series", label: "Series" },
+        { key: "type", label: "Type" },
         { key: "volume", label: "Volume" },
         { key: "number", label: "Number" },
         { key: "pages", label: "Pages" },
@@ -1223,19 +1378,59 @@
         return null;
       }
 
-      function recommendedSetForEntryType(entryType) {
-        const set = new Set(alwaysRecommendedFields);
-        for (const key of recommendedFieldsByType[entryType] || []) {
+      function isKnownEntryType(entryType) {
+        return Object.prototype.hasOwnProperty.call(entryTypeRules, entryType);
+      }
+
+      function entryTypeRule(entryType) {
+        const normalized = String(entryType || "").trim().toLowerCase();
+        return entryTypeRules[normalized] || entryTypeRules.article;
+      }
+
+      function requiredAnyGroupsForEntryType(entryType) {
+        return entryTypeRule(entryType).requiredAny || [];
+      }
+
+      function requiredSetForEntryType(entryType) {
+        const set = new Set(appRequiredFields);
+        const rule = entryTypeRule(entryType);
+        for (const key of rule.requiredAll || []) {
           set.add(key);
+        }
+        for (const group of rule.requiredAny || []) {
+          for (const key of group) {
+            set.add(key);
+          }
         }
         return set;
       }
 
-      function createFieldLabel(text, recommended) {
+      function recommendedSetForEntryType(entryType) {
+        return new Set(entryTypeRule(entryType).recommended || []);
+      }
+
+      function displayFieldName(key) {
+        if (key === "authors") return "Authors";
+        if (key === "editors") return "Editors";
+        if (key === "entryType") return "Entry Type";
+        if (key === "citationKey") return "Citation Key";
+        if (key === "booktitle") return "Booktitle";
+        if (key === "howpublished") return "How Published";
+        return String(key || "")
+          .replace(/([A-Z])/g, " $1")
+          .replace(/^./, (char) => char.toUpperCase());
+      }
+
+      function createFieldLabel(text, { required = false, recommended = false } = {}) {
         const label = document.createElement("label");
         label.className = "field-label";
         label.textContent = text;
-        if (recommended) {
+        if (required) {
+          const badge = document.createElement("span");
+          badge.className = "required-badge";
+          badge.textContent = "Required";
+          label.append(badge);
+        } else if (recommended) {
           const badge = document.createElement("span");
           badge.className = "recommended-badge";
           badge.textContent = "Recommended";
@@ -1260,8 +1455,32 @@
         for (let idx = 0; idx < file.authors.length; idx += 1) {
           const author = file.authors[idx];
           if (author && typeof author === "object") {
-            author.firstName = typeof author.firstName === "string" ? author.firstName : "";
-            author.lastName = typeof author.lastName === "string" ? author.lastName : "";
+            let firstName = typeof author.firstName === "string" ? author.firstName : "";
+            let lastName = typeof author.lastName === "string" ? author.lastName : "";
+            if (!firstName && typeof author.given === "string") firstName = author.given;
+            if (!firstName && typeof author.givenName === "string") firstName = author.givenName;
+            if (!lastName && typeof author.family === "string") lastName = author.family;
+            if (!lastName && typeof author.familyName === "string") lastName = author.familyName;
+            if (!firstName && !lastName) {
+              const fullName =
+                typeof author.name === "string"
+                  ? author.name
+                  : typeof author.literal === "string"
+                    ? author.literal
+                    : "";
+              const parts = String(fullName)
+                .trim()
+                .split(/\s+/)
+                .filter(Boolean);
+              if (parts.length === 1) {
+                lastName = parts[0];
+              } else if (parts.length > 1) {
+                firstName = parts.slice(0, -1).join(" ");
+                lastName = parts[parts.length - 1];
+              }
+            }
+            author.firstName = String(firstName || "");
+            author.lastName = String(lastName || "");
             continue;
           }
           if (typeof author === "string") {
@@ -1342,7 +1561,7 @@
           file.redisDocIds = file.redisDocIds.map((entry) => String(entry || "")).filter(Boolean);
         }
         file.redisDocId = String(file.redisDocId || file.redisDocIds[0] || "");
-        file.entryType = recommendedFieldsByType[file.entryType] ? file.entryType : "article";
+        file.entryType = isKnownEntryType(file.entryType) ? file.entryType : "article";
         for (const key of Object.keys(defaultFileFields)) {
           if (key === "authors") continue;
           file[key] = file[key] == null ? "" : String(file[key]);
@@ -2263,7 +2482,7 @@
           }
           if (key === "entryType") {
             const normalized = String(value || "").trim().toLowerCase();
-            draft.entryType = recommendedFieldsByType[normalized] ? normalized : "article";
+            draft.entryType = isKnownEntryType(normalized) ? normalized : "article";
             continue;
           }
           draft[key] = String(value ?? "");
@@ -2705,17 +2924,33 @@
         const grid = document.createElement("div");
         grid.className = "field-grid";
 
+        const requiredSet = requiredSetForEntryType(file.entryType);
         const recommendedSet = recommendedSetForEntryType(file.entryType);
+        const requiredAnyGroups = requiredAnyGroupsForEntryType(file.entryType);
 
         const recommendedSummary = document.createElement("div");
         recommendedSummary.className = "recommended-summary";
-        recommendedSummary.textContent = `Recommended fields for ${file.entryType}: marked below.`;
+        let summary = `Required and recommended fields for ${file.entryType} are marked below.`;
+        if (requiredAnyGroups.length > 0) {
+          const groupText = requiredAnyGroups
+            .map((group) => group.map((key) => displayFieldName(key)).join(" or "))
+            .join("; ");
+          summary += ` One-of requirements: ${groupText}.`;
+        }
+        recommendedSummary.textContent = summary;
         grid.append(recommendedSummary);
 
         const titleWrap = document.createElement("div");
         titleWrap.className = "field-wrap";
-        if (recommendedSet.has("title")) titleWrap.classList.add("recommended");
-        const titleLabel = createFieldLabel("Title", recommendedSet.has("title"));
+        if (requiredSet.has("title")) {
+          titleWrap.classList.add("required");
+        } else if (recommendedSet.has("title")) {
+          titleWrap.classList.add("recommended");
+        }
+        const titleLabel = createFieldLabel("Title", {
+          required: requiredSet.has("title"),
+          recommended: recommendedSet.has("title"),
+        });
         const titleInput = document.createElement("input");
         titleInput.className = "editor-input";
         titleInput.value = file.title || "";
@@ -2730,8 +2965,15 @@
 
         const yearWrap = document.createElement("div");
         yearWrap.className = "field-wrap";
-        if (recommendedSet.has("year")) yearWrap.classList.add("recommended");
-        const yearLabel = createFieldLabel("Year", recommendedSet.has("year"));
+        if (requiredSet.has("year")) {
+          yearWrap.classList.add("required");
+        } else if (recommendedSet.has("year")) {
+          yearWrap.classList.add("recommended");
+        }
+        const yearLabel = createFieldLabel("Year", {
+          required: requiredSet.has("year"),
+          recommended: recommendedSet.has("year"),
+        });
         const yearInput = document.createElement("input");
         yearInput.className = "editor-input";
         yearInput.value = file.year || "";
@@ -2745,8 +2987,15 @@
 
         const authorsWrap = document.createElement("div");
         authorsWrap.className = "field-wrap";
-        if (recommendedSet.has("authors")) authorsWrap.classList.add("recommended");
-        const authorsLabel = createFieldLabel("Authors", recommendedSet.has("authors"));
+        if (requiredSet.has("authors")) {
+          authorsWrap.classList.add("required");
+        } else if (recommendedSet.has("authors")) {
+          authorsWrap.classList.add("recommended");
+        }
+        const authorsLabel = createFieldLabel("Authors", {
+          required: requiredSet.has("authors"),
+          recommended: recommendedSet.has("authors"),
+        });
         authorsWrap.append(authorsLabel);
 
         const authorsHint = document.createElement("div");
@@ -2829,8 +3078,15 @@
         for (const field of fieldConfig) {
           const wrap = document.createElement("div");
           wrap.className = "field-wrap";
-          if (recommendedSet.has(field.key)) wrap.classList.add("recommended");
-          const label = createFieldLabel(field.label, recommendedSet.has(field.key));
+          if (requiredSet.has(field.key)) {
+            wrap.classList.add("required");
+          } else if (recommendedSet.has(field.key)) {
+            wrap.classList.add("recommended");
+          }
+          const label = createFieldLabel(field.label, {
+            required: requiredSet.has(field.key),
+            recommended: recommendedSet.has(field.key),
+          });
           wrap.append(label);
 
           if (field.type === "textarea") {

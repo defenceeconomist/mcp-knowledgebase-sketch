@@ -85,7 +85,22 @@ except Exception:  # pragma: no cover - fallback when optional deps are unavaila
         return f"{base}{path}?ref={encoded_ref}"
 
 
-ALLOWED_ENTRY_TYPES = {"article", "inproceedings", "inbook", "incollection", "book", "misc", "techreport"}
+ALLOWED_ENTRY_TYPES = {
+    "article",
+    "book",
+    "booklet",
+    "conference",
+    "inbook",
+    "incollection",
+    "inproceedings",
+    "manual",
+    "mastersthesis",
+    "misc",
+    "phdthesis",
+    "proceedings",
+    "techreport",
+    "unpublished",
+}
 
 
 def load_dotenv(path: str = ".env") -> None:
@@ -395,9 +410,23 @@ def _default_metadata(bucket: str, object_name: str) -> Dict[str, Any]:
         "title": "",
         "year": "",
         "authors": [],
+        "editors": "",
+        "address": "",
+        "annote": "",
+        "chapter": "",
+        "crossref": "",
+        "edition": "",
+        "howpublished": "",
+        "institution": "",
+        "key": "",
+        "month": "",
         "journal": "",
         "booktitle": "",
+        "organization": "",
         "publisher": "",
+        "school": "",
+        "series": "",
+        "type": "",
         "volume": "",
         "number": "",
         "pages": "",
@@ -432,10 +461,9 @@ def _normalize_authors(value: Any) -> List[Dict[str, str]]:
 
     for item in value:
         if isinstance(item, dict):
-            first_name = _normalize_text(item.get("firstName"))
-            last_name = _normalize_text(item.get("lastName"))
-            if first_name or last_name:
-                authors.append({"firstName": first_name, "lastName": last_name})
+            parsed = _author_dict_to_bibtex(item)
+            if parsed:
+                authors.append(parsed)
             continue
         if isinstance(item, str):
             name = item.strip()
@@ -443,6 +471,31 @@ def _normalize_authors(value: Any) -> List[Dict[str, str]]:
                 authors.append({"firstName": "", "lastName": name})
 
     return authors
+
+
+def _author_dict_to_bibtex(author: Dict[str, Any]) -> Dict[str, str] | None:
+    first_name = _normalize_text(
+        author.get("firstName")
+        or author.get("first_name")
+        or author.get("given")
+        or author.get("givenName")
+    )
+    last_name = _normalize_text(
+        author.get("lastName")
+        or author.get("last_name")
+        or author.get("family")
+        or author.get("familyName")
+    )
+    if first_name or last_name:
+        return {"firstName": first_name, "lastName": last_name}
+
+    full_name = _normalize_text(author.get("name") or author.get("literal"))
+    if full_name:
+        parts = [part for part in full_name.split(" ") if part]
+        if len(parts) == 1:
+            return {"firstName": "", "lastName": parts[0]}
+        return {"firstName": " ".join(parts[:-1]), "lastName": parts[-1]}
+    return None
 
 
 def _normalize_metadata(
@@ -458,9 +511,23 @@ def _normalize_metadata(
         "citationKey",
         "title",
         "year",
+        "editors",
+        "address",
+        "annote",
+        "chapter",
+        "crossref",
+        "edition",
+        "howpublished",
+        "institution",
+        "key",
+        "month",
         "journal",
         "booktitle",
+        "organization",
         "publisher",
+        "school",
+        "series",
+        "type",
         "volume",
         "number",
         "pages",
@@ -783,15 +850,85 @@ def _merge_candidate_metadata(
     merged = dict(existing or {})
     for key, value in (candidate or {}).items():
         if key == "authors":
-            current_authors = merged.get("authors")
-            if overwrite or not current_authors:
-                merged[key] = value
+            current_authors = _normalize_authors(merged.get("authors"))
+            incoming_authors = _normalize_authors(value)
+            if incoming_authors and (overwrite or not current_authors):
+                merged[key] = incoming_authors
+            elif not current_authors and overwrite:
+                merged[key] = []
             continue
         current_value = _normalize_text(merged.get(key))
         incoming = value if isinstance(value, list) else _normalize_text(value)
         if overwrite or not current_value:
             merged[key] = incoming
     return merged
+
+
+def _has_structured_authors(metadata: Dict[str, Any]) -> bool:
+    for author in _normalize_authors(metadata.get("authors")):
+        first = _normalize_text(author.get("firstName"))
+        last = _normalize_text(author.get("lastName"))
+        if first or last:
+            return True
+    return False
+
+
+def _chapter_parent_doi(doi: str) -> str:
+    clean = _normalize_text(doi)
+    if "/" not in clean:
+        return ""
+    prefix, suffix = clean.split("/", 1)
+    parent_suffix = re.sub(r"-\d+[a-z]?$", "", suffix, flags=re.IGNORECASE)
+    if not parent_suffix or parent_suffix == suffix:
+        return ""
+    return f"{prefix}/{parent_suffix}"
+
+
+def _authors_from_crossref_message(message: Dict[str, Any]) -> List[Dict[str, str]]:
+    if bibtex_autofill is None:
+        return []
+
+    extract_crossref_authors = getattr(bibtex_autofill, "_crossref_authors", None)
+    author_to_bibtex = getattr(bibtex_autofill, "_author_to_bibtex", None)
+    if not callable(extract_crossref_authors) or not callable(author_to_bibtex):
+        return _normalize_authors(message.get("author"))
+
+    structured: List[Dict[str, str]] = []
+    for name in extract_crossref_authors(message):
+        if not isinstance(name, str):
+            continue
+        parsed = author_to_bibtex(name)
+        if not isinstance(parsed, dict):
+            continue
+        first = _normalize_text(parsed.get("firstName"))
+        last = _normalize_text(parsed.get("lastName"))
+        if first or last:
+            structured.append({"firstName": first, "lastName": last})
+    return structured
+
+
+def _fallback_authors_for_doi(
+    *,
+    crossref_client: Any,
+    requested_doi: str,
+    crossref_message: Dict[str, Any],
+) -> List[Dict[str, str]]:
+    # First try contributors on the DOI response itself.
+    direct = _authors_from_crossref_message(crossref_message)
+    if direct:
+        return direct
+
+    # Some chapter DOIs omit contributors; retry on the parent work DOI.
+    parent_doi = _chapter_parent_doi(requested_doi)
+    if not parent_doi:
+        return []
+    try:
+        parent_message = crossref_client.lookup_by_doi(parent_doi)
+    except Exception:
+        return []
+    if not isinstance(parent_message, dict):
+        return []
+    return _authors_from_crossref_message(parent_message)
 
 
 def _crossref_lookup_by_doi_and_save(
@@ -825,6 +962,14 @@ def _crossref_lookup_by_doi_and_save(
 
     existing = _get_file_metadata(redis_client, _bibtex_prefix(), bucket, object_name)
     candidate = to_bibtex(crossref_message, object_name)
+    if not _has_structured_authors(candidate):
+        fallback_authors = _fallback_authors_for_doi(
+            crossref_client=crossref_client,
+            requested_doi=clean_doi,
+            crossref_message=crossref_message,
+        )
+        if fallback_authors:
+            candidate["authors"] = fallback_authors
     merged = _merge_candidate_metadata(existing, candidate, overwrite=overwrite)
     normalized = _normalize_metadata(bucket, object_name, merged)
     _save_file_metadata(redis_client, bucket, object_name, normalized)

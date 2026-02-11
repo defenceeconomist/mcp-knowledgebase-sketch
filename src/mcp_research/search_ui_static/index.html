@@ -1,0 +1,936 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MCP Qdrant Search Workspace</title>
+    <style>
+      :root {
+        --bg-0: #f1efe8;
+        --bg-1: #e4dbc9;
+        --panel: #fffdf8;
+        --panel-soft: #f5f1e7;
+        --ink: #23201b;
+        --muted: #6e6659;
+        --line: #d3c9b8;
+        --brand: #0d6b62;
+        --brand-soft: #d9efe9;
+        --accent: #b34f1e;
+        --danger: #b44343;
+        --ok: #2f7a4e;
+        --radius: 16px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--ink);
+        font-family: "Avenir Next", "Segoe UI", "Trebuchet MS", sans-serif;
+        background:
+          radial-gradient(circle at 10% 0%, rgba(179, 79, 30, 0.14), transparent 35%),
+          radial-gradient(circle at 100% 100%, rgba(13, 107, 98, 0.13), transparent 42%),
+          linear-gradient(160deg, var(--bg-0), var(--bg-1));
+      }
+
+      .shell {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 14px;
+        padding: 14px;
+        height: 100vh;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        background: color-mix(in oklab, var(--panel) 90%, white 10%);
+        box-shadow: 0 10px 28px rgba(27, 24, 19, 0.07);
+        overflow: hidden;
+      }
+
+      .pane-header {
+        padding: 14px 16px 12px;
+        border-bottom: 1px solid var(--line);
+        background: linear-gradient(180deg, color-mix(in oklab, var(--panel-soft) 90%, white 10%), var(--panel));
+      }
+
+      .title {
+        margin: 0;
+        font-size: 20px;
+        line-height: 1.1;
+      }
+
+      .subtitle {
+        margin-top: 5px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .left-body {
+        height: calc(100% - 80px);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        padding: 12px;
+      }
+
+      .right-body {
+        height: calc(100% - 80px);
+        overflow: auto;
+        padding: 12px;
+      }
+
+      .status-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 4px 10px;
+        font-size: 12px;
+        background: var(--panel-soft);
+        color: var(--muted);
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: #9f9688;
+      }
+
+      .dot.ok {
+        background: var(--ok);
+      }
+
+      .dot.bad {
+        background: var(--danger);
+      }
+
+      .btn {
+        border: 1px solid var(--line);
+        background: var(--panel-soft);
+        color: var(--ink);
+        border-radius: 10px;
+        cursor: pointer;
+        padding: 8px 11px;
+        font-size: 13px;
+      }
+
+      .btn:hover {
+        background: color-mix(in oklab, var(--brand-soft) 78%, white 22%);
+        border-color: color-mix(in oklab, var(--brand) 36%, var(--line));
+      }
+
+      .btn.brand {
+        background: color-mix(in oklab, var(--brand) 88%, white 12%);
+        border-color: color-mix(in oklab, var(--brand) 90%, black 10%);
+        color: #f7fffd;
+      }
+
+      .btn.brand:hover {
+        background: color-mix(in oklab, var(--brand) 80%, white 20%);
+      }
+
+      .btn.ghost {
+        background: #0000;
+      }
+
+      .text-input {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 11px;
+        padding: 9px 11px;
+        font-size: 13px;
+        color: var(--ink);
+        background: color-mix(in oklab, white 80%, var(--panel-soft) 20%);
+      }
+
+      .text-input:focus {
+        outline: 2px solid color-mix(in oklab, var(--brand) 38%, white 62%);
+        outline-offset: 1px;
+      }
+
+      .collections {
+        display: flex;
+        flex-direction: column;
+        gap: 7px;
+        overflow: auto;
+      }
+
+      .collection-btn {
+        border: 1px solid var(--line);
+        background: var(--panel-soft);
+        color: var(--ink);
+        border-radius: 11px;
+        cursor: pointer;
+        text-align: left;
+        padding: 10px 11px;
+        font-size: 13px;
+      }
+
+      .collection-btn:hover {
+        border-color: color-mix(in oklab, var(--brand) 33%, var(--line));
+        transform: translateX(2px);
+      }
+
+      .collection-btn.active {
+        border-color: var(--brand);
+        background: var(--brand-soft);
+      }
+
+      .mono {
+        font-family: "IBM Plex Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      }
+
+      .tiny {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .search-form {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 140px 160px 170px 110px;
+        gap: 8px;
+        align-items: end;
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .field.hidden {
+        display: none;
+      }
+
+      .field-label {
+        font-size: 11px;
+        color: var(--muted);
+        letter-spacing: 0.02em;
+      }
+
+      .meta-line {
+        margin-top: 8px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .techniques {
+        margin-top: 10px;
+        display: grid;
+        gap: 7px;
+      }
+
+      .technique {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 8px 10px;
+        font-size: 12px;
+        background: color-mix(in oklab, var(--panel-soft) 82%, white 18%);
+      }
+
+      .technique.active {
+        border-color: color-mix(in oklab, var(--brand) 38%, var(--line));
+        background: color-mix(in oklab, var(--brand-soft) 78%, white 22%);
+      }
+
+      .param-guide {
+        margin-top: 10px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 9px 10px;
+        font-size: 12px;
+        color: var(--muted);
+        background: color-mix(in oklab, var(--panel-soft) 80%, white 20%);
+        line-height: 1.45;
+      }
+
+      .results {
+        margin-top: 14px;
+        display: grid;
+        gap: 10px;
+      }
+
+      .result-card {
+        border: 1px solid var(--line);
+        border-radius: 13px;
+        background: color-mix(in oklab, var(--panel) 88%, white 12%);
+        padding: 12px;
+        animation: card-enter 220ms ease both;
+      }
+
+      @keyframes card-enter {
+        from {
+          opacity: 0;
+          transform: translateY(7px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .result-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .score-pill {
+        border: 1px solid color-mix(in oklab, var(--brand) 32%, var(--line));
+        color: color-mix(in oklab, var(--brand) 75%, black 25%);
+        background: color-mix(in oklab, var(--brand-soft) 80%, white 20%);
+        border-radius: 999px;
+        padding: 3px 9px;
+        font-size: 12px;
+      }
+
+      .result-path {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 6px;
+      }
+
+      .result-snippet {
+        margin: 9px 0 0;
+        font-size: 13px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+      }
+
+      .result-actions {
+        margin-top: 10px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 7px;
+      }
+
+      .fetch-box {
+        margin-top: 10px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: color-mix(in oklab, var(--panel-soft) 88%, white 12%);
+        padding: 10px;
+      }
+
+      .fetch-label {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .fetch-title {
+        margin-top: 6px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .fetch-text {
+        margin: 6px 0 0;
+        font-size: 13px;
+        white-space: pre-wrap;
+        line-height: 1.5;
+      }
+
+      .empty {
+        margin-top: 20px;
+        border: 1px dashed var(--line);
+        border-radius: 12px;
+        padding: 18px;
+        color: var(--muted);
+        text-align: center;
+        font-size: 13px;
+      }
+
+      .error {
+        margin-top: 10px;
+        font-size: 12px;
+        color: var(--danger);
+      }
+
+      @media (max-width: 980px) {
+        .shell {
+          grid-template-columns: 1fr;
+          height: auto;
+        }
+
+        .left-body,
+        .right-body {
+          height: auto;
+          max-height: none;
+        }
+
+        .search-form {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="panel">
+        <div class="pane-header">
+          <h1 class="title">Qdrant Search</h1>
+          <div class="subtitle">Run MCP search and fetch tools interactively.</div>
+        </div>
+        <div class="left-body">
+          <div class="status-row">
+            <span class="chip"><span id="statusDot" class="dot"></span><span id="statusText">Checking</span></span>
+            <button class="btn" id="refreshBtn" type="button">Refresh</button>
+          </div>
+          <div class="tiny mono" id="qdrantUrl">QDRANT URL: -</div>
+          <input class="text-input" id="collectionFilter" placeholder="Filter collections" />
+          <div class="collections" id="collectionList"></div>
+          <button class="btn ghost" id="setDefaultBtn" type="button">Set selected as default</button>
+          <div class="tiny" id="defaultCollectionText">Default collection: -</div>
+        </div>
+      </aside>
+
+      <main class="panel">
+        <div class="pane-header">
+          <h2 class="title">Search Workspace</h2>
+          <div class="subtitle">Query hybrid search and inspect chunk payloads.</div>
+        </div>
+        <div class="right-body">
+          <form id="searchForm" class="search-form">
+            <div class="field">
+              <label class="field-label mono" for="queryInput">query</label>
+              <input class="text-input" id="queryInput" placeholder="Ask a question about your indexed corpus" />
+            </div>
+            <div class="field">
+              <label class="field-label mono" for="topKInput">top_k (default 8)</label>
+              <input class="text-input" id="topKInput" type="number" min="1" max="50" value="8" />
+            </div>
+            <div class="field" id="prefetchField">
+              <label class="field-label mono" for="prefetchKInput">prefetch_k (default 60)</label>
+              <input class="text-input" id="prefetchKInput" type="number" min="1" max="500" value="60" />
+            </div>
+            <div class="field">
+              <label class="field-label mono" for="retrievalModeInput">retrieval mode</label>
+              <select class="text-input" id="retrievalModeInput">
+                <option value="hybrid" selected>hybrid (dense + sparse fusion)</option>
+                <option value="cosine">cosine (dense-only similarity)</option>
+              </select>
+            </div>
+            <button class="btn brand" type="submit" id="searchBtn">Search</button>
+          </form>
+          <div class="techniques">
+            <div class="technique active" id="hybridTechnique">
+              <strong>Hybrid search</strong>: Combines sparse keyword matching (BM25-style) and dense semantic embeddings,
+              then fuses rankings with RRF. Best default when you need both exact terms and semantic relevance.
+            </div>
+            <div class="technique" id="cosineTechnique">
+              <strong>Cosine search</strong>: Uses only dense embedding vectors and cosine similarity. Simpler and semantic-first,
+              but may miss exact keyword-heavy matches that sparse retrieval would catch.
+            </div>
+          </div>
+          <div class="param-guide" id="parameterGuide"></div>
+          <div class="meta-line" id="searchMeta">Waiting for query.</div>
+          <div class="error" id="errorText"></div>
+          <section class="results" id="results"></section>
+          <div class="empty" id="emptyState">Run a search to see results.</div>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      const state = {
+        collections: [],
+        defaultCollection: "",
+        selectedCollection: "",
+        activeCollection: "",
+        retrievalMode: "hybrid",
+        details: {},
+        results: [],
+      };
+
+      const el = {
+        statusDot: document.getElementById("statusDot"),
+        statusText: document.getElementById("statusText"),
+        qdrantUrl: document.getElementById("qdrantUrl"),
+        refreshBtn: document.getElementById("refreshBtn"),
+        collectionFilter: document.getElementById("collectionFilter"),
+        collectionList: document.getElementById("collectionList"),
+        setDefaultBtn: document.getElementById("setDefaultBtn"),
+        defaultCollectionText: document.getElementById("defaultCollectionText"),
+        searchForm: document.getElementById("searchForm"),
+        queryInput: document.getElementById("queryInput"),
+        topKInput: document.getElementById("topKInput"),
+        prefetchField: document.getElementById("prefetchField"),
+        prefetchKInput: document.getElementById("prefetchKInput"),
+        retrievalModeInput: document.getElementById("retrievalModeInput"),
+        searchBtn: document.getElementById("searchBtn"),
+        hybridTechnique: document.getElementById("hybridTechnique"),
+        cosineTechnique: document.getElementById("cosineTechnique"),
+        parameterGuide: document.getElementById("parameterGuide"),
+        searchMeta: document.getElementById("searchMeta"),
+        errorText: document.getElementById("errorText"),
+        results: document.getElementById("results"),
+        emptyState: document.getElementById("emptyState"),
+      };
+
+      function safeText(value) {
+        if (value === undefined || value === null) return "";
+        return String(value);
+      }
+
+      function truncate(text, maxLen = 520) {
+        const raw = safeText(text).trim();
+        if (!raw) return "";
+        if (raw.length <= maxLen) return raw;
+        return raw.slice(0, maxLen - 3) + "...";
+      }
+
+      function sourcePath(item) {
+        if (item.bucket && item.key) return `${item.bucket}/${item.key}`;
+        if (item.source) return item.source;
+        if (item.document_id) return `document:${item.document_id}`;
+        return "unknown source";
+      }
+
+      function prettyJson(value) {
+        try {
+          return JSON.stringify(value, null, 2);
+        } catch (_) {
+          return safeText(value);
+        }
+      }
+
+      function keyRef(payload) {
+        if (!payload || typeof payload !== "object") return "-";
+        if (payload.bucket && payload.key) return `${safeText(payload.bucket)}/${safeText(payload.key)}`;
+        if (payload.source) return safeText(payload.source);
+        return "-";
+      }
+
+      function extractChunkText(entry) {
+        if (!entry || typeof entry !== "object") return "";
+        for (const key of ["text", "chunk_text", "content", "chunk", "page_content", "raw_text"]) {
+          const value = entry[key];
+          if (typeof value === "string" && value.trim()) {
+            return value.trim();
+          }
+        }
+        return "";
+      }
+
+      function formatChunkTexts(chunks) {
+        if (!Array.isArray(chunks) || !chunks.length) {
+          return "";
+        }
+        const texts = [];
+        for (const chunk of chunks) {
+          const text = extractChunkText(chunk);
+          if (text) {
+            texts.push(text);
+          }
+        }
+        return texts.join("\n\n---\n\n");
+      }
+
+      async function api(path, init) {
+        const response = await fetch(path, init);
+        const text = await response.text();
+        let body = {};
+        try {
+          body = text ? JSON.parse(text) : {};
+        } catch (_) {
+          body = { detail: text || "Invalid server response" };
+        }
+        if (!response.ok) {
+          const detail = body && body.detail ? body.detail : `Request failed (${response.status})`;
+          throw new Error(detail);
+        }
+        return body;
+      }
+
+      function setError(message) {
+        el.errorText.textContent = message || "";
+      }
+
+      function renderCollections() {
+        const filter = safeText(el.collectionFilter.value).toLowerCase();
+        el.collectionList.innerHTML = "";
+        const shown = state.collections.filter((name) => name.toLowerCase().includes(filter));
+
+        if (!shown.length) {
+          const empty = document.createElement("div");
+          empty.className = "tiny";
+          empty.textContent = "No collections match this filter.";
+          el.collectionList.appendChild(empty);
+        }
+
+        for (const name of shown) {
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "collection-btn" + (state.selectedCollection === name ? " active" : "");
+          btn.textContent = name;
+          btn.addEventListener("click", () => {
+            state.selectedCollection = name;
+            renderCollections();
+          });
+          el.collectionList.appendChild(btn);
+        }
+
+        const defaultLabel = state.defaultCollection || "(unset)";
+        const selectedLabel = state.selectedCollection || defaultLabel;
+        el.defaultCollectionText.textContent = `Default collection: ${defaultLabel} | Selected: ${selectedLabel}`;
+      }
+
+      function renderTechniqueState() {
+        const mode = safeText(state.retrievalMode || "hybrid").toLowerCase();
+        const isCosine = mode === "cosine";
+        if (el.hybridTechnique) {
+          el.hybridTechnique.classList.toggle("active", !isCosine);
+        }
+        if (el.cosineTechnique) {
+          el.cosineTechnique.classList.toggle("active", isCosine);
+        }
+        if (el.prefetchField) {
+          el.prefetchField.classList.toggle("hidden", isCosine);
+        }
+        if (el.prefetchKInput) {
+          el.prefetchKInput.disabled = isCosine;
+        }
+        if (el.parameterGuide) {
+          if (isCosine) {
+            el.parameterGuide.textContent =
+              "Parameters: query is your question text. top_k controls how many final results are returned. Cosine mode only uses dense semantic similarity, so prefetch_k is not used.";
+          } else {
+            el.parameterGuide.textContent =
+              "Parameters: query is your question text. top_k controls the number of final fused results. prefetch_k controls how many dense and sparse candidates are gathered before RRF fusion (higher can improve recall but increases latency).";
+          }
+        }
+      }
+
+      function setResultDetail(pointId, kind, payload) {
+        const key = safeText(pointId);
+        const current = state.details[key] || {};
+        state.details[key] = { ...current, [kind]: payload };
+      }
+
+      function detailTitle(kind, payload) {
+        if (!payload || payload.found === false) return `${kind} not found`;
+        if (kind === "chunk") {
+          return `Chunk ${safeText(payload.chunk_index) || "-"}`;
+        }
+        if (kind === "partition") {
+          const partition = payload.partition || {};
+          return `${safeText(partition.label || "Partition")} | chunks ${Number(payload.count || 0)}`;
+        }
+        if (kind === "document") {
+          return `Document chunks ${Number(payload.count || 0)}`;
+        }
+        if (kind === "bibtex") {
+          return `citation_key: ${safeText(payload.citation_key || "-")}`;
+        }
+        return kind;
+      }
+
+      function detailBody(kind, payload) {
+        if (!payload) return "";
+        if (kind === "chunk") {
+          return truncate(payload.text || "", 6000) || prettyJson(payload);
+        }
+        if (kind === "bibtex") {
+          return truncate(prettyJson(payload.metadata || payload), 6000);
+        }
+        if (kind === "partition") {
+          const partition = payload.partition || {};
+          const header = [
+            `point_id: ${safeText(payload.id || "-")}`,
+            `document_id: ${safeText(payload.document_id || "-")}`,
+            `object: ${keyRef(payload)}`,
+            `partition: ${safeText(partition.label || "-")} (${safeText(partition.page_start || "-")} - ${safeText(partition.page_end || "-")})`,
+            `chunk_count: ${Number(payload.count || 0)}`,
+          ];
+          const body = formatChunkTexts(payload.chunks || []);
+          if (!body) {
+            header.push("", "(No partition text found.)");
+            return truncate(header.join("\n"), 6000);
+          }
+          return truncate(`${header.join("\n")}\n\n${body}`, 6000);
+        }
+        if (kind === "document") {
+          const docIds = Array.isArray(payload.document_ids) ? payload.document_ids.join(", ") : "";
+          const header = [
+            `point_id: ${safeText(payload.id || "-")}`,
+            `document_id: ${safeText(payload.document_id || docIds || "-")}`,
+            `object: ${keyRef(payload)}`,
+            `chunk_count: ${Number(payload.count || 0)}`,
+          ];
+          const body = formatChunkTexts(payload.chunks || []);
+          if (!body) {
+            header.push("", "(No document text found.)");
+            return truncate(header.join("\n"), 6000);
+          }
+          return truncate(`${header.join("\n")}\n\n${body}`, 6000);
+        }
+        return truncate(prettyJson(payload), 6000);
+      }
+
+      function renderDetailBox(kind, payload) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "fetch-box";
+
+        const label = document.createElement("div");
+        label.className = "fetch-label mono";
+        label.textContent = kind;
+
+        const title = document.createElement("div");
+        title.className = "fetch-title";
+        title.textContent = detailTitle(kind, payload);
+
+        const text = document.createElement("pre");
+        text.className = "fetch-text";
+        text.textContent = detailBody(kind, payload);
+
+        wrapper.appendChild(label);
+        wrapper.appendChild(title);
+        wrapper.appendChild(text);
+        return wrapper;
+      }
+
+      function renderDetails(pointId, card) {
+        const detail = state.details[safeText(pointId)];
+        if (!detail) return;
+        for (const kind of ["chunk", "partition", "document", "bibtex"]) {
+          if (detail[kind] !== undefined) {
+            card.appendChild(renderDetailBox(kind, detail[kind]));
+          }
+        }
+      }
+
+      async function fetchResultDetail(item, kind, card) {
+        setError("");
+        const pointId = safeText(item && item.id);
+        if (!pointId) return;
+        const collection = state.activeCollection || state.selectedCollection || state.defaultCollection;
+        const query = collection ? `?collection=${encodeURIComponent(collection)}` : "";
+        const endpoint = {
+          chunk: `/api/fetch/${encodeURIComponent(pointId)}`,
+          partition: `/api/chunk/${encodeURIComponent(pointId)}/partition`,
+          document: `/api/chunk/${encodeURIComponent(pointId)}/document`,
+          bibtex: `/api/chunk/${encodeURIComponent(pointId)}/bibtex`,
+        }[kind];
+        if (!endpoint) return;
+
+        try {
+          const payload = await api(`${endpoint}${query}`);
+          setResultDetail(pointId, kind, payload);
+          renderResults();
+        } catch (error) {
+          setError(error.message || `Failed to fetch ${kind}`);
+          if (card) {
+            card.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
+        }
+      }
+
+      function renderResults() {
+        el.results.innerHTML = "";
+        const items = state.results || [];
+        el.emptyState.style.display = items.length ? "none" : "block";
+
+        for (const [index, item] of items.entries()) {
+          const card = document.createElement("article");
+          card.className = "result-card";
+          card.style.animationDelay = `${Math.min(index * 24, 220)}ms`;
+
+          const header = document.createElement("div");
+          header.className = "result-head";
+          header.innerHTML = `
+            <strong class="mono">id: ${safeText(item.id)}</strong>
+            <span class="score-pill">score ${Number(item.score || 0).toFixed(4)}</span>
+          `;
+
+          const path = document.createElement("div");
+          path.className = "result-path mono";
+          path.textContent = sourcePath(item);
+
+          const citationKeyLine = document.createElement("div");
+          citationKeyLine.className = "result-path mono";
+          citationKeyLine.textContent = `citation_key: ${safeText(item.citation_key || "-")}`;
+
+          const snippet = document.createElement("p");
+          snippet.className = "result-snippet";
+          snippet.textContent = truncate(item.text, 420) || "No text in payload.";
+
+          const actions = document.createElement("div");
+          actions.className = "result-actions";
+
+          const fetchChunkBtn = document.createElement("button");
+          fetchChunkBtn.type = "button";
+          fetchChunkBtn.className = "btn";
+          fetchChunkBtn.textContent = "Fetch full chunk";
+          fetchChunkBtn.addEventListener("click", () => fetchResultDetail(item, "chunk", card));
+          actions.appendChild(fetchChunkBtn);
+
+          const fetchPartitionBtn = document.createElement("button");
+          fetchPartitionBtn.type = "button";
+          fetchPartitionBtn.className = "btn";
+          fetchPartitionBtn.textContent = "Fetch partition";
+          fetchPartitionBtn.addEventListener("click", () => fetchResultDetail(item, "partition", card));
+          actions.appendChild(fetchPartitionBtn);
+
+          const fetchDocumentBtn = document.createElement("button");
+          fetchDocumentBtn.type = "button";
+          fetchDocumentBtn.className = "btn";
+          fetchDocumentBtn.textContent = "Fetch full document";
+          fetchDocumentBtn.addEventListener("click", () => fetchResultDetail(item, "document", card));
+          actions.appendChild(fetchDocumentBtn);
+
+          const bibtexBtn = document.createElement("button");
+          bibtexBtn.type = "button";
+          bibtexBtn.className = "btn";
+          bibtexBtn.textContent = "Show BibTeX metadata";
+          bibtexBtn.addEventListener("click", () => fetchResultDetail(item, "bibtex", card));
+          actions.appendChild(bibtexBtn);
+
+          if (item.citation_url) {
+            const open = document.createElement("a");
+            open.className = "btn";
+            open.href = item.citation_url;
+            open.target = "_blank";
+            open.rel = "noopener noreferrer";
+            open.textContent = "Open citation";
+            actions.appendChild(open);
+          }
+
+          card.appendChild(header);
+          card.appendChild(path);
+          card.appendChild(citationKeyLine);
+          card.appendChild(snippet);
+          card.appendChild(actions);
+          renderDetails(item.id, card);
+
+          el.results.appendChild(card);
+        }
+      }
+
+      async function loadStatus() {
+        const status = await api("/api/status");
+        const ok = !!status.ok;
+        el.statusDot.className = "dot " + (ok ? "ok" : "bad");
+        el.statusText.textContent = ok ? "Connected" : "Unavailable";
+        el.qdrantUrl.textContent = `QDRANT URL: ${safeText(status.qdrant_url || "-")}`;
+      }
+
+      async function loadCollections() {
+        const payload = await api("/api/collections");
+        state.collections = Array.isArray(payload.collections) ? payload.collections : [];
+        state.defaultCollection = safeText(payload.default_collection);
+        if (!state.selectedCollection) {
+          state.selectedCollection = state.defaultCollection || state.collections[0] || "";
+        }
+        renderCollections();
+      }
+
+      async function runSearch() {
+        setError("");
+        const query = safeText(el.queryInput.value).trim();
+        if (!query) {
+          setError("Enter a search query.");
+          return;
+        }
+
+        const topK = parseInt(el.topKInput.value || "8", 10);
+        const retrievalMode = safeText(el.retrievalModeInput.value || "hybrid").toLowerCase();
+        const collection = state.selectedCollection || state.defaultCollection || "";
+        const body = {
+          query,
+          topK: Number.isFinite(topK) ? topK : 8,
+          retrievalMode,
+          collection,
+        };
+        if (retrievalMode === "hybrid") {
+          const prefetchK = parseInt(el.prefetchKInput.value || "60", 10);
+          body.prefetchK = Number.isFinite(prefetchK) ? prefetchK : 60;
+        }
+
+        el.searchBtn.disabled = true;
+        el.searchBtn.textContent = "Searching...";
+        try {
+          const payload = await api("/api/search", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          state.results = Array.isArray(payload.results) ? payload.results : [];
+          state.activeCollection = safeText(payload.collection || collection);
+          state.retrievalMode = safeText(payload.retrieval_mode || retrievalMode || "hybrid").toLowerCase();
+          state.details = {};
+          renderTechniqueState();
+          el.searchMeta.textContent = `Mode: ${state.retrievalMode} | Collection: ${state.activeCollection || "-"} | Results: ${state.results.length} | Latency: ${safeText(payload.latency_ms)}ms`;
+          renderResults();
+        } catch (error) {
+          setError(error.message || "Search failed");
+          state.results = [];
+          renderResults();
+        } finally {
+          el.searchBtn.disabled = false;
+          el.searchBtn.textContent = "Search";
+        }
+      }
+
+      async function setDefaultCollection() {
+        setError("");
+        const collection = safeText(state.selectedCollection).trim();
+        if (!collection) {
+          setError("Select a collection first.");
+          return;
+        }
+        try {
+          await api("/api/default-collection", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ collection }),
+          });
+          state.defaultCollection = collection;
+          renderCollections();
+        } catch (error) {
+          setError(error.message || "Failed to set default collection");
+        }
+      }
+
+      async function refreshAll() {
+        setError("");
+        await Promise.all([loadStatus(), loadCollections()]);
+      }
+
+      el.refreshBtn.addEventListener("click", () => {
+        refreshAll().catch((error) => setError(error.message || "Refresh failed"));
+      });
+
+      el.collectionFilter.addEventListener("input", renderCollections);
+      el.retrievalModeInput.addEventListener("change", () => {
+        state.retrievalMode = safeText(el.retrievalModeInput.value || "hybrid").toLowerCase();
+        renderTechniqueState();
+      });
+      el.setDefaultBtn.addEventListener("click", () => {
+        setDefaultCollection().catch((error) => setError(error.message || "Failed to set default collection"));
+      });
+
+      el.searchForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        runSearch();
+      });
+
+      renderTechniqueState();
+      refreshAll().catch((error) => setError(error.message || "Failed to initialize UI"));
+    </script>
+  </body>
+</html>

@@ -8,9 +8,43 @@ SRC_ROOT = os.path.join(PROJECT_ROOT, "src")
 if SRC_ROOT not in sys.path:
     sys.path.insert(0, SRC_ROOT)
 
-from mcp_research import mcp_app
+try:
+    from mcp_research import mcp_app
+except ModuleNotFoundError:  # pragma: no cover - optional local deps
+    mcp_app = None  # type: ignore[assignment]
 
 
+class _FakeRedis:
+    def __init__(self, *, values=None, smembers=None, hashes=None):
+        self._values = values or {}
+        self._smembers = smembers or {}
+        self._hashes = hashes or {}
+
+    def get(self, key):
+        return self._values.get(key)
+
+    def smembers(self, key):
+        return self._smembers.get(key, set())
+
+    def hgetall(self, key):
+        return self._hashes.get(key, {})
+
+
+class _DummyPoint:
+    def __init__(self, pid, payload):
+        self.id = pid
+        self.payload = payload
+
+
+class _FakeQdrant:
+    def __init__(self, payload):
+        self._payload = payload
+
+    def retrieve(self, **_kwargs):
+        return [_DummyPoint("42", self._payload)] if self._payload is not None else []
+
+
+@unittest.skipIf(mcp_app is None, "mcp_app optional dependencies unavailable")
 class McpAppTests(unittest.TestCase):
     def test_pages_to_range_handles_empty(self):
         self.assertEqual(mcp_app._pages_to_range([]), (None, None))
@@ -35,6 +69,87 @@ class McpAppTests(unittest.TestCase):
 
     def test_default_collection_key_uses_prefix(self):
         self.assertEqual(mcp_app._default_collection_key(), "unstructured:qdrant:default_collection")
+
+    def test_normalize_retrieval_mode(self):
+        self.assertEqual(mcp_app._normalize_retrieval_mode("HYBRID"), "hybrid")
+        self.assertEqual(mcp_app._normalize_retrieval_mode(" cosine "), "cosine")
+        with self.assertRaises(ValueError):
+            mcp_app._normalize_retrieval_mode("bm25")
+
+    def test_citation_key_from_payload_prefers_payload_value(self):
+        payload = {"citation_key": "alpha2025"}
+        self.assertEqual(mcp_app._citation_key_from_payload(payload), "alpha2025")
+
+    def test_citation_key_from_payload_falls_back_to_bibtex_metadata(self):
+        fake_redis = _FakeRedis(
+            values={
+                "bibtex:file:bucket-a/paper.pdf": b'{"citationKey":"doe2024paper"}',
+            }
+        )
+        with mock.patch.object(mcp_app, "_get_redis_client", return_value=fake_redis):
+            payload = {"bucket": "bucket-a", "key": "paper.pdf"}
+            self.assertEqual(mcp_app._citation_key_from_payload(payload), "doe2024paper")
+
+    def test_fetch_document_chunks_uses_meta_chunks_key_override(self):
+        fake_redis = _FakeRedis(
+            values={
+                "custom:chunks:key": b'[{"text":"chunk-a"}]',
+            },
+            smembers={
+                "unstructured:pdf:source:bucket-a/paper.pdf": {b"doc-1"},
+            },
+            hashes={
+                "unstructured:pdf:doc-1:meta": {
+                    b"chunks_key": b"custom:chunks:key",
+                },
+            },
+        )
+        with mock.patch.object(mcp_app, "_get_redis_client", return_value=fake_redis):
+            result = mcp_app.fetch_document_chunks(bucket="bucket-a", key="paper.pdf")
+        self.assertTrue(result["found"])
+        self.assertEqual(result["count"], 1)
+        self.assertEqual(result["chunks_key"], "custom:chunks:key")
+        self.assertEqual(result["chunks"][0]["text"], "chunk-a")
+
+    def test_fetch_chunk_bibtex_returns_metadata_for_chunk(self):
+        fake_qdrant = _FakeQdrant({"bucket": "bucket-a", "key": "paper.pdf", "document_id": "doc-1"})
+        fake_redis = _FakeRedis(
+            values={
+                "bibtex:file:bucket-a/paper.pdf": b'{"citationKey":"doe2024paper","title":"Paper"}',
+            }
+        )
+        with mock.patch.object(mcp_app, "_get_qdrant_client", return_value=fake_qdrant):
+            with mock.patch.object(mcp_app, "_get_redis_client", return_value=fake_redis):
+                result = mcp_app.fetch_chunk_bibtex("42", collection="research_2026")
+        self.assertTrue(result["found"])
+        self.assertEqual(result["citation_key"], "doe2024paper")
+        self.assertEqual(result["metadata"]["title"], "Paper")
+
+    def test_fetch_chunk_partition_returns_partition_chunks_for_chunk_page(self):
+        fake_qdrant = _FakeQdrant(
+            {
+                "document_id": "doc-1",
+                "bucket": "bucket-a",
+                "key": "paper.pdf",
+                "page_start": 1,
+                "page_end": 1,
+                "chunk_index": 0,
+                "text": "seed chunk",
+            }
+        )
+        fake_redis = _FakeRedis(
+            values={
+                "unstructured:pdf:doc-1:chunks": b'[{"page_start":1,"page_end":1,"chunk_index":0,"text":"chunk page 1"},{"page_start":2,"page_end":2,"chunk_index":1,"text":"chunk page 2"}]',
+                "unstructured:pdf:doc-1:partitions": b'[{"page_start":1,"page_end":1,"text":"partition 1"},{"page_start":2,"page_end":2,"text":"partition 2"}]',
+            }
+        )
+        with mock.patch.object(mcp_app, "_get_qdrant_client", return_value=fake_qdrant):
+            with mock.patch.object(mcp_app, "_get_redis_client", return_value=fake_redis):
+                result = mcp_app.fetch_chunk_partition("42", collection="research_2026")
+        self.assertTrue(result["found"])
+        self.assertEqual(result["count"], 1)
+        self.assertEqual(result["partition"]["page_start"], 1)
+        self.assertEqual(result["chunks"][0]["text"], "chunk page 1")
 
 
 if __name__ == "__main__":
