@@ -58,7 +58,7 @@ MINIO_DOI_KEYS = {
     "prism-doi",
 }
 
-ALLOWED_ENTRY_TYPES = {"article", "inproceedings", "book", "misc", "techreport"}
+ALLOWED_ENTRY_TYPES = {"article", "inproceedings", "inbook", "incollection", "book", "misc", "techreport"}
 
 
 def load_dotenv(path: Path) -> None:
@@ -116,6 +116,7 @@ def _default_bibtex_metadata(object_name: str) -> Dict[str, Any]:
         "authors": [],
         "journal": "",
         "booktitle": "",
+        "publisher": "",
         "volume": "",
         "number": "",
         "pages": "",
@@ -157,6 +158,7 @@ def _normalize_bibtex_metadata(object_name: str, metadata: Dict[str, Any] | None
         "year",
         "journal",
         "booktitle",
+        "publisher",
         "volume",
         "number",
         "pages",
@@ -852,7 +854,7 @@ def _entry_type_from_crossref(crossref_type: str) -> str:
         "proceedings-article": "inproceedings",
         "proceedings": "inproceedings",
         "book": "book",
-        "book-chapter": "book",
+        "book-chapter": "incollection",
         "report": "techreport",
     }
     return mapping.get(crossref_type.lower(), "misc")
@@ -905,12 +907,13 @@ def _crossref_to_bibtex(message: Dict[str, Any], object_name: str) -> Dict[str, 
             "volume": _normalize_text(message.get("volume")),
             "number": _normalize_text(message.get("issue")),
             "pages": _normalize_text(message.get("page")),
+            "publisher": _normalize_text(message.get("publisher")),
             "doi": doi,
             "url": url,
             "abstract": _strip_html(_normalize_text(message.get("abstract"))),
         }
     )
-    if entry_type == "inproceedings":
+    if entry_type in {"inproceedings", "inbook", "incollection"}:
         metadata["booktitle"] = container
     else:
         metadata["journal"] = container

@@ -4,6 +4,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>BibTeX Metadata Workspace</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/handsontable@14.5.0/dist/handsontable.full.min.css"
+    />
     <style>
       :root {
         --bg: #f4f0e8;
@@ -40,6 +44,14 @@
         gap: 14px;
         padding: 14px;
         height: 100vh;
+      }
+
+      .app-shell.bulk-mode {
+        grid-template-columns: 260px 1fr;
+      }
+
+      .app-shell.bulk-mode .right-pane {
+        display: none;
       }
 
       .pane {
@@ -378,6 +390,37 @@
         align-items: center;
       }
 
+      .view-toggle {
+        margin-top: 8px;
+        display: inline-flex;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        overflow: hidden;
+        width: fit-content;
+        background: color-mix(in oklab, var(--panel-alt) 78%, white 22%);
+      }
+
+      .view-toggle-btn {
+        border: none;
+        border-right: 1px solid var(--line);
+        background: transparent;
+        color: var(--muted);
+        font: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 6px 10px;
+        cursor: pointer;
+      }
+
+      .view-toggle-btn:last-child {
+        border-right: none;
+      }
+
+      .view-toggle-btn.active {
+        background: color-mix(in oklab, var(--brand-soft) 78%, white 22%);
+        color: color-mix(in oklab, var(--brand) 75%, #4c2318);
+      }
+
       .main-action-btn {
         border: 1px solid color-mix(in oklab, var(--brand) 35%, var(--line));
         background: color-mix(in oklab, var(--brand-soft) 72%, white 28%);
@@ -430,6 +473,107 @@
       .autofill-progress-text {
         margin-top: 5px;
         font-size: 11px;
+        color: var(--muted);
+      }
+
+      .bulk-view[hidden],
+      .detail-view[hidden] {
+        display: none !important;
+      }
+
+      .bulk-view,
+      .detail-view {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 0;
+      }
+
+      .bulk-view .table-wrap,
+      .detail-view .table-wrap {
+        flex: 1;
+        min-height: 0;
+      }
+
+      .bulk-toolbar {
+        padding: 10px 12px 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .bulk-toolbar-note {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .bulk-toolbar-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .bulk-btn {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel-alt);
+        color: var(--ink);
+        font: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 6px 10px;
+      }
+
+      .bulk-btn:hover {
+        border-color: color-mix(in oklab, var(--brand) 45%, var(--line));
+      }
+
+      .bulk-btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .bulk-cell-input {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--panel);
+        color: var(--ink);
+        font: inherit;
+        font-size: 12px;
+        padding: 6px 7px;
+      }
+
+      .bulk-cell-input.readonly {
+        background: color-mix(in oklab, var(--panel-alt) 84%, white 16%);
+        color: var(--muted);
+        border-style: dashed;
+      }
+
+      .bulk-grid-wrap {
+        min-height: 380px;
+      }
+
+      .bulk-hot {
+        width: 100%;
+      }
+
+      .bulk-hot-message {
+        border: 1px dashed var(--line);
+        border-radius: 10px;
+        padding: 18px;
+        color: var(--muted);
+        font-size: 13px;
+        background: color-mix(in oklab, var(--panel-alt) 78%, white 22%);
+      }
+
+      .bulk-hot-message[hidden] {
+        display: none !important;
+      }
+
+      .hot .htDimmed {
         color: var(--muted);
       }
 
@@ -536,6 +680,39 @@
         margin-top: 4px;
         font-size: 11px;
         color: var(--muted);
+      }
+
+      .field-hint.error {
+        color: color-mix(in oklab, #b53c31 82%, var(--ink));
+      }
+
+      .editor-inline-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .editor-action-btn {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel-alt);
+        color: var(--ink);
+        font: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 7px 10px;
+        white-space: nowrap;
+      }
+
+      .editor-action-btn:hover {
+        border-color: color-mix(in oklab, var(--brand) 45%, var(--line));
+      }
+
+      .editor-action-btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
       }
 
       .recommended-summary {
@@ -729,7 +906,7 @@
     </style>
   </head>
   <body>
-    <div class="app-shell">
+    <div class="app-shell" id="appShell">
       <aside class="pane left-pane">
         <div class="pane-header">
           <h1 class="pane-title">Buckets</h1>
@@ -741,7 +918,11 @@
       <main class="pane main-pane">
         <div class="pane-header">
           <h2 class="pane-title" id="tableTitle">Files</h2>
-          <div class="pane-subtitle">Table shows title, year, author, plus PDF and text links. If title is empty, filename is used.</div>
+          <div class="pane-subtitle">Table shows title, year, authors, and journal/book context, plus PDF and text links. If title is empty, filename is used.</div>
+          <div class="view-toggle" id="viewToggle">
+            <button type="button" class="view-toggle-btn" id="viewToggleBulk">Bulk Edit</button>
+            <button type="button" class="view-toggle-btn" id="viewToggleDetail">Detail Edit</button>
+          </div>
           <div class="main-tools">
             <button type="button" id="autofillMissingBtn" class="main-action-btn">Autofill Missing Metadata</button>
             <div id="autofillStatus" class="autofill-status">Ready.</div>
@@ -754,37 +935,63 @@
           </div>
         </div>
         <div class="main-pane-body">
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th style="width: 40%">
-                    <button class="sort-btn" type="button" data-sort-key="title">
-                      Title
-                      <span class="sort-indicator"></span>
-                    </button>
-                  </th>
-                  <th style="width: 12%">
-                    <button class="sort-btn" type="button" data-sort-key="year">
-                      Year
-                      <span class="sort-indicator"></span>
-                    </button>
-                  </th>
-                  <th style="width: 32%">
-                    <button class="sort-btn" type="button" data-sort-key="authors">
-                      Authors
-                      <span class="sort-indicator"></span>
-                    </button>
-                  </th>
-                  <th style="width: 8%; text-align: center"><span class="sr-only">PDF</span></th>
-                </tr>
-              </thead>
-              <tbody id="fileTableBody"></tbody>
-            </table>
+          <div class="bulk-view" id="bulkView">
+            <div class="bulk-toolbar">
+              <div class="bulk-toolbar-note">Paste tabular cells from Excel/Sheets. First two columns (MinIO path, Redis doc id) are read-only.</div>
+              <div class="bulk-toolbar-actions">
+                <button type="button" class="bulk-btn" id="bulkCopyBtn">Copy TSV</button>
+                <button type="button" class="bulk-btn" id="bulkSaveBtn">Save Pending Changes</button>
+              </div>
+            </div>
+            <div class="table-wrap bulk-grid-wrap">
+              <div id="bulkHotMessage" class="bulk-hot-message" hidden></div>
+              <div id="bulkHot" class="bulk-hot"></div>
+            </div>
+            <div class="main-footer">
+              <div><span class="dot"></span>Bulk edits are local until you press Save Pending Changes</div>
+              <div id="bulkStatus">No pending changes.</div>
+            </div>
           </div>
-          <div class="main-footer">
-            <div><span class="dot"></span>BibTeX metadata autosaves to Redis (prefix: bibtex)</div>
-            <div id="selectionHint">Select a file to edit extra BibTeX fields</div>
+
+          <div class="detail-view" id="detailView" hidden>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width: 30%">
+                      <button class="sort-btn" type="button" data-sort-key="title">
+                        Title
+                        <span class="sort-indicator"></span>
+                      </button>
+                    </th>
+                    <th style="width: 12%">
+                      <button class="sort-btn" type="button" data-sort-key="year">
+                        Year
+                        <span class="sort-indicator"></span>
+                      </button>
+                    </th>
+                    <th style="width: 22%">
+                      <button class="sort-btn" type="button" data-sort-key="authors">
+                        Authors
+                        <span class="sort-indicator"></span>
+                      </button>
+                    </th>
+                    <th style="width: 28%">
+                      <button class="sort-btn" type="button" data-sort-key="source">
+                        Journal / Book
+                        <span class="sort-indicator"></span>
+                      </button>
+                    </th>
+                    <th style="width: 8%; text-align: center"><span class="sr-only">Links</span></th>
+                  </tr>
+                </thead>
+                <tbody id="fileTableBody"></tbody>
+              </table>
+            </div>
+            <div class="main-footer">
+              <div><span class="dot"></span>BibTeX metadata autosaves to Redis (prefix: bibtex)</div>
+              <div id="selectionHint">Select a file to edit extra BibTeX fields</div>
+            </div>
           </div>
         </div>
       </main>
@@ -808,6 +1015,7 @@
       </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/handsontable@14.5.0/dist/handsontable.full.min.js"></script>
     <script>
       const fieldConfig = [
         { key: "citationKey", label: "Citation Key", type: "text" },
@@ -815,10 +1023,11 @@
           key: "entryType",
           label: "Entry Type",
           type: "select",
-          options: ["article", "inproceedings", "book", "misc", "techreport"],
+          options: ["article", "inproceedings", "inbook", "incollection", "book", "misc", "techreport"],
         },
         { key: "journal", label: "Journal", type: "text" },
         { key: "booktitle", label: "Booktitle", type: "text" },
+        { key: "publisher", label: "Publisher", type: "text" },
         { key: "volume", label: "Volume", type: "text" },
         { key: "number", label: "Number", type: "text" },
         { key: "pages", label: "Pages", type: "text" },
@@ -837,6 +1046,7 @@
         "authors",
         "journal",
         "booktitle",
+        "publisher",
         "volume",
         "number",
         "pages",
@@ -850,6 +1060,8 @@
       const recommendedFieldsByType = {
         article: ["journal", "volume", "number", "pages", "doi"],
         inproceedings: ["booktitle", "pages", "doi", "url"],
+        inbook: ["booktitle", "pages", "doi", "url", "note"],
+        incollection: ["booktitle", "publisher", "pages", "volume", "number", "doi", "url"],
         book: ["volume", "number", "url", "note"],
         misc: ["url", "note", "keywords"],
         techreport: ["number", "url", "doi", "note"],
@@ -865,6 +1077,7 @@
         authors: [],
         journal: "",
         booktitle: "",
+        publisher: "",
         volume: "",
         number: "",
         pages: "",
@@ -875,10 +1088,46 @@
         note: "",
       };
 
+      const bulkColumns = [
+        { key: "minioPath", label: "MinIO Path", readOnly: true },
+        { key: "redisDocId", label: "Redis Doc ID", readOnly: true },
+        { key: "title", label: "Title" },
+        { key: "year", label: "Year" },
+        { key: "authors", label: "Authors" },
+        { key: "doi", label: "DOI" },
+        { key: "entryType", label: "Entry Type" },
+        { key: "journal", label: "Journal" },
+        { key: "booktitle", label: "Booktitle" },
+        { key: "publisher", label: "Publisher" },
+        { key: "volume", label: "Volume" },
+        { key: "number", label: "Number" },
+        { key: "pages", label: "Pages" },
+        { key: "url", label: "URL" },
+        { key: "keywords", label: "Keywords" },
+        { key: "note", label: "Note" },
+        { key: "abstract", label: "Abstract" },
+        { key: "citationKey", label: "Citation Key" },
+      ];
+
       const saveTimers = new Map();
+      const saveInFlightByFileId = new Map();
       const autofillBatchSize = 20;
+      const selectedBucketCookieName = "mcp_research_selected_bucket";
+      const selectedBucketCookieMaxAgeSec = 60 * 60 * 24 * 365;
+      const bulkWidthDefaults = { min: 120, max: 420 };
+      const bulkWidthByColumn = {
+        minioPath: { min: 220, max: 560 },
+        redisDocId: { min: 170, max: 320 },
+        title: { min: 180, max: 520 },
+        authors: { min: 170, max: 420 },
+        abstract: { min: 220, max: 560 },
+        note: { min: 180, max: 480 },
+      };
+      const bulkWidthSampleLimit = 250;
+      let bulkHot = null;
 
       const state = {
+        viewMode: "detail",
         buckets: [],
         activeBucketId: null,
         activeFileId: null,
@@ -890,6 +1139,13 @@
         saveError: "",
         redisSummaryByFile: {},
         redisDetailCache: {},
+        bulk: {
+          edits: {},
+          saving: false,
+          status: "No pending changes.",
+          error: "",
+          rowFileIds: [],
+        },
         autofill: {
           running: false,
           bucketId: null,
@@ -907,10 +1163,45 @@
           items: [],
           totalAvailable: 0,
         },
+        doiLookup: {
+          running: false,
+          fileId: null,
+          message: "",
+          error: "",
+        },
       };
 
       function bucketById(bucketId) {
         return state.buckets.find((bucket) => bucket.id === bucketId) || null;
+      }
+
+      function readCookie(name) {
+        const source = String(document.cookie || "");
+        if (!source) return "";
+        const parts = source.split(";");
+        for (const part of parts) {
+          const [rawName, ...rawValue] = part.trim().split("=");
+          if (rawName !== name) continue;
+          const value = rawValue.join("=");
+          try {
+            return decodeURIComponent(value);
+          } catch (_error) {
+            return value;
+          }
+        }
+        return "";
+      }
+
+      function readSelectedBucketCookie() {
+        return String(readCookie(selectedBucketCookieName) || "").trim();
+      }
+
+      function writeSelectedBucketCookie(bucketId) {
+        const value = String(bucketId || "").trim();
+        if (!value) return;
+        document.cookie =
+          `${selectedBucketCookieName}=${encodeURIComponent(value)}; ` +
+          `path=/; max-age=${selectedBucketCookieMaxAgeSec}; samesite=lax`;
       }
 
       function getActiveBucket() {
@@ -966,11 +1257,26 @@
           }
         }
 
-        file.authors = file.authors.map((author) => ({
-          firstName: typeof author?.firstName === "string" ? author.firstName : "",
-          lastName: typeof author?.lastName === "string" ? author.lastName : "",
-        }));
+        for (let idx = 0; idx < file.authors.length; idx += 1) {
+          const author = file.authors[idx];
+          if (author && typeof author === "object") {
+            author.firstName = typeof author.firstName === "string" ? author.firstName : "";
+            author.lastName = typeof author.lastName === "string" ? author.lastName : "";
+            continue;
+          }
+          if (typeof author === "string") {
+            file.authors[idx] = { firstName: "", lastName: author };
+            continue;
+          }
+          file.authors[idx] = { firstName: "", lastName: "" };
+        }
         return file.authors;
+      }
+
+      function hasIncompleteAuthorRows(authors) {
+        return (authors || []).some(
+          (author) => String(author?.firstName || "").trim() && !String(author?.lastName || "").trim()
+        );
       }
 
       function initialsFromFirstName(firstName) {
@@ -1010,12 +1316,32 @@
         return String(file?.title || "").trim() || String(file?.fileName || "").trim() || "—";
       }
 
+      function displaySource(file) {
+        const entryType = String(file?.entryType || "").trim().toLowerCase();
+        const journal = String(file?.journal || "").trim();
+        const booktitle = String(file?.booktitle || "").trim();
+        const publisher = String(file?.publisher || "").trim();
+
+        if (entryType === "article") return journal || booktitle || publisher;
+        if (entryType === "inproceedings" || entryType === "inbook" || entryType === "incollection") {
+          return booktitle || journal || publisher;
+        }
+        if (entryType === "book") return booktitle || publisher || journal;
+        return journal || booktitle || publisher;
+      }
+
       function normalizeFileRecord(raw) {
         const file = { ...defaultFileFields, ...(raw || {}) };
         file.bucket = String(file.bucket || "");
         file.objectName = String(file.objectName || "");
         file.fileName = String(file.fileName || file.objectName.split("/").pop() || "unknown");
         file.id = String(file.id || `${file.bucket}/${file.objectName}` || file.fileName);
+        if (!Array.isArray(file.redisDocIds)) {
+          file.redisDocIds = file.redisDocId ? [String(file.redisDocId)] : [];
+        } else {
+          file.redisDocIds = file.redisDocIds.map((entry) => String(entry || "")).filter(Boolean);
+        }
+        file.redisDocId = String(file.redisDocId || file.redisDocIds[0] || "");
         file.entryType = recommendedFieldsByType[file.entryType] ? file.entryType : "article";
         for (const key of Object.keys(defaultFileFields)) {
           if (key === "authors") continue;
@@ -1023,6 +1349,237 @@
         }
         coerceAuthors(file);
         return file;
+      }
+
+      function setViewMode(mode) {
+        if (mode !== "bulk" && mode !== "detail") return;
+        if (state.viewMode === "bulk" && mode !== "bulk") {
+          finalizeBulkEditing();
+        }
+        state.viewMode = mode;
+        if (mode === "detail") {
+          const activeBucket = getActiveBucket();
+          if (activeBucket && activeBucket.loaded && !state.activeFileId && activeBucket.files.length > 0) {
+            state.activeFileId = activeBucket.files[0].id;
+          }
+        }
+        renderAll();
+      }
+
+      function bulkFilesForBucket(bucket) {
+        if (!bucket || !Array.isArray(bucket.files)) return [];
+        return [...bucket.files].sort((left, right) =>
+          String(left.objectName || "").localeCompare(String(right.objectName || ""), undefined, {
+            numeric: true,
+            sensitivity: "base",
+          })
+        );
+      }
+
+      function bulkFilesForActiveBucket() {
+        return bulkFilesForBucket(getActiveBucket());
+      }
+
+      function authorsToBulkText(file) {
+        const authors = coerceAuthors(file);
+        const names = authors
+          .map((author) => [author.firstName, author.lastName].filter(Boolean).join(" ").trim())
+          .filter(Boolean);
+        return names.join("; ");
+      }
+
+      function parseBulkAuthors(value) {
+        const text = String(value || "").trim();
+        if (!text) return [];
+        const rawParts = text
+          .replace(/\band\b/gi, ";")
+          .split(/[;\n]/)
+          .map((entry) => entry.trim())
+          .filter(Boolean);
+        return rawParts.map((entry) => {
+          const parts = entry.split(/\s+/).filter(Boolean);
+          if (parts.length <= 1) {
+            return { firstName: "", lastName: parts[0] || "" };
+          }
+          return { firstName: parts.slice(0, -1).join(" "), lastName: parts[parts.length - 1] };
+        });
+      }
+
+      function bulkBaselineValue(file, key) {
+        if (key === "minioPath") return `${file.bucket}/${file.objectName}`;
+        if (key === "redisDocId") return String(file.redisDocId || "");
+        if (key === "authors") return authorsToBulkText(file);
+        return String(file?.[key] ?? "");
+      }
+
+      function getBulkEditsForFile(fileId) {
+        return state.bulk.edits[fileId] || {};
+      }
+
+      function getBulkCellValue(file, key) {
+        const edits = getBulkEditsForFile(file.id);
+        if (Object.prototype.hasOwnProperty.call(edits, key)) {
+          return String(edits[key] ?? "");
+        }
+        return bulkBaselineValue(file, key);
+      }
+
+      function updateBulkStatusText() {
+        if (state.bulk.saving) {
+          return;
+        }
+        const pendingFiles = Object.keys(state.bulk.edits).length;
+        if (pendingFiles === 0) {
+          state.bulk.status = "No pending changes.";
+          state.bulk.error = "";
+          return;
+        }
+        state.bulk.status = `${pendingFiles} file(s) pending save.`;
+      }
+
+      function setBulkCellValue(file, key, value) {
+        if (!file || !file.id || key === "minioPath" || key === "redisDocId") return;
+        const normalized = String(value ?? "");
+        const baseline = bulkBaselineValue(file, key);
+        const rowEdits = { ...getBulkEditsForFile(file.id) };
+        if (normalized === baseline) {
+          delete rowEdits[key];
+        } else {
+          rowEdits[key] = normalized;
+        }
+
+        if (Object.keys(rowEdits).length === 0) {
+          delete state.bulk.edits[file.id];
+        } else {
+          state.bulk.edits[file.id] = rowEdits;
+        }
+        updateBulkStatusText();
+      }
+
+      function destroyBulkHot() {
+        if (!bulkHot) return;
+        bulkHot.destroy();
+        bulkHot = null;
+      }
+
+      function finalizeBulkEditing() {
+        if (!bulkHot) return;
+        const editor = bulkHot.getActiveEditor?.();
+        if (editor && editor.isOpened?.()) {
+          editor.finishEditing();
+        }
+      }
+
+      function setBulkHotMessage(message) {
+        const messageEl = document.getElementById("bulkHotMessage");
+        if (!messageEl) return;
+        const text = String(message || "").trim();
+        messageEl.hidden = !text;
+        messageEl.textContent = text;
+      }
+
+      function bulkRowData(file) {
+        const row = {};
+        for (const column of bulkColumns) {
+          row[column.key] = getBulkCellValue(file, column.key);
+        }
+        return row;
+      }
+
+      function clampBulkWidth(value, key) {
+        const config = bulkWidthByColumn[key] || bulkWidthDefaults;
+        const min = Number(config.min || bulkWidthDefaults.min);
+        const max = Number(config.max || bulkWidthDefaults.max);
+        return Math.max(min, Math.min(max, value));
+      }
+
+      function estimateBulkColumnWidth(key, label, files) {
+        const sampleCount = Math.min(files.length, bulkWidthSampleLimit);
+        let maxChars = String(label || "").length;
+        for (let idx = 0; idx < sampleCount; idx += 1) {
+          const file = files[idx];
+          const value = String(getBulkCellValue(file, key) || "")
+            .replace(/\s+/g, " ")
+            .trim();
+          if (!value) continue;
+          const charCount = Math.min(value.length, 120);
+          if (charCount > maxChars) {
+            maxChars = charCount;
+          }
+        }
+
+        const estimatedPixels = Math.round(maxChars * 7.4 + 34);
+        return clampBulkWidth(estimatedPixels, key);
+      }
+
+      function bulkColumnWidths(files) {
+        return bulkColumns.map((column) =>
+          estimateBulkColumnWidth(column.key, column.label, files || [])
+        );
+      }
+
+      function syncBulkEditsFromHotChanges(changes) {
+        if (!Array.isArray(changes) || changes.length === 0) return;
+        for (const change of changes) {
+          const [row, prop, _oldValue, newValue] = change;
+          const key = String(prop || "");
+          if (!key) continue;
+          const column = bulkColumns.find((entry) => entry.key === key);
+          if (!column || column.readOnly) continue;
+          const fileId = state.bulk.rowFileIds[row];
+          const file = findFileById(fileId);
+          if (!file) continue;
+          setBulkCellValue(file, key, newValue);
+        }
+      }
+
+      function ensureBulkHot(container) {
+        if (bulkHot) return bulkHot;
+        const HandsontableLib = window.Handsontable;
+        if (!HandsontableLib || !container) return null;
+
+        bulkHot = new HandsontableLib(container, {
+          data: [],
+          columns: bulkColumns.map((column) => ({
+            data: column.key,
+            readOnly: !!column.readOnly,
+          })),
+          colHeaders: bulkColumns.map((column) => column.label),
+          colWidths: bulkColumnWidths([]),
+          rowHeaders: false,
+          width: "100%",
+          height: 520,
+          stretchH: "none",
+          contextMenu: true,
+          manualColumnResize: true,
+          copyPaste: true,
+          autoWrapRow: false,
+          autoWrapCol: false,
+          licenseKey: "non-commercial-and-evaluation",
+          afterChange(changes, source) {
+            if (source === "loadData" || source === "updateSettings") return;
+            syncBulkEditsFromHotChanges(changes);
+            renderBulkStatusAndActions();
+          },
+        });
+
+        return bulkHot;
+      }
+
+      function renderBulkHotGrid(files) {
+        const container = document.getElementById("bulkHot");
+        if (!container) return;
+        const hot = ensureBulkHot(container);
+        if (!hot) {
+          state.bulk.rowFileIds = [];
+          setBulkHotMessage("Handsontable failed to load. Check network access to jsdelivr.");
+          return;
+        }
+
+        state.bulk.rowFileIds = files.map((file) => file.id);
+        const rows = files.map((file) => bulkRowData(file));
+        hot.updateSettings({ colWidths: bulkColumnWidths(files) });
+        hot.loadData(rows);
       }
 
       function hasRequiredCoreMetadata(file) {
@@ -1173,6 +1730,9 @@
         if (key === "title") {
           return displayTitle(file);
         }
+        if (key === "source") {
+          return displaySource(file);
+        }
         const value = file[key];
         return value == null ? "" : String(value);
       }
@@ -1229,7 +1789,7 @@
           state.sort.key = key;
           state.sort.direction = "asc";
         }
-        renderTable();
+        renderAll();
       }
 
       function initSortControls() {
@@ -1238,6 +1798,17 @@
           button.addEventListener("click", () => {
             setSort(button.dataset.sortKey);
           });
+        }
+      }
+
+      function initViewToggleControls() {
+        const bulkBtn = document.getElementById("viewToggleBulk");
+        const detailBtn = document.getElementById("viewToggleDetail");
+        if (bulkBtn) {
+          bulkBtn.addEventListener("click", () => setViewMode("bulk"));
+        }
+        if (detailBtn) {
+          detailBtn.addEventListener("click", () => setViewMode("detail"));
         }
       }
 
@@ -1282,6 +1853,21 @@
         button.addEventListener("click", () => {
           runAutofillMissing();
         });
+      }
+
+      function initBulkControls() {
+        const copyBtn = document.getElementById("bulkCopyBtn");
+        const saveBtn = document.getElementById("bulkSaveBtn");
+        if (copyBtn) {
+          copyBtn.addEventListener("click", () => {
+            copyBulkTsv();
+          });
+        }
+        if (saveBtn) {
+          saveBtn.addEventListener("click", () => {
+            saveBulkChanges();
+          });
+        }
       }
 
       function redisSummaryForFile(file) {
@@ -1476,10 +2062,18 @@
             loading: false,
             error: "",
           }));
-          if (!state.buckets.some((bucket) => bucket.id === state.activeBucketId)) {
-            state.activeBucketId = state.buckets.length > 0 ? state.buckets[0].id : null;
+          const hasActiveSelection = state.buckets.some((bucket) => bucket.id === state.activeBucketId);
+          if (!hasActiveSelection) {
+            const persistedBucketId = readSelectedBucketCookie();
+            const hasPersistedSelection = state.buckets.some((bucket) => bucket.id === persistedBucketId);
+            state.activeBucketId = hasPersistedSelection
+              ? persistedBucketId
+              : state.buckets.length > 0
+                ? state.buckets[0].id
+                : null;
             state.activeFileId = null;
           }
+          writeSelectedBucketCookie(state.activeBucketId);
           renderAll();
           if (state.buckets.length > 0) {
             await Promise.allSettled(state.buckets.map((bucket) => ensureBucketLoaded(bucket.id)));
@@ -1531,9 +2125,11 @@
       function selectBucket(bucketId) {
         state.activeBucketId = bucketId;
         state.activeFileId = null;
+        writeSelectedBucketCookie(bucketId);
         if (!state.autofill.running) {
           resetAutofillState();
         }
+        updateBulkStatusText();
         renderAll();
         ensureBucketLoaded(bucketId);
       }
@@ -1555,33 +2151,197 @@
         return payload;
       }
 
+      async function persistFileMetadata(file) {
+        const data = await apiRequest(
+          `/api/buckets/${encodeURIComponent(file.bucket)}/files/${encodeObjectPath(file.objectName)}/bibtex`,
+          {
+            method: "PUT",
+            body: JSON.stringify(buildSavePayload(file)),
+          }
+        );
+        return normalizeFileRecord(data.file || {});
+      }
+
       async function saveFile(file) {
         if (!file || !file.bucket || !file.objectName) {
           return;
         }
-        state.saveState = "saving";
-        state.saveFileId = file.id;
-        state.saveError = "";
-        renderTable();
-        try {
-          const data = await apiRequest(
-            `/api/buckets/${encodeURIComponent(file.bucket)}/files/${encodeObjectPath(file.objectName)}/bibtex`,
-            {
-              method: "PUT",
-              body: JSON.stringify(buildSavePayload(file)),
-            }
-          );
-          const saved = normalizeFileRecord(data.file || {});
-          Object.assign(file, saved);
-          state.saveState = "saved";
+        const priorSave = saveInFlightByFileId.get(file.id);
+        if (priorSave) {
+          try {
+            await priorSave;
+          } catch (_error) {
+            // Continue and allow the latest save attempt.
+          }
+        }
+
+        const savePromise = (async () => {
+          state.saveState = "saving";
           state.saveFileId = file.id;
           state.saveError = "";
+          renderTable();
+          try {
+            const saved = await persistFileMetadata(file);
+            Object.assign(file, saved);
+            state.saveState = "saved";
+            state.saveFileId = file.id;
+            state.saveError = "";
+          } catch (error) {
+            state.saveState = "error";
+            state.saveFileId = file.id;
+            state.saveError = String(error.message || error);
+          }
+          renderAll();
+        })();
+
+        saveInFlightByFileId.set(file.id, savePromise);
+        try {
+          await savePromise;
+        } finally {
+          if (saveInFlightByFileId.get(file.id) === savePromise) {
+            saveInFlightByFileId.delete(file.id);
+          }
+        }
+      }
+
+      async function lookupByDoiForFile(file) {
+        if (!file || !file.bucket || !file.objectName || state.doiLookup.running) return;
+        const doi = String(file.doi || "").trim();
+        if (!doi) return;
+
+        const confirmed = window.confirm(
+          "DOI lookup will overwrite existing metadata for this file with CrossRef values. Continue?"
+        );
+        if (!confirmed) return;
+
+        cancelScheduledSave(file.id);
+        const pendingSave = saveInFlightByFileId.get(file.id);
+        if (pendingSave) {
+          try {
+            await pendingSave;
+          } catch (_error) {
+            // Lookup can still proceed even if a prior autosave failed.
+          }
+        }
+        state.doiLookup.running = true;
+        state.doiLookup.fileId = file.id;
+        state.doiLookup.message = "Looking up DOI via CrossRef...";
+        state.doiLookup.error = "";
+        renderEditor();
+
+        try {
+          const data = await apiRequest(
+            `/api/buckets/${encodeURIComponent(file.bucket)}/files/${encodeObjectPath(file.objectName)}/lookup-by-doi`,
+            {
+              method: "POST",
+              body: JSON.stringify({ doi, overwrite: true }),
+            }
+          );
+          const updated = normalizeFileRecord(data.file || {});
+          Object.assign(file, updated);
+          state.doiLookup.running = false;
+          state.doiLookup.fileId = file.id;
+          state.doiLookup.error = "";
+          state.doiLookup.message = "CrossRef metadata applied.";
+          renderAll();
         } catch (error) {
-          state.saveState = "error";
-          state.saveFileId = file.id;
-          state.saveError = String(error.message || error);
+          state.doiLookup.running = false;
+          state.doiLookup.fileId = file.id;
+          state.doiLookup.error = String(error.message || error);
+          state.doiLookup.message = "";
+          renderEditor();
+        }
+      }
+
+      function applyBulkEditsToDraft(file, edits) {
+        const draft = normalizeFileRecord({ ...file });
+        for (const [key, value] of Object.entries(edits || {})) {
+          if (key === "minioPath" || key === "redisDocId") continue;
+          if (key === "authors") {
+            draft.authors = parseBulkAuthors(value);
+            continue;
+          }
+          if (key === "entryType") {
+            const normalized = String(value || "").trim().toLowerCase();
+            draft.entryType = recommendedFieldsByType[normalized] ? normalized : "article";
+            continue;
+          }
+          draft[key] = String(value ?? "");
+        }
+        return draft;
+      }
+
+      async function saveBulkChanges() {
+        finalizeBulkEditing();
+        const pendingEntries = Object.entries(state.bulk.edits);
+        if (pendingEntries.length === 0) {
+          state.bulk.status = "No pending changes.";
+          state.bulk.error = "";
+          renderBulkView();
+          return;
+        }
+
+        state.bulk.saving = true;
+        state.bulk.error = "";
+        state.bulk.status = `Saving ${pendingEntries.length} file(s)...`;
+        renderBulkView();
+
+        let savedCount = 0;
+        let failedCount = 0;
+        for (const [fileId, edits] of pendingEntries) {
+          const file = findFileById(fileId);
+          if (!file) {
+            delete state.bulk.edits[fileId];
+            continue;
+          }
+          const draft = applyBulkEditsToDraft(file, edits);
+          try {
+            const saved = await persistFileMetadata(draft);
+            Object.assign(file, saved);
+            delete state.bulk.edits[fileId];
+            savedCount += 1;
+          } catch (error) {
+            failedCount += 1;
+            state.bulk.error = String(error.message || error);
+          }
+        }
+
+        state.bulk.saving = false;
+        if (failedCount > 0) {
+          const remaining = Object.keys(state.bulk.edits).length;
+          state.bulk.status = `Saved ${savedCount}; ${failedCount} failed. ${remaining} file(s) still pending.`;
+        } else {
+          state.bulk.status = `Saved ${savedCount} file(s).`;
+          updateBulkStatusText();
         }
         renderAll();
+      }
+
+      async function copyBulkTsv() {
+        finalizeBulkEditing();
+        const files = bulkFilesForActiveBucket();
+        if (files.length === 0) {
+          state.bulk.status = "No rows to copy.";
+          renderBulkView();
+          return;
+        }
+
+        const lines = [];
+        lines.push(bulkColumns.map((column) => column.label).join("\t"));
+        for (const file of files) {
+          const row = bulkColumns.map((column) => getBulkCellValue(file, column.key));
+          lines.push(row.join("\t"));
+        }
+        const text = lines.join("\n");
+        try {
+          await navigator.clipboard.writeText(text);
+          state.bulk.status = `Copied ${files.length} row(s) to clipboard.`;
+          state.bulk.error = "";
+        } catch (error) {
+          state.bulk.status = "Clipboard copy failed.";
+          state.bulk.error = String(error.message || error);
+        }
+        renderBulkView();
       }
 
       function cancelScheduledSave(fileId) {
@@ -1684,6 +2444,108 @@
         return text;
       }
 
+      function renderViewToggle() {
+        const bulkBtn = document.getElementById("viewToggleBulk");
+        const detailBtn = document.getElementById("viewToggleDetail");
+        if (!bulkBtn || !detailBtn) return;
+        bulkBtn.classList.toggle("active", state.viewMode === "bulk");
+        detailBtn.classList.toggle("active", state.viewMode === "detail");
+      }
+
+      function renderLayoutMode() {
+        const appShell = document.getElementById("appShell");
+        const bulkView = document.getElementById("bulkView");
+        const detailView = document.getElementById("detailView");
+        if (appShell) {
+          appShell.classList.toggle("bulk-mode", state.viewMode === "bulk");
+        }
+        if (bulkView) {
+          bulkView.hidden = state.viewMode !== "bulk";
+        }
+        if (detailView) {
+          detailView.hidden = state.viewMode !== "detail";
+        }
+        if (state.viewMode !== "bulk") {
+          destroyBulkHot();
+          state.bulk.rowFileIds = [];
+        }
+      }
+
+      function renderBulkStatusAndActions() {
+        const status = document.getElementById("bulkStatus");
+        const copyBtn = document.getElementById("bulkCopyBtn");
+        const saveBtn = document.getElementById("bulkSaveBtn");
+        const activeBucket = getActiveBucket();
+        const fileCount = bulkFilesForActiveBucket().length;
+        const pendingCount = Object.keys(state.bulk.edits).length;
+        if (status) {
+          const errorText = state.bulk.error ? ` Error: ${state.bulk.error}` : "";
+          status.textContent = `${state.bulk.status || "No pending changes."}${errorText}`;
+        }
+        if (copyBtn) {
+          copyBtn.disabled = state.bulk.saving || !activeBucket || activeBucket.loading || fileCount === 0;
+        }
+        if (saveBtn) {
+          saveBtn.disabled = state.bulk.saving || pendingCount === 0;
+          saveBtn.textContent = state.bulk.saving ? "Saving..." : "Save Pending Changes";
+        }
+      }
+
+      function renderBulkView() {
+        const title = document.getElementById("tableTitle");
+        if (!title) return;
+
+        const activeBucket = getActiveBucket();
+        title.textContent = activeBucket ? `Bulk Edit in ${activeBucket.name}` : "Bulk Edit";
+
+        if (state.loadingBuckets && state.buckets.length === 0) {
+          setBulkHotMessage("Loading buckets...");
+          renderBulkHotGrid([]);
+          renderBulkStatusAndActions();
+          return;
+        }
+
+        if (state.bucketsError) {
+          setBulkHotMessage(`Error: ${state.bucketsError}`);
+          renderBulkHotGrid([]);
+          renderBulkStatusAndActions();
+          return;
+        }
+
+        if (!activeBucket) {
+          setBulkHotMessage("No bucket selected.");
+          renderBulkHotGrid([]);
+          renderBulkStatusAndActions();
+          return;
+        }
+
+        if (activeBucket.loading) {
+          setBulkHotMessage("Loading files...");
+          renderBulkHotGrid([]);
+          renderBulkStatusAndActions();
+          return;
+        }
+
+        if (activeBucket.error) {
+          setBulkHotMessage(`Error: ${activeBucket.error}`);
+          renderBulkHotGrid([]);
+          renderBulkStatusAndActions();
+          return;
+        }
+
+        const files = bulkFilesForActiveBucket();
+        if (files.length === 0) {
+          setBulkHotMessage("No files available in this bucket.");
+          renderBulkHotGrid([]);
+          renderBulkStatusAndActions();
+          return;
+        }
+
+        setBulkHotMessage("");
+        renderBulkHotGrid(files);
+        renderBulkStatusAndActions();
+      }
+
       function renderTable() {
         const activeBucket = getActiveBucket();
         const activeFile = getActiveFile();
@@ -1695,21 +2557,21 @@
         if (state.loadingBuckets && state.buckets.length === 0) {
           title.textContent = "Files";
           hint.textContent = "Loading buckets...";
-          body.innerHTML = '<tr><td colspan="4">Loading buckets...</td></tr>';
+          body.innerHTML = '<tr><td colspan="5">Loading buckets...</td></tr>';
           return;
         }
 
         if (state.bucketsError) {
           title.textContent = "Files";
           hint.textContent = "Unable to load data";
-          body.innerHTML = `<tr><td colspan="4">Error: ${state.bucketsError}</td></tr>`;
+          body.innerHTML = `<tr><td colspan="5">Error: ${state.bucketsError}</td></tr>`;
           return;
         }
 
         if (!activeBucket) {
           title.textContent = "Files";
           hint.textContent = "No bucket selected";
-          body.innerHTML = '<tr><td colspan="4">No files available.</td></tr>';
+          body.innerHTML = '<tr><td colspan="5">No files available.</td></tr>';
           return;
         }
 
@@ -1718,17 +2580,17 @@
         body.innerHTML = "";
 
         if (activeBucket.loading) {
-          body.innerHTML = '<tr><td colspan="4">Loading files...</td></tr>';
+          body.innerHTML = '<tr><td colspan="5">Loading files...</td></tr>';
           return;
         }
 
         if (activeBucket.error) {
-          body.innerHTML = `<tr><td colspan="4">Error: ${activeBucket.error}</td></tr>`;
+          body.innerHTML = `<tr><td colspan="5">Error: ${activeBucket.error}</td></tr>`;
           return;
         }
 
         if (activeBucket.files.length === 0) {
-          body.innerHTML = '<tr><td colspan="4">No matching files in this bucket.</td></tr>';
+          body.innerHTML = '<tr><td colspan="5">No matching files in this bucket.</td></tr>';
           return;
         }
 
@@ -1753,6 +2615,10 @@
           const authors = coerceAuthors(file);
           authorsCell.textContent = formatAuthorsApa(authors) || "—";
           row.append(authorsCell);
+
+          const sourceCell = document.createElement("td");
+          sourceCell.textContent = displaySource(file) || "—";
+          row.append(sourceCell);
 
           const linkCell = document.createElement("td");
           linkCell.className = "pdf-cell";
@@ -1904,7 +2770,10 @@
           firstNameInput.addEventListener("input", () => {
             author.firstName = firstNameInput.value;
             apaPreview.textContent = formatAuthorsApa(authors) || "—";
-            renderTable();
+            if (hasIncompleteAuthorRows(authors)) {
+              cancelScheduledSave(file.id);
+              return;
+            }
             scheduleSave(file);
           });
 
@@ -1915,7 +2784,10 @@
           lastNameInput.addEventListener("input", () => {
             author.lastName = lastNameInput.value;
             apaPreview.textContent = formatAuthorsApa(authors) || "—";
-            renderTable();
+            if (hasIncompleteAuthorRows(authors)) {
+              cancelScheduledSave(file.id);
+              return;
+            }
             scheduleSave(file);
           });
 
@@ -1944,7 +2816,6 @@
           authors.push({ firstName: "", lastName: "" });
           renderEditor();
           renderTable();
-          scheduleSave(file);
         });
         authorsWrap.append(addAuthorBtn);
 
@@ -1999,12 +2870,54 @@
             input.value = file[field.key] || "";
             input.addEventListener("input", () => {
               file[field.key] = input.value;
+              if (field.key === "doi" && state.doiLookup.fileId === file.id) {
+                state.doiLookup.message = "";
+                state.doiLookup.error = "";
+              }
               if (field.key === "citationKey") {
                 renderTable();
               }
               scheduleSave(file);
             });
-            wrap.append(input);
+            if (field.key === "doi") {
+              const row = document.createElement("div");
+              row.className = "editor-inline-row";
+
+              const lookupBtn = document.createElement("button");
+              lookupBtn.type = "button";
+              lookupBtn.className = "editor-action-btn";
+              lookupBtn.addEventListener("click", () => {
+                lookupByDoiForFile(file);
+              });
+
+              const updateLookupButtonState = () => {
+                const hasDoi = String(input.value || "").trim().length > 0;
+                const busy = state.doiLookup.running && state.doiLookup.fileId === file.id;
+                lookupBtn.disabled = !hasDoi || busy;
+                lookupBtn.textContent = busy ? "Looking up..." : "Lookup DOI";
+              };
+
+              input.addEventListener("input", updateLookupButtonState);
+              updateLookupButtonState();
+              row.append(input, lookupBtn);
+              wrap.append(row);
+
+              if (state.doiLookup.fileId === file.id) {
+                if (state.doiLookup.error) {
+                  const errorHint = document.createElement("div");
+                  errorHint.className = "field-hint error";
+                  errorHint.textContent = `DOI lookup failed: ${state.doiLookup.error}`;
+                  wrap.append(errorHint);
+                } else if (state.doiLookup.message) {
+                  const infoHint = document.createElement("div");
+                  infoHint.className = "field-hint";
+                  infoHint.textContent = state.doiLookup.message;
+                  wrap.append(infoHint);
+                }
+              }
+            } else {
+              wrap.append(input);
+            }
           }
 
           grid.append(wrap);
@@ -2015,14 +2928,22 @@
 
       function renderAll() {
         renderBuckets();
-        renderTable();
+        renderViewToggle();
+        renderLayoutMode();
         renderAutofillControls();
-        renderEditor();
+        if (state.viewMode === "bulk") {
+          renderBulkView();
+        } else {
+          renderTable();
+          renderEditor();
+        }
         renderModal();
       }
 
       initSortControls();
+      initViewToggleControls();
       initAutofillControls();
+      initBulkControls();
       initModalControls();
       loadBuckets();
     </script>

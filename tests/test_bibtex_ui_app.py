@@ -147,7 +147,8 @@ class BibtexUiAppTests(unittest.TestCase):
                         "title": "Updated Alpha",
                         "year": "2025",
                         "citationKey": "alpha2025updated",
-                        "entryType": "inproceedings",
+                        "entryType": "incollection",
+                        "publisher": "ACM Press",
                         "authors": [
                             {"firstName": "Ada", "lastName": "Lovelace"},
                             {"firstName": "Grace", "lastName": "Hopper"},
@@ -159,7 +160,8 @@ class BibtexUiAppTests(unittest.TestCase):
         body = response.json()
         self.assertEqual(body["redis_key"], "bibtex:file:bucket-a/folder/alpha.pdf")
         self.assertEqual(body["file"]["title"], "Updated Alpha")
-        self.assertEqual(body["file"]["entryType"], "inproceedings")
+        self.assertEqual(body["file"]["entryType"], "incollection")
+        self.assertEqual(body["file"]["publisher"], "ACM Press")
         self.assertIn("bucket-a/folder/alpha.pdf", fake_redis.sets.get("bibtex:files", set()))
 
         stored = json.loads(fake_redis.get("bibtex:file:bucket-a/folder/alpha.pdf"))
@@ -264,6 +266,72 @@ class BibtexUiAppTests(unittest.TestCase):
             self.assertFalse(call["overwrite"])
             self.assertTrue(call["skip_complete"])
             self.assertFalse(call["dry_run"])
+
+    def test_api_file_lookup_by_doi_overwrites_metadata_from_crossref(self):
+        if bibtex_ui_app.bibtex_autofill is None:
+            self.skipTest("bibtex_autofill module unavailable")
+
+        fake_redis = _FakeRedis()
+        fake_redis.set(
+            "bibtex:file:bucket-a/folder/alpha.pdf",
+            json.dumps(
+                {
+                    "title": "Old Title",
+                    "doi": "10.1111/old",
+                    "citationKey": "oldkey",
+                    "entryType": "article",
+                    "authors": [{"firstName": "Old", "lastName": "Author"}],
+                }
+            ),
+        )
+
+        class _FakeCrossrefClient:
+            def lookup_by_doi(self, doi):
+                self.last_doi = doi
+                return {
+                    "DOI": "10.1000/testdoi",
+                    "title": ["CrossRef Title"],
+                    "author": [{"given": "Ada", "family": "Lovelace"}],
+                    "issued": {"date-parts": [[2024]]},
+                    "type": "journal-article",
+                    "container-title": ["Journal of Testing"],
+                    "URL": "https://doi.org/10.1000/testdoi",
+                }
+
+        fake_crossref = _FakeCrossrefClient()
+        with mock.patch.object(bibtex_ui_app, "_get_redis_client", return_value=(fake_redis, None)):
+            with mock.patch.object(bibtex_ui_app, "_crossref_client_from_env", return_value=fake_crossref):
+                with mock.patch.dict(os.environ, {"BIBTEX_REDIS_PREFIX": "bibtex"}, clear=False):
+                    response = self.client.post(
+                        "/api/buckets/bucket-a/files/folder%2Falpha.pdf/lookup-by-doi",
+                        json={"doi": "10.1000/testdoi", "overwrite": True},
+                    )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["doi"], "10.1000/testdoi")
+        self.assertEqual(body["file"]["title"], "CrossRef Title")
+        self.assertEqual(body["file"]["year"], "2024")
+        self.assertEqual(body["file"]["doi"], "10.1000/testdoi")
+        self.assertEqual(body["file"]["authors"][0]["lastName"], "Lovelace")
+
+        stored = json.loads(fake_redis.get("bibtex:file:bucket-a/folder/alpha.pdf"))
+        self.assertEqual(stored["title"], "CrossRef Title")
+        self.assertEqual(stored["doi"], "10.1000/testdoi")
+
+    def test_api_file_lookup_by_doi_requires_valid_doi(self):
+        if bibtex_ui_app.bibtex_autofill is None:
+            self.skipTest("bibtex_autofill module unavailable")
+
+        fake_redis = _FakeRedis()
+        with mock.patch.object(bibtex_ui_app, "_get_redis_client", return_value=(fake_redis, None)):
+            response = self.client.post(
+                "/api/buckets/bucket-a/files/folder%2Falpha.pdf/lookup-by-doi",
+                json={"doi": ""},
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("valid DOI", response.json().get("detail", ""))
 
 
 if __name__ == "__main__":

@@ -292,6 +292,25 @@ class BibtexAutofillTests(unittest.TestCase):
         self.assertEqual(result.get("match", {}).get("confidence"), 0.41)
         self.assertIsNone(redis_client.values.get("bibtex:file:bucket-a/paper.pdf"))
 
+    def test_crossref_book_chapter_maps_to_incollection(self):
+        message = {
+            "DOI": "10.4000/inbook1",
+            "title": ["A Chapter Title"],
+            "type": "book-chapter",
+            "author": [{"given": "Ada", "family": "Lovelace"}],
+            "container-title": ["Collected Works of Computing"],
+            "publisher": "Springer",
+            "issued": {"date-parts": [[2022, 8, 12]]},
+            "page": "101-120",
+            "URL": "https://doi.org/10.4000/inbook1",
+        }
+
+        converted = bibtex_autofill._crossref_to_bibtex(message, "chapter.pdf")
+        self.assertEqual(converted["entryType"], "incollection")
+        self.assertEqual(converted["booktitle"], "Collected Works of Computing")
+        self.assertEqual(converted["publisher"], "Springer")
+        self.assertEqual(converted["journal"], "")
+
 
 if __name__ == "__main__":
     unittest.main()

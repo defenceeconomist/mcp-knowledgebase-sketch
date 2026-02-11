@@ -85,7 +85,7 @@ except Exception:  # pragma: no cover - fallback when optional deps are unavaila
         return f"{base}{path}?ref={encoded_ref}"
 
 
-ALLOWED_ENTRY_TYPES = {"article", "inproceedings", "book", "misc", "techreport"}
+ALLOWED_ENTRY_TYPES = {"article", "inproceedings", "inbook", "incollection", "book", "misc", "techreport"}
 
 
 def load_dotenv(path: str = ".env") -> None:
@@ -397,6 +397,7 @@ def _default_metadata(bucket: str, object_name: str) -> Dict[str, Any]:
         "authors": [],
         "journal": "",
         "booktitle": "",
+        "publisher": "",
         "volume": "",
         "number": "",
         "pages": "",
@@ -459,6 +460,7 @@ def _normalize_metadata(
         "year",
         "journal",
         "booktitle",
+        "publisher",
         "volume",
         "number",
         "pages",
@@ -542,14 +544,22 @@ def _batch_get_file_metadata(
     return out
 
 
-def _file_record(bucket: str, object_name: str, metadata: Dict[str, Any]) -> Dict[str, Any]:
+def _file_record(
+    bucket: str,
+    object_name: str,
+    metadata: Dict[str, Any],
+    redis_doc_ids: List[str] | None = None,
+) -> Dict[str, Any]:
     source_ref = build_source_ref(bucket=bucket, key=object_name)
     original_file_url = build_citation_url(source_ref=source_ref)
+    doc_ids = [str(entry) for entry in (redis_doc_ids or []) if str(entry)]
     return {
         "id": f"{bucket}/{object_name}",
         "bucket": bucket,
         "objectName": object_name,
         "fileName": Path(object_name).name,
+        "redisDocIds": doc_ids,
+        "redisDocId": doc_ids[0] if doc_ids else "",
         "sourceRef": source_ref,
         "originalFileUrl": original_file_url,
         **metadata,
@@ -566,6 +576,7 @@ def _list_bucket_files(
     suffix: str,
 ) -> List[Dict[str, Any]]:
     prefix = _bibtex_prefix()
+    source_prefix = _source_redis_prefix()
     object_names = _list_minio_objects(
         minio_client=minio_client,
         bucket=bucket,
@@ -574,7 +585,14 @@ def _list_bucket_files(
         limit=limit,
     )
     metadata_by_name = _batch_get_file_metadata(redis_client, prefix, bucket, object_names)
-    return [_file_record(bucket, object_name, metadata_by_name[object_name]) for object_name in object_names]
+    files: List[Dict[str, Any]] = []
+    for object_name in object_names:
+        doc_ids: List[str] = []
+        if redis_client:
+            source = f"{bucket}/{object_name}"
+            doc_ids = _source_doc_ids(redis_client, source_prefix, source)
+        files.append(_file_record(bucket, object_name, metadata_by_name[object_name], redis_doc_ids=doc_ids))
+    return files
 
 
 def _save_file_metadata(
@@ -756,6 +774,68 @@ def _autofill_missing_metadata_batch(
     }
 
 
+def _merge_candidate_metadata(
+    existing: Dict[str, Any],
+    candidate: Dict[str, Any],
+    *,
+    overwrite: bool,
+) -> Dict[str, Any]:
+    merged = dict(existing or {})
+    for key, value in (candidate or {}).items():
+        if key == "authors":
+            current_authors = merged.get("authors")
+            if overwrite or not current_authors:
+                merged[key] = value
+            continue
+        current_value = _normalize_text(merged.get(key))
+        incoming = value if isinstance(value, list) else _normalize_text(value)
+        if overwrite or not current_value:
+            merged[key] = incoming
+    return merged
+
+
+def _crossref_lookup_by_doi_and_save(
+    *,
+    redis_client: Any,
+    bucket: str,
+    object_name: str,
+    doi: str,
+    overwrite: bool,
+) -> Dict[str, Any]:
+    if bibtex_autofill is None:
+        raise RuntimeError("bibtex_autofill module is unavailable")
+
+    sanitize_doi = getattr(bibtex_autofill, "_sanitize_doi", None)
+    if not callable(sanitize_doi):
+        raise RuntimeError("DOI sanitizer is unavailable")
+    clean_doi = sanitize_doi(doi)
+    if not clean_doi:
+        raise ValueError("A valid DOI is required")
+
+    crossref_client = _crossref_client_from_env()
+    if not hasattr(crossref_client, "lookup_by_doi"):
+        raise RuntimeError("CrossRef DOI lookup is unavailable")
+    crossref_message = crossref_client.lookup_by_doi(clean_doi)
+    if not isinstance(crossref_message, dict):
+        raise LookupError("CrossRef returned no result for this DOI")
+
+    to_bibtex = getattr(bibtex_autofill, "_crossref_to_bibtex", None)
+    if not callable(to_bibtex):
+        raise RuntimeError("CrossRef metadata parser is unavailable")
+
+    existing = _get_file_metadata(redis_client, _bibtex_prefix(), bucket, object_name)
+    candidate = to_bibtex(crossref_message, object_name)
+    merged = _merge_candidate_metadata(existing, candidate, overwrite=overwrite)
+    normalized = _normalize_metadata(bucket, object_name, merged)
+    _save_file_metadata(redis_client, bucket, object_name, normalized)
+
+    return {
+        "doi": clean_doi,
+        "matchedDoi": _normalize_text(crossref_message.get("DOI")),
+        "file": normalized,
+    }
+
+
 load_dotenv()
 
 app = FastAPI(title="MCP BibTeX UI") if FastAPI is not None else None
@@ -842,6 +922,49 @@ if app is not None:
             "objectName": object_name,
             "redis_key": _bibtex_file_key(_bibtex_prefix(), bucket, object_name),
             "file": _file_record(bucket, object_name, metadata),
+        }
+
+    @app.post("/api/buckets/{bucket}/files/{object_name:path}/lookup-by-doi")
+    def api_file_lookup_by_doi(bucket: str, object_name: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        redis_client, redis_error = _get_redis_client()
+        if redis_error or not redis_client:
+            raise HTTPException(status_code=503, detail=redis_error or "Redis is not configured")
+
+        raw_payload = payload or {}
+        requested_doi = _normalize_text(raw_payload.get("doi"))
+        if not requested_doi:
+            existing = _get_file_metadata(redis_client, _bibtex_prefix(), bucket, object_name)
+            requested_doi = _normalize_text(existing.get("doi"))
+        overwrite = _payload_bool(raw_payload, "overwrite", True)
+
+        try:
+            result = _crossref_lookup_by_doi_and_save(
+                redis_client=redis_client,
+                bucket=bucket,
+                object_name=object_name,
+                doi=requested_doi,
+                overwrite=overwrite,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except LookupError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except RuntimeError as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
+        except Exception as exc:  # pragma: no cover - runtime safety
+            raise HTTPException(status_code=502, detail=f"CrossRef lookup failed: {exc}") from exc
+
+        source_prefix = _source_redis_prefix()
+        source = f"{bucket}/{object_name}"
+        doc_ids = _source_doc_ids(redis_client, source_prefix, source)
+        return {
+            "bucket": bucket,
+            "objectName": object_name,
+            "overwrite": overwrite,
+            "doi": result["doi"],
+            "matchedDoi": result["matchedDoi"],
+            "redis_key": _bibtex_file_key(_bibtex_prefix(), bucket, object_name),
+            "file": _file_record(bucket, object_name, result["file"], redis_doc_ids=doc_ids),
         }
 
     @app.get("/api/buckets/{bucket}/files/{object_name:path}/redis-summary")
