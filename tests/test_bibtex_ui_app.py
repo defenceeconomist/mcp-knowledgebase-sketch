@@ -201,6 +201,70 @@ class BibtexUiAppTests(unittest.TestCase):
         self.assertTrue(payload["truncated"])
         self.assertIn("chunk one", payload["items"][0]["text"])
 
+    def test_api_bucket_autofill_missing_processes_in_batches(self):
+        if bibtex_ui_app.bibtex_autofill is None:
+            self.skipTest("bibtex_autofill module unavailable")
+        fake_minio = _FakeMinio({"bucket-a": ["alpha.pdf", "beta.pdf", "gamma.pdf"]})
+        fake_redis = _FakeRedis()
+        calls = []
+
+        def fake_enrich_file_metadata(**kwargs):
+            calls.append(kwargs)
+            object_name = kwargs["object_name"]
+            if object_name == "alpha.pdf":
+                return {"status": "updated"}
+            if object_name == "beta.pdf":
+                return {"status": "no_match"}
+            return {"status": "skipped_existing"}
+
+        with mock.patch.object(bibtex_ui_app, "_get_minio_client", return_value=(fake_minio, None)):
+            with mock.patch.object(bibtex_ui_app, "_get_redis_client", return_value=(fake_redis, None)):
+                with mock.patch.object(bibtex_ui_app.bibtex_autofill, "CrossrefClient", return_value=object()):
+                    with mock.patch.object(
+                        bibtex_ui_app.bibtex_autofill,
+                        "enrich_file_metadata",
+                        side_effect=fake_enrich_file_metadata,
+                    ):
+                        first = self.client.post(
+                            "/api/buckets/bucket-a/autofill-missing",
+                            json={
+                                "objectNames": ["alpha.pdf", "beta.pdf", "gamma.pdf"],
+                                "offset": 0,
+                                "batchSize": 2,
+                            },
+                        )
+                        second = self.client.post(
+                            "/api/buckets/bucket-a/autofill-missing",
+                            json={
+                                "objectNames": ["alpha.pdf", "beta.pdf", "gamma.pdf"],
+                                "offset": 2,
+                                "batchSize": 2,
+                            },
+                        )
+
+        self.assertEqual(first.status_code, 200)
+        first_payload = first.json()
+        self.assertEqual(first_payload["processed_total"], 2)
+        self.assertEqual(first_payload["processed_in_batch"], 2)
+        self.assertFalse(first_payload["done"])
+        self.assertEqual(first_payload["next_offset"], 2)
+        self.assertEqual(first_payload["counts"]["updated"], 1)
+        self.assertEqual(first_payload["counts"]["no_match"], 1)
+
+        self.assertEqual(second.status_code, 200)
+        second_payload = second.json()
+        self.assertEqual(second_payload["processed_total"], 3)
+        self.assertEqual(second_payload["processed_in_batch"], 1)
+        self.assertTrue(second_payload["done"])
+        self.assertIsNone(second_payload["next_offset"])
+        self.assertEqual(second_payload["counts"]["skipped_existing"], 1)
+
+        self.assertEqual(len(calls), 3)
+        for call in calls:
+            self.assertFalse(call["overwrite"])
+            self.assertTrue(call["skip_complete"])
+            self.assertFalse(call["dry_run"])
+
 
 if __name__ == "__main__":
     unittest.main()

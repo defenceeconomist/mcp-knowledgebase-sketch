@@ -73,3 +73,14 @@ docker compose run --rm mcp python upsert_chunks.py --chunks-dir /app/data/chunk
 ```
 
 If you run Redis locally (or via `docker compose up redis redisinsight`), partitions + chunks are mirrored into Redis and you can browse them in RedisInsight at `http://localhost:8001`. Set `STORE_PARTITIONS_DISK=1` and `STORE_CHUNKS_DISK=1` to also write JSON files to `./data`.
+
+## 8) Batch-autofill BibTeX metadata (optional)
+Populate BibTeX entries for PDFs from MinIO metadata + Redis first-page text + Crossref:
+```bash
+CROSSREF_MAILTO=you@example.com python bibtex_autofill.py --bucket your-bucket --limit 200
+```
+
+Preview without writing:
+```bash
+python bibtex_autofill.py --bucket your-bucket --dry-run
+```

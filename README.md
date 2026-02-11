@@ -46,6 +46,38 @@ docker compose up --build
 
 Open the dashboard at `http://localhost:8002` to browse Qdrant collections (buckets) and see per-file metadata from Qdrant + Redis.
 
+## Automatic BibTeX enrichment (Crossref)
+Use `bibtex_autofill.py` to batch-populate BibTeX metadata for PDFs using:
+- MinIO object metadata (title/author/doi fields).
+- Redis first-page extracted text from `unstructured:pdf:*` chunk/partition payloads.
+- Crossref lookup/search for final bibliographic fields.
+
+The script writes into the same Redis keys used by the BibTeX UI:
+- `bibtex:file:<bucket>/<object>`
+- `bibtex:files`
+
+Key environment:
+- `REDIS_URL` (or `BIBTEX_REDIS_URL`)
+- `BIBTEX_REDIS_PREFIX` (default `bibtex`)
+- `BIBTEX_SOURCE_REDIS_PREFIX` (default `REDIS_PREFIX` or `unstructured`)
+- `MINIO_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`
+- `CROSSREF_MAILTO` (recommended for Crossref etiquette/rate limiting)
+- `CROSSREF_MATCH_CONFIDENCE_THRESHOLD` (default `0.85`)
+- `CROSSREF_MIN_TITLE_SIMILARITY` (default `0.55`)
+- `CROSSREF_MIN_AUTHOR_OVERLAP` (default `0.25`)
+
+Autofill applies only when confidence gates pass. Low-confidence and DOI-conflict candidates are skipped.
+
+Example:
+```bash
+python bibtex_autofill.py --bucket my-bucket --limit 200 --batch-size 25
+```
+
+Dry run (no writes):
+```bash
+python bibtex_autofill.py --bucket my-bucket --dry-run
+```
+
 ## Exposed Tools
 - `ping`: health check returning `"pong"`.
 - `list_collections`, `set_default_collection`, `list_collection_files`

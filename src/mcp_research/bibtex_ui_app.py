@@ -32,6 +32,11 @@ except ImportError:  # pragma: no cover - optional dependency
     redis = None  # type: ignore[assignment]
 
 try:
+    from mcp_research import bibtex_autofill
+except Exception:  # pragma: no cover - optional dependency chain
+    bibtex_autofill = None  # type: ignore[assignment]
+
+try:
     from mcp_research.link_resolver import build_citation_url, build_source_ref
 except Exception:  # pragma: no cover - fallback when optional deps are unavailable
 
@@ -586,6 +591,171 @@ def _save_file_metadata(
     return metadata
 
 
+def _payload_int(payload: Dict[str, Any], key: str, default: int, min_value: int, max_value: int) -> int:
+    raw_value = payload.get(key, default)
+    try:
+        value = int(raw_value)
+    except (TypeError, ValueError):
+        value = default
+    if value < min_value:
+        value = min_value
+    if value > max_value:
+        value = max_value
+    return value
+
+
+def _payload_bool(payload: Dict[str, Any], key: str, default: bool = False) -> bool:
+    raw_value = payload.get(key)
+    if raw_value is None:
+        return default
+    if isinstance(raw_value, bool):
+        return raw_value
+    return str(raw_value).strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
+def _dedupe_object_names(object_names: List[str]) -> List[str]:
+    seen: set[str] = set()
+    out: List[str] = []
+    for entry in object_names:
+        name = entry.strip()
+        if not name or name in seen:
+            continue
+        seen.add(name)
+        out.append(name)
+    return out
+
+
+def _autofill_object_names(
+    minio_client: Any,
+    bucket: str,
+    payload: Dict[str, Any],
+) -> List[str]:
+    provided = payload.get("objectNames")
+    if isinstance(provided, list):
+        object_names = [str(entry).strip() for entry in provided if str(entry).strip()]
+        suffix = str(payload.get("suffix", os.getenv("BIBTEX_MINIO_SUFFIX", ".pdf"))).strip()
+        if suffix:
+            object_names = [entry for entry in object_names if entry.lower().endswith(suffix.lower())]
+        return _dedupe_object_names(object_names)
+
+    default_prefix = os.getenv("BIBTEX_MINIO_PREFIX", os.getenv("MINIO_PREFIX", "")).strip()
+    default_suffix = os.getenv("BIBTEX_MINIO_SUFFIX", ".pdf").strip()
+    object_prefix = str(payload.get("objectPrefix", default_prefix))
+    suffix = str(payload.get("suffix", default_suffix))
+    limit = _payload_int(payload, "limit", 10000, 1, 50000)
+    return _list_minio_objects(
+        minio_client=minio_client,
+        bucket=bucket,
+        prefix=object_prefix,
+        suffix=suffix,
+        limit=limit,
+    )
+
+
+def _crossref_client_from_env():
+    if bibtex_autofill is None:
+        raise RuntimeError("bibtex_autofill module is unavailable")
+    try:
+        timeout_seconds = int(os.getenv("CROSSREF_TIMEOUT_SECONDS", "20"))
+    except ValueError:
+        timeout_seconds = 20
+    try:
+        rows = int(os.getenv("CROSSREF_ROWS", "5"))
+    except ValueError:
+        rows = 5
+    try:
+        throttle_seconds = float(os.getenv("CROSSREF_THROTTLE_SECONDS", "0.15"))
+    except ValueError:
+        throttle_seconds = 0.15
+    return bibtex_autofill.CrossrefClient(
+        api_url=os.getenv("CROSSREF_API_URL", "https://api.crossref.org"),
+        timeout_seconds=timeout_seconds,
+        rows=rows,
+        mailto=os.getenv("CROSSREF_MAILTO", ""),
+        user_agent=os.getenv("CROSSREF_USER_AGENT", ""),
+        throttle_seconds=throttle_seconds,
+    )
+
+
+def _autofill_missing_metadata_batch(
+    *,
+    minio_client: Any,
+    redis_client: Any,
+    bucket: str,
+    object_names: List[str],
+    offset: int,
+    batch_size: int,
+    dry_run: bool,
+) -> Dict[str, Any]:
+    if bibtex_autofill is None:
+        raise RuntimeError("bibtex_autofill module is unavailable")
+
+    total = len(object_names)
+    safe_offset = max(0, min(offset, total))
+    safe_batch_size = max(1, batch_size)
+    end = min(total, safe_offset + safe_batch_size)
+    batch = object_names[safe_offset:end]
+
+    counts = {
+        "updated": 0,
+        "dry_run_update": 0,
+        "skipped_existing": 0,
+        "no_match": 0,
+        "low_confidence": 0,
+        "doi_conflict": 0,
+        "no_signals": 0,
+        "error": 0,
+    }
+    results: List[Dict[str, Any]] = []
+    crossref_client = _crossref_client_from_env()
+
+    for object_name in batch:
+        try:
+            result = bibtex_autofill.enrich_file_metadata(
+                minio_client=minio_client,
+                redis_client=redis_client,
+                bucket=bucket,
+                object_name=object_name,
+                bibtex_prefix=_bibtex_prefix(),
+                source_prefix=_source_redis_prefix(),
+                overwrite=False,
+                dry_run=dry_run,
+                skip_complete=True,
+                crossref_client=crossref_client,
+            )
+        except Exception as exc:  # pragma: no cover - runtime safety
+            result = {"bucket": bucket, "object_name": object_name, "status": "error", "error": str(exc)}
+
+        status = str(result.get("status", "error"))
+        counts[status] = counts.get(status, 0) + 1
+
+        out_entry = {
+            "objectName": object_name,
+            "status": status,
+            "error": result.get("error"),
+            "match": result.get("match") if isinstance(result.get("match"), dict) else {},
+            "candidates": result.get("candidates") if isinstance(result.get("candidates"), list) else [],
+        }
+        if status in {"updated", "dry_run_update", "skipped_existing"}:
+            metadata = _get_file_metadata(redis_client, _bibtex_prefix(), bucket, object_name)
+            out_entry["file"] = _file_record(bucket, object_name, metadata)
+        results.append(out_entry)
+
+    processed_total = end
+    done = processed_total >= total
+    return {
+        "total": total,
+        "offset": safe_offset,
+        "batch_size": safe_batch_size,
+        "processed_in_batch": len(batch),
+        "processed_total": processed_total,
+        "next_offset": None if done else processed_total,
+        "done": done,
+        "counts": counts,
+        "results": results,
+    }
+
+
 load_dotenv()
 
 app = FastAPI(title="MCP BibTeX UI") if FastAPI is not None else None
@@ -697,6 +867,39 @@ if app is not None:
         except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return {"bucket": bucket, "objectName": object_name, **payload}
+
+    @app.post("/api/buckets/{bucket}/autofill-missing")
+    def api_bucket_autofill_missing(bucket: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        minio_client, minio_error = _get_minio_client()
+        if minio_error or not minio_client:
+            raise HTTPException(status_code=503, detail=minio_error or "MinIO is not configured")
+        redis_client, redis_error = _get_redis_client()
+        if redis_error or not redis_client:
+            raise HTTPException(status_code=503, detail=redis_error or "Redis is not configured")
+
+        try:
+            object_names = _autofill_object_names(minio_client, bucket, payload or {})
+        except S3Error as exc:
+            raise HTTPException(status_code=500, detail=f"Failed to list objects for bucket {bucket}: {exc}") from exc
+
+        offset = _payload_int(payload or {}, "offset", 0, 0, max(len(object_names), 0))
+        batch_size = _payload_int(payload or {}, "batchSize", 25, 1, 500)
+        dry_run = _payload_bool(payload or {}, "dryRun", False)
+
+        try:
+            report = _autofill_missing_metadata_batch(
+                minio_client=minio_client,
+                redis_client=redis_client,
+                bucket=bucket,
+                object_names=object_names,
+                offset=offset,
+                batch_size=batch_size,
+                dry_run=dry_run,
+            )
+        except RuntimeError as exc:
+            raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+        return {"bucket": bucket, **report}
 
 
 def main() -> None:

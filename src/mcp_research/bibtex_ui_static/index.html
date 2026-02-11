@@ -182,10 +182,89 @@
         text-decoration: none;
         font-size: 12px;
         font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+        padding: 4px;
+        border-radius: 8px;
       }
 
       .file-link:hover {
-        text-decoration: underline;
+        background: color-mix(in oklab, var(--panel-alt) 80%, white 20%);
+      }
+
+      .file-link:focus-visible {
+        outline: 2px solid color-mix(in oklab, var(--brand) 70%, white 30%);
+        outline-offset: 2px;
+      }
+
+      .file-link svg {
+        width: 16px;
+        height: 16px;
+        fill: currentColor;
+      }
+
+      .file-action-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 28px;
+        height: 20px;
+        border-radius: 6px;
+        border: 1px solid var(--line);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        line-height: 1;
+        padding: 0 6px;
+      }
+
+      .file-action-chip-pdf {
+        background: color-mix(in oklab, #f3d2c8 74%, white 26%);
+        color: color-mix(in oklab, #8d2c1b 80%, var(--ink));
+        border-color: color-mix(in oklab, #b54b31 40%, var(--line));
+      }
+
+      .file-action-chip-md {
+        background: color-mix(in oklab, #d9efe5 74%, white 26%);
+        color: color-mix(in oklab, #1f7c60 80%, var(--ink));
+        border-color: color-mix(in oklab, #2e7a57 42%, var(--line));
+      }
+
+      .file-actions {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+
+      .icon-btn {
+        border: none;
+        background: transparent;
+        cursor: pointer;
+      }
+
+      .icon-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+
+      .pdf-cell {
+        text-align: center;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
       }
 
       .redis-stats {
@@ -291,6 +370,69 @@
         font-size: 12px;
       }
 
+      .main-tools {
+        margin-top: 8px;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .main-action-btn {
+        border: 1px solid color-mix(in oklab, var(--brand) 35%, var(--line));
+        background: color-mix(in oklab, var(--brand-soft) 72%, white 28%);
+        color: color-mix(in oklab, var(--brand) 78%, #4c2318);
+        border-radius: 9px;
+        padding: 7px 10px;
+        font: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .main-action-btn:hover {
+        border-color: color-mix(in oklab, var(--brand) 65%, var(--line));
+      }
+
+      .main-action-btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .autofill-status {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .autofill-progress {
+        margin-top: 8px;
+      }
+
+      .autofill-progress[hidden] {
+        display: none !important;
+      }
+
+      .autofill-progress-track {
+        height: 10px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: color-mix(in oklab, var(--panel-alt) 84%, white 16%);
+        overflow: hidden;
+      }
+
+      .autofill-progress-fill {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #c45f43, #1d8a6e);
+        transition: width 140ms ease;
+      }
+
+      .autofill-progress-text {
+        margin-top: 5px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+
       .dot {
         width: 8px;
         height: 8px;
@@ -324,6 +466,13 @@
         margin-bottom: 11px;
       }
 
+      .editor-head-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
       .editor-file {
         font-size: 12px;
         color: var(--muted);
@@ -333,6 +482,22 @@
       .editor-title {
         font-size: 14px;
         font-weight: 700;
+      }
+
+      .editor-clear-btn {
+        border: 1px solid color-mix(in oklab, #b53c31 45%, var(--line));
+        border-radius: 8px;
+        background: color-mix(in oklab, #f9d9d4 75%, white 25%);
+        color: color-mix(in oklab, #7f211a 82%, var(--ink));
+        font: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 6px 9px;
+      }
+
+      .editor-clear-btn:hover {
+        border-color: color-mix(in oklab, #b53c31 70%, var(--line));
       }
 
       .field-grid {
@@ -576,7 +741,17 @@
       <main class="pane main-pane">
         <div class="pane-header">
           <h2 class="pane-title" id="tableTitle">Files</h2>
-          <div class="pane-subtitle">Table shows title, year, author, and original file link. If title is empty, filename is used.</div>
+          <div class="pane-subtitle">Table shows title, year, author, plus PDF and text links. If title is empty, filename is used.</div>
+          <div class="main-tools">
+            <button type="button" id="autofillMissingBtn" class="main-action-btn">Autofill Missing Metadata</button>
+            <div id="autofillStatus" class="autofill-status">Ready.</div>
+          </div>
+          <div class="autofill-progress" id="autofillProgress" hidden>
+            <div class="autofill-progress-track">
+              <div class="autofill-progress-fill" id="autofillProgressFill"></div>
+            </div>
+            <div class="autofill-progress-text" id="autofillProgressText"></div>
+          </div>
         </div>
         <div class="main-pane-body">
           <div class="table-wrap">
@@ -601,7 +776,7 @@
                       <span class="sort-indicator"></span>
                     </button>
                   </th>
-                  <th style="width: 16%">Original File</th>
+                  <th style="width: 8%; text-align: center"><span class="sr-only">PDF</span></th>
                 </tr>
               </thead>
               <tbody id="fileTableBody"></tbody>
@@ -701,6 +876,7 @@
       };
 
       const saveTimers = new Map();
+      const autofillBatchSize = 20;
 
       const state = {
         buckets: [],
@@ -714,6 +890,15 @@
         saveError: "",
         redisSummaryByFile: {},
         redisDetailCache: {},
+        autofill: {
+          running: false,
+          bucketId: null,
+          total: 0,
+          processed: 0,
+          counts: {},
+          message: "Ready.",
+          error: "",
+        },
         modal: {
           open: false,
           fileId: null,
@@ -840,6 +1025,115 @@
         return file;
       }
 
+      function hasRequiredCoreMetadata(file) {
+        if (!file) return false;
+        const hasTitle = String(file.title || "").trim().length > 0;
+        const hasDoi = String(file.doi || "").trim().length > 0;
+        const authors = coerceAuthors(file);
+        const hasAuthors = authors.some(
+          (author) => String(author.firstName || "").trim() || String(author.lastName || "").trim()
+        );
+        return hasTitle && hasDoi && hasAuthors;
+      }
+
+      function autofillObjectNames(bucket) {
+        if (!bucket || !Array.isArray(bucket.files)) return [];
+        const names = [];
+        for (const file of bucket.files) {
+          if (!file?.objectName || hasRequiredCoreMetadata(file)) continue;
+          names.push(String(file.objectName));
+        }
+        return names;
+      }
+
+      function resetAutofillState(message = "Ready.") {
+        state.autofill.running = false;
+        state.autofill.bucketId = null;
+        state.autofill.total = 0;
+        state.autofill.processed = 0;
+        state.autofill.counts = {};
+        state.autofill.message = message;
+        state.autofill.error = "";
+      }
+
+      function applyAutofillResults(bucketId, results) {
+        const bucket = bucketById(bucketId);
+        if (!bucket || !Array.isArray(results)) return;
+        for (const item of results) {
+          const objectName = String(item?.objectName || "");
+          const incomingFile = item?.file;
+          if (!objectName || !incomingFile) continue;
+          const idx = bucket.files.findIndex((file) => file.objectName === objectName);
+          if (idx < 0) continue;
+          bucket.files[idx] = normalizeFileRecord(incomingFile);
+        }
+      }
+
+      function mergeAutofillCounts(counts) {
+        if (!counts || typeof counts !== "object") return;
+        for (const [key, value] of Object.entries(counts)) {
+          const numericValue = Number(value || 0);
+          state.autofill.counts[key] = Number(state.autofill.counts[key] || 0) + numericValue;
+        }
+      }
+
+      async function runAutofillMissing() {
+        const bucket = getActiveBucket();
+        if (!bucket || bucket.loading || state.autofill.running) return;
+        const targetObjectNames = autofillObjectNames(bucket);
+        resetAutofillState();
+        state.autofill.bucketId = bucket.id;
+        state.autofill.total = targetObjectNames.length;
+        state.autofill.message = "Preparing autofill run...";
+        renderAll();
+
+        if (targetObjectNames.length === 0) {
+          state.autofill.message = "No files with missing core metadata.";
+          renderAll();
+          return;
+        }
+
+        state.autofill.running = true;
+        state.autofill.message = "Running autofill in batches...";
+        renderAll();
+
+        let offset = 0;
+        while (offset < targetObjectNames.length) {
+          try {
+            const data = await apiRequest(`/api/buckets/${encodeURIComponent(bucket.id)}/autofill-missing`, {
+              method: "POST",
+              body: JSON.stringify({
+                objectNames: targetObjectNames,
+                offset,
+                batchSize: autofillBatchSize,
+                dryRun: false,
+              }),
+            });
+            offset = Number(data.next_offset ?? data.processed_total ?? targetObjectNames.length);
+            state.autofill.processed = Number(data.processed_total || offset);
+            mergeAutofillCounts(data.counts || {});
+            applyAutofillResults(bucket.id, data.results || []);
+            state.autofill.message = `Processed ${state.autofill.processed} of ${state.autofill.total}.`;
+            renderAll();
+          } catch (error) {
+            state.autofill.error = String(error.message || error);
+            state.autofill.message = `Autofill failed: ${state.autofill.error}`;
+            break;
+          }
+        }
+
+        state.autofill.running = false;
+        if (!state.autofill.error) {
+          const updatedCount = Number(state.autofill.counts.updated || 0);
+          const skippedCount = Number(state.autofill.counts.skipped_existing || 0);
+          const lowConfidenceCount = Number(state.autofill.counts.low_confidence || 0);
+          const conflictCount = Number(state.autofill.counts.doi_conflict || 0);
+          state.autofill.message =
+            `Done. Updated ${updatedCount} file(s), skipped ${skippedCount}, low confidence ${lowConfidenceCount}, DOI conflicts ${conflictCount}.`;
+        }
+        renderAll();
+      }
+
       async function apiRequest(path, options = {}) {
         const requestOptions = {
           ...options,
@@ -945,6 +1239,49 @@
             setSort(button.dataset.sortKey);
           });
         }
+      }
+
+      function renderAutofillControls() {
+        const button = document.getElementById("autofillMissingBtn");
+        const status = document.getElementById("autofillStatus");
+        const progressWrap = document.getElementById("autofillProgress");
+        const progressFill = document.getElementById("autofillProgressFill");
+        const progressText = document.getElementById("autofillProgressText");
+        if (!button || !status || !progressWrap || !progressFill || !progressText) return;
+
+        const activeBucket = getActiveBucket();
+        const ready = !!activeBucket && activeBucket.loaded && !activeBucket.loading;
+        button.disabled = !ready || state.autofill.running;
+        button.textContent = state.autofill.running ? "Autofilling..." : "Autofill Missing Metadata";
+        status.textContent = state.autofill.message || "Ready.";
+
+        const total = Number(state.autofill.total || 0);
+        const processed = Number(state.autofill.processed || 0);
+        const hasProgress = total > 0 || state.autofill.running;
+        progressWrap.hidden = !hasProgress;
+        if (!hasProgress) {
+          progressFill.style.width = "0%";
+          progressText.textContent = "";
+          return;
+        }
+
+        const percent = total > 0 ? Math.min(100, Math.round((processed / total) * 100)) : 0;
+        progressFill.style.width = `${percent}%`;
+        const updated = Number(state.autofill.counts.updated || 0);
+        const skipped = Number(state.autofill.counts.skipped_existing || 0);
+        const lowConfidence = Number(state.autofill.counts.low_confidence || 0);
+        const conflicts = Number(state.autofill.counts.doi_conflict || 0);
+        const failed = Number(state.autofill.counts.error || 0);
+        progressText.textContent =
+          `${processed}/${total} • ${percent}% • updated ${updated} • skipped ${skipped} • low confidence ${lowConfidence} • DOI conflicts ${conflicts} • errors ${failed}`;
+      }
+
+      function initAutofillControls() {
+        const button = document.getElementById("autofillMissingBtn");
+        if (!button) return;
+        button.addEventListener("click", () => {
+          runAutofillMissing();
+        });
       }
 
       function redisSummaryForFile(file) {
@@ -1061,7 +1398,7 @@
 
         const file = findFileById(state.modal.fileId) || getActiveFile();
         const fileLabel = file ? file.fileName : "File";
-        modalTitle.textContent = `Partition Text - ${fileLabel}`;
+        modalTitle.textContent = `Partition Markdown - ${fileLabel}`;
         modal.hidden = false;
         modalBody.innerHTML = "";
 
@@ -1194,6 +1531,9 @@
       function selectBucket(bucketId) {
         state.activeBucketId = bucketId;
         state.activeFileId = null;
+        if (!state.autofill.running) {
+          resetAutofillState();
+        }
         renderAll();
         ensureBucketLoaded(bucketId);
       }
@@ -1244,21 +1584,44 @@
         renderAll();
       }
 
+      function cancelScheduledSave(fileId) {
+        const existingTimer = saveTimers.get(fileId);
+        if (!existingTimer) return;
+        clearTimeout(existingTimer);
+        saveTimers.delete(fileId);
+      }
+
       function scheduleSave(file) {
         if (!file) return;
         state.saveState = "pending";
         state.saveFileId = file.id;
         state.saveError = "";
         renderTable();
-        const existingTimer = saveTimers.get(file.id);
-        if (existingTimer) {
-          clearTimeout(existingTimer);
-        }
+        cancelScheduledSave(file.id);
         const timer = setTimeout(() => {
           saveTimers.delete(file.id);
           saveFile(file);
         }, 500);
         saveTimers.set(file.id, timer);
+      }
+
+      async function clearSelectedFileMetadata(file) {
+        if (!file) return;
+        const confirmed = window.confirm(`Clear metadata for "${file.fileName}"?`);
+        if (!confirmed) return;
+
+        cancelScheduledSave(file.id);
+        for (const key of Object.keys(defaultFileFields)) {
+          if (key === "authors") {
+            file.authors = [];
+            continue;
+          }
+          file[key] = defaultFileFields[key];
+        }
+
+        renderTable();
+        renderEditor();
+        await saveFile(file);
       }
 
       function renderBuckets() {
@@ -1392,15 +1755,38 @@
           row.append(authorsCell);
 
           const linkCell = document.createElement("td");
+          linkCell.className = "pdf-cell";
+          const actions = document.createElement("div");
+          actions.className = "file-actions";
           if (file.originalFileUrl) {
             const link = document.createElement("a");
             link.href = file.originalFileUrl;
             link.className = "file-link";
-            link.textContent = "Open";
+            link.title = "Open PDF";
+            link.setAttribute("aria-label", "Open PDF");
+            link.innerHTML =
+              '<span class="file-action-chip file-action-chip-pdf" aria-hidden="true">PDF</span>';
             link.target = "_blank";
             link.rel = "noopener noreferrer";
             link.addEventListener("click", (event) => event.stopPropagation());
-            linkCell.append(link);
+            actions.append(link);
+          }
+          const textBtn = document.createElement("button");
+          textBtn.type = "button";
+          textBtn.className = "file-link icon-btn";
+          textBtn.title = "View partition markdown";
+          textBtn.setAttribute("aria-label", "View partition markdown");
+          textBtn.disabled = !file.bucket || !file.objectName;
+          textBtn.innerHTML =
+            '<span class="file-action-chip file-action-chip-md" aria-hidden="true">MD</span>';
+          textBtn.addEventListener("click", (event) => {
+            event.stopPropagation();
+            openRedisModal(file);
+          });
+          actions.append(textBtn);
+
+          if (actions.childElementCount > 0) {
+            linkCell.append(actions);
           } else {
             linkCell.textContent = "—";
           }
@@ -1430,47 +1816,25 @@
         const headerTitle = document.createElement("div");
         headerTitle.className = "editor-title";
         headerTitle.textContent = file.title || "Untitled";
-        header.append(fileTag, headerTitle);
+
+        const fileInfo = document.createElement("div");
+        fileInfo.append(fileTag, headerTitle);
+
+        const headerTop = document.createElement("div");
+        headerTop.className = "editor-head-top";
+        headerTop.append(fileInfo);
+
+        const clearBtn = document.createElement("button");
+        clearBtn.type = "button";
+        clearBtn.className = "editor-clear-btn";
+        clearBtn.textContent = "Clear Metadata";
+        clearBtn.addEventListener("click", () => {
+          clearSelectedFileMetadata(file);
+        });
+        headerTop.append(clearBtn);
+
+        header.append(headerTop);
         pane.append(header);
-
-        ensureRedisSummary(file);
-        const summary = redisSummaryForFile(file);
-        const stats = document.createElement("div");
-        stats.className = "redis-stats";
-
-        const statsTitle = document.createElement("div");
-        statsTitle.className = "redis-stats-title";
-        statsTitle.textContent = "Redis Partition Data";
-        stats.append(statsTitle);
-
-        const statsGrid = document.createElement("div");
-        statsGrid.className = "redis-stats-grid";
-
-        const partitionBtn = document.createElement("button");
-        partitionBtn.type = "button";
-        partitionBtn.className = "redis-stat-btn";
-        const partitionCount = summary?.partitionCount ?? 0;
-        partitionBtn.innerHTML = `<div class="redis-stat-count">${partitionCount}</div><div class="redis-stat-label">Partitions</div>`;
-        partitionBtn.disabled = !summary || summary.status !== "loaded" || partitionCount === 0;
-        partitionBtn.addEventListener("click", () => openRedisModal(file));
-        statsGrid.append(partitionBtn);
-
-        stats.append(statsGrid);
-
-        const statsMeta = document.createElement("div");
-        statsMeta.className = "redis-stats-meta";
-        if (!summary || summary.status === "loading") {
-          statsMeta.textContent = "Loading counts...";
-        } else if (summary.status === "error") {
-          statsMeta.textContent = `Unable to load Redis counts: ${summary.error}`;
-        } else if (summary.docIds.length === 0) {
-          statsMeta.textContent = "No source mapping found in Redis.";
-        } else {
-          statsMeta.textContent = `From ${summary.docIds.length} document id(s) in ${summary.sourcePrefix}. Click to lazy load partition text.`;
-        }
-        stats.append(statsMeta);
-
-        pane.append(stats);
 
         const grid = document.createElement("div");
         grid.className = "field-grid";
@@ -1652,11 +2016,13 @@
       function renderAll() {
         renderBuckets();
         renderTable();
+        renderAutofillControls();
         renderEditor();
         renderModal();
       }
 
       initSortControls();
+      initAutofillControls();
       initModalControls();
       loadBuckets();
     </script>
