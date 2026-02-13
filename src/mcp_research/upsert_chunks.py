@@ -14,10 +14,11 @@ from mcp_research.runtime_utils import decode_redis_value as _decode_redis_value
 from mcp_research.schema_v2 import (
     chunk_hash,
     partition_hash,
-    qdrant_payload_schema_mode,
+    read_v2_doc_chunks,
     qdrant_point_id_mode,
-    should_write_v1,
-    should_write_v2,
+    redis_v2_doc_hashes_key,
+    source_id,
+    split_source_path,
 )
 
 try:
@@ -96,26 +97,20 @@ def load_chunk_items_from_redis(
     prefix: str,
     doc_ids: List[str] | None,
 ) -> List[dict]:
-    """Load chunk payloads from Redis for the specified document ids."""
+    """Load chunk payloads from Redis v2 for the specified document hashes."""
     items: List[dict] = []
     if doc_ids:
         ids = doc_ids
     else:
-        raw_ids = redis_client.smembers(f"{prefix}:pdf:hashes")
+        raw_ids = redis_client.smembers(redis_v2_doc_hashes_key(prefix))
         ids = [_decode_redis_value(val) for val in raw_ids]
 
     for doc_id in ids:
         if not doc_id:
             continue
-        chunks_key = f"{prefix}:pdf:{doc_id}:chunks"
-        raw = redis_client.get(chunks_key)
-        raw = _decode_redis_value(raw)
-        if not raw:
-            logger.warning("Missing Redis key %s", chunks_key)
-            continue
-        payload = json.loads(raw)
-        if not isinstance(payload, list):
-            logger.warning("Skipping %s (expected list payload)", chunks_key)
+        payload = read_v2_doc_chunks(redis_client, prefix, str(doc_id))
+        if not payload:
+            logger.warning("Missing Redis v2 chunks for doc_hash=%s", doc_id)
             continue
         for entry in payload:
             if not isinstance(entry, dict):
@@ -147,53 +142,35 @@ def upsert_items(
 
         points = []
         for item, dense_vec, sparse_vec in zip(batch, dense_embs, sparse_embs):
-            payload_mode = qdrant_payload_schema_mode()
             point_mode = qdrant_point_id_mode()
             doc_hash = str(item.get("doc_hash") or item.get("document_id") or "")
             p_hash = str(item.get("partition_hash") or partition_hash(doc_hash, item))
             c_hash = str(item.get("chunk_hash") or chunk_hash(doc_hash, item))
+            bucket = item.get("bucket")
+            key = item.get("key")
+            version_id = item.get("version_id")
+            if (not bucket or not key) and item.get("source"):
+                source_bucket, source_key = split_source_path(str(item.get("source")))
+                bucket = bucket or source_bucket
+                key = key or source_key
+            sid = item.get("source_id")
+            if not sid and bucket and key:
+                sid = source_id(str(bucket), str(key), str(version_id) if version_id else None)
 
-            payload = {}
-            if should_write_v1(payload_mode):
-                payload.update(
-                    {
-                        "document_id": item.get("document_id"),
-                        "source": item.get("source"),
-                        "chunk_index": item.get("chunk_index"),
-                        "pages": item.get("pages") or [],
-                        "text": item.get("text") or "",
-                    }
-                )
-                for key in (
-                    "source_ref",
-                    "bucket",
-                    "key",
-                    "version_id",
-                    "page_start",
-                    "page_end",
-                ):
-                    if key in item and item.get(key) is not None:
-                        payload[key] = item.get(key)
-
-            if should_write_v2(payload_mode):
-                payload.update(
-                    {
-                        "doc_hash": doc_hash,
-                        "partition_hash": p_hash,
-                        "chunk_hash": c_hash,
-                    }
-                )
-                source_id = item.get("source_id")
-                if source_id:
-                    payload["source_id"] = source_id
-                if not payload.get("text"):
-                    payload["text"] = item.get("text") or ""
-                if "chunk_index" not in payload:
-                    payload["chunk_index"] = item.get("chunk_index")
-                if "page_start" not in payload and item.get("page_start") is not None:
-                    payload["page_start"] = item.get("page_start")
-                if "page_end" not in payload and item.get("page_end") is not None:
-                    payload["page_end"] = item.get("page_end")
+            payload = {
+                "doc_hash": doc_hash,
+                "partition_hash": p_hash,
+                "chunk_hash": c_hash,
+                "chunk_index": item.get("chunk_index"),
+                "page_start": item.get("page_start"),
+                "page_end": item.get("page_end"),
+                "text": item.get("text") or "",
+            }
+            if sid:
+                payload["source_id"] = sid
+            for key_name in ("source_ref", "bucket", "key", "version_id"):
+                if item.get(key_name) is not None:
+                    payload[key_name] = item.get(key_name)
 
             point_id = str(uuid.uuid4())
             if point_mode == "deterministic":
@@ -249,9 +226,10 @@ def main() -> None:
     )
     parser.add_argument(
         "--redis-doc-id",
+        "--redis-doc-hash",
         action="append",
         default=[],
-        help="Only upsert specific document_id values (repeatable)",
+        help="Only upsert specific Redis doc_hash values (repeatable)",
     )
     parser.add_argument(
         "--url",
@@ -322,7 +300,11 @@ def main() -> None:
         batch_size=args.batch_size,
     )
     if redis_client:
-        doc_ids = {item.get("document_id") for item in items if item.get("document_id")}
+        doc_ids = {
+            item.get("doc_hash") or item.get("document_id")
+            for item in items
+            if item.get("doc_hash") or item.get("document_id")
+        }
         for doc_id in doc_ids:
             record_collection_mapping(
                 redis_client=redis_client,

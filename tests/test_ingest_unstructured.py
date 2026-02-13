@@ -20,6 +20,7 @@ class _FakeRedis:
         self.data = {}
         self.sets = {}
         self.hashes = {}
+        self.sorted_sets = {}
 
     def set(self, key, value):
         self.data[key] = value
@@ -33,11 +34,24 @@ class _FakeRedis:
     def sadd(self, key, value):
         self.sets.setdefault(key, set()).add(value)
 
+    def zadd(self, key, mapping):
+        bucket = self.sorted_sets.setdefault(key, {})
+        for member, score in mapping.items():
+            bucket[str(member)] = float(score)
+
+    def zcard(self, key):
+        return len(self.sorted_sets.get(key, {}))
+
     def smembers(self, key):
         return self.sets.get(key, set())
 
+    def delete(self, key):
+        self.data.pop(key, None)
+        self.hashes.pop(key, None)
+        self.sorted_sets.pop(key, None)
+
     def exists(self, key):
-        return key in self.data or key in self.hashes
+        return key in self.data or key in self.hashes or key in self.sorted_sets
 
 
 class IngestUnstructuredTests(unittest.TestCase):
@@ -104,9 +118,9 @@ class IngestUnstructuredTests(unittest.TestCase):
             collection="collection_a",
         )
 
-        self.assertIn("unit:pdf:doc123:meta", result["meta_key"])
-        self.assertIn("doc123", redis_client.sets.get("unit:pdf:hashes", set()))
-        self.assertIn("collection_a", redis_client.sets.get("unit:pdf:doc123:collections", set()))
+        self.assertIn("unit:v2:doc:doc123:meta", result["doc_meta_key"])
+        self.assertIn("doc123", redis_client.sets.get("unit:v2:doc_hashes", set()))
+        self.assertIn("collection_a", redis_client.sets.get("unit:v2:doc:doc123:collections", set()))
 
     def test_upload_json_files_to_redis_inferrs_doc_id(self):
         redis_client = _FakeRedis()
@@ -129,7 +143,7 @@ class IngestUnstructuredTests(unittest.TestCase):
                 collection=None,
             )
 
-        self.assertIn("unit:pdf:docxyz:meta", result["meta_key"])
+        self.assertIn("unit:v2:doc:docxyz:meta", result["doc_meta_key"])
 
     def test_main_help_uses_argparse_and_does_not_ingest(self):
         output = io.StringIO()

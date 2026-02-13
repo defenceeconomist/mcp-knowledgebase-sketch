@@ -14,11 +14,9 @@ from mcp_research.schema_v2 import (
     read_v2_doc_chunks,
     read_v2_doc_partitions,
     read_v2_source_doc_hash,
-    redis_schema_read_mode,
+    redis_v2_source_meta_key,
     search_link_mode,
     search_redis_enrichment_mode,
-    should_fallback_v1,
-    should_read_v2,
 )
 
 try:
@@ -102,16 +100,6 @@ def _default_collection_key() -> str:
     return f"{REDIS_PREFIX}:qdrant:default_collection"
 
 
-def _redis_key(prefix: str, doc_id: str, suffix: str) -> str:
-    """Build a Redis key for document metadata."""
-    return f"{prefix}:pdf:{doc_id}:{suffix}"
-
-
-def _source_key(prefix: str, source: str) -> str:
-    """Build a Redis key for a source-to-document mapping."""
-    return f"{prefix}:pdf:source:{source}"
-
-
 def _get_default_collection() -> str | None:
     """Fetch the default collection name from Redis, if set."""
     client = _get_redis_client()
@@ -127,13 +115,68 @@ def _pages_to_range(pages: List[int]) -> tuple[Optional[int], Optional[int]]:
     return min(pages), max(pages)
 
 
+def _v2_source_meta(source_id: str) -> Dict[str, str]:
+    """Load v2 source metadata from Redis for a source_id."""
+    redis_client = _get_redis_client()
+    if not redis_client or not source_id or not hasattr(redis_client, "hgetall"):
+        return {}
+    raw_meta = redis_client.hgetall(redis_v2_source_meta_key(REDIS_PREFIX, source_id)) or {}
+    normalized: Dict[str, str] = {}
+    for raw_key, raw_value in raw_meta.items():
+        key = _decode_redis_value(raw_key)
+        value = _decode_redis_value(raw_value)
+        if key is None or value is None:
+            continue
+        normalized[str(key)] = str(value)
+    return normalized
+
+
+def _payload_identity_fields(
+    payload: Dict[str, Any],
+    *,
+    resolve_source_meta: bool = False,
+) -> tuple[str | None, str | None, str | None, str | None, str | None, str | None]:
+    """Return (doc_hash, source_id, bucket, key, source, version_id)."""
+    doc_hash_raw = payload.get("doc_hash") or payload.get("document_id")
+    source_id_raw = payload.get("source_id")
+    bucket_raw = payload.get("bucket")
+    key_raw = payload.get("key")
+    source_raw = payload.get("source")
+    version_raw = payload.get("version_id")
+
+    bucket = str(bucket_raw) if bucket_raw else None
+    key = str(key_raw) if key_raw else None
+    source = str(source_raw) if source_raw else None
+    version_id = str(version_raw) if version_raw not in (None, "") else None
+    sid = str(source_id_raw) if source_id_raw else None
+
+    if (not bucket or not key) and source:
+        source_bucket, source_key = _split_source(source)
+        bucket = bucket or source_bucket
+        key = key or source_key
+
+    if resolve_source_meta and sid and (not bucket or not key or version_id is None or source is None):
+        source_meta = _v2_source_meta(sid)
+        bucket = bucket or source_meta.get("bucket")
+        key = key or source_meta.get("key")
+        if version_id is None:
+            candidate = source_meta.get("version_id")
+            version_id = candidate if candidate else None
+        source = source or source_meta.get("source_path")
+
+    if not source and bucket and key:
+        source = f"{bucket}/{key}"
+
+    doc_hash = str(doc_hash_raw) if doc_hash_raw else None
+    return doc_hash, sid, bucket, key, source, version_id
+
+
 def _source_ref_from_payload(payload: Dict[str, Any]) -> Optional[str]:
     """Construct a source_ref from payload fields or existing source_ref."""
     source_ref = payload.get("source_ref")
     if source_ref:
         return source_ref
-    bucket = payload.get("bucket")
-    key = payload.get("key")
+    _, _, bucket, key, _, version_id = _payload_identity_fields(payload, resolve_source_meta=True)
     if not bucket or not key:
         return None
     page_start = payload.get("page_start")
@@ -145,7 +188,7 @@ def _source_ref_from_payload(payload: Dict[str, Any]) -> Optional[str]:
         key=key,
         page_start=page_start,
         page_end=page_end,
-        version_id=payload.get("version_id"),
+        version_id=version_id,
     )
 
 
@@ -160,12 +203,11 @@ def _coerce_qdrant_offset(offset: str | None):
 
 def _file_identity(payload: Dict[str, Any]) -> Optional[tuple[str, Dict[str, Any]]]:
     """Derive a stable identity key and metadata from a Qdrant payload."""
-    document_id = payload.get("document_id")
-    source = payload.get("source")
-    bucket = payload.get("bucket")
-    key = payload.get("key")
-    if document_id:
-        identity = f"doc:{document_id}"
+    doc_hash, sid, bucket, key, source, _ = _payload_identity_fields(payload)
+    if doc_hash:
+        identity = f"doc:{doc_hash}"
+    elif sid:
+        identity = f"source_id:{sid}"
     elif source:
         identity = f"source:{source}"
     elif bucket and key:
@@ -173,7 +215,9 @@ def _file_identity(payload: Dict[str, Any]) -> Optional[tuple[str, Dict[str, Any
     else:
         return None
     return identity, {
-        "document_id": document_id,
+        "document_id": doc_hash,
+        "doc_hash": doc_hash,
+        "source_id": sid,
         "source": source,
         "bucket": bucket,
         "key": key,
@@ -267,45 +311,9 @@ def _extract_chunk_text(payload: Dict[str, Any]) -> str:
 
 
 def _source_and_doc_identity(payload: Dict[str, Any]) -> tuple[str | None, str | None, str | None]:
-    """Return (document_id, bucket, key) from payload fields."""
-    document_id = payload.get("document_id")
-    bucket = payload.get("bucket")
-    key = payload.get("key")
-    if bucket and key:
-        return document_id, bucket, key
-
-    source_bucket, source_key = _split_source(payload.get("source"))
-    if source_bucket and source_key:
-        return document_id, source_bucket, source_key
-    return document_id, bucket, key
-
-
-def _doc_meta(redis_client: Any, prefix: str, doc_id: str) -> Dict[str, str]:
-    """Load document metadata hash from Redis when available."""
-    meta_key = _redis_key(prefix, doc_id, "meta")
-    if not hasattr(redis_client, "hgetall"):
-        return {}
-    raw_meta = redis_client.hgetall(meta_key) or {}
-    normalized: Dict[str, str] = {}
-    for raw_key, raw_value in raw_meta.items():
-        key = _decode_redis_value(raw_key)
-        value = _decode_redis_value(raw_value)
-        if key is None or value is None:
-            continue
-        normalized[str(key)] = str(value)
-    return normalized
-
-
-def _safe_json_list(raw_value: Any, *, field_name: str) -> List[Any]:
-    """Parse a Redis JSON list field, raising a clear error on invalid JSON."""
-    raw = _decode_redis_value(raw_value)
-    if not raw:
-        return []
-    try:
-        payload = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise RuntimeError(f"Invalid JSON payload for {field_name}") from exc
-    return payload if isinstance(payload, list) else []
+    """Return (doc_hash, bucket, key) from payload fields."""
+    doc_hash, _, bucket, key, _, _ = _payload_identity_fields(payload, resolve_source_meta=True)
+    return doc_hash, bucket, key
 
 
 def _resolve_doc_ids(
@@ -321,37 +329,16 @@ def _resolve_doc_ids(
         raise ValueError("document_id or bucket/key is required")
 
     source = f"{bucket}/{key}"
-    read_mode = redis_schema_read_mode()
-    if should_read_v2(read_mode):
-        v2_doc = read_v2_source_doc_hash(
-            redis_client=redis_client,
-            prefix=REDIS_PREFIX,
-            bucket=bucket,
-            key=key,
-            version_id=None,
-        )
-        if v2_doc:
-            return [v2_doc], source
-        if not should_fallback_v1(read_mode):
-            return [], source
-
-    source_key = _source_key(REDIS_PREFIX, source)
-    doc_ids: List[str] = []
-
-    raw_members = redis_client.smembers(source_key) if hasattr(redis_client, "smembers") else None
-    for entry in raw_members or []:
-        decoded = _decode_redis_value(entry)
-        if decoded:
-            doc_ids.append(str(decoded))
-
-    if not doc_ids and hasattr(redis_client, "get"):
-        mapped = _decode_redis_value(redis_client.get(source_key))
-        if mapped:
-            doc_ids.append(str(mapped))
-
-    if not doc_ids:
+    v2_doc = read_v2_source_doc_hash(
+        redis_client=redis_client,
+        prefix=REDIS_PREFIX,
+        bucket=bucket,
+        key=key,
+        version_id=None,
+    )
+    if not v2_doc:
         return [], source
-    return sorted({doc_id for doc_id in doc_ids if doc_id}), source
+    return [v2_doc], source
 
 
 def _load_document_payloads(
@@ -363,51 +350,19 @@ def _load_document_payloads(
     partitions: List[Dict[str, Any]] = []
     chunks_keys: List[str] = []
     partitions_keys: List[str] = []
-    read_mode = redis_schema_read_mode()
-
     for doc_id in doc_ids:
-        used_v2 = False
-        if should_read_v2(read_mode):
-            v2_chunks = read_v2_doc_chunks(redis_client, REDIS_PREFIX, doc_id)
-            v2_partitions = read_v2_doc_partitions(redis_client, REDIS_PREFIX, doc_id)
-            if v2_chunks or v2_partitions:
-                used_v2 = True
-                for entry in v2_partitions:
-                    if isinstance(entry, dict):
-                        partitions.append(dict(entry))
-                for entry in v2_chunks:
-                    if isinstance(entry, dict):
-                        chunks.append(dict(entry))
-                if v2_chunks:
-                    chunks_keys.append(f"{REDIS_PREFIX}:v2:doc:{doc_id}:chunk_hashes")
-                if v2_partitions:
-                    partitions_keys.append(f"{REDIS_PREFIX}:v2:doc:{doc_id}:partition_hashes")
-        if used_v2 and not should_fallback_v1(read_mode):
-            continue
-
-        meta = _doc_meta(redis_client, REDIS_PREFIX, doc_id)
-        partitions_key = str(meta.get("partitions_key") or _redis_key(REDIS_PREFIX, doc_id, "partitions"))
-        chunks_key = str(meta.get("chunks_key") or _redis_key(REDIS_PREFIX, doc_id, "chunks"))
-
-        raw_partitions = redis_client.get(partitions_key)
-        raw_chunks = redis_client.get(chunks_key)
-        try:
-            partition_entries = _safe_json_list(raw_partitions, field_name=partitions_key)
-        except RuntimeError:
-            partition_entries = []
-        chunk_entries = _safe_json_list(raw_chunks, field_name=chunks_key)
-
-        for entry in partition_entries:
+        v2_chunks = read_v2_doc_chunks(redis_client, REDIS_PREFIX, doc_id)
+        v2_partitions = read_v2_doc_partitions(redis_client, REDIS_PREFIX, doc_id)
+        for entry in v2_partitions:
             if isinstance(entry, dict):
                 partitions.append(dict(entry))
-        for entry in chunk_entries:
+        for entry in v2_chunks:
             if isinstance(entry, dict):
                 chunks.append(dict(entry))
-
-        if partition_entries:
-            partitions_keys.append(partitions_key)
-        if chunk_entries:
-            chunks_keys.append(chunks_key)
+        if v2_chunks:
+            chunks_keys.append(f"{REDIS_PREFIX}:v2:doc:{doc_id}:chunk_hashes")
+        if v2_partitions:
+            partitions_keys.append(f"{REDIS_PREFIX}:v2:doc:{doc_id}:partition_hashes")
 
     return chunks, partitions, chunks_keys, partitions_keys
 
@@ -483,8 +438,7 @@ def _citation_key_from_payload(payload: Dict[str, Any]) -> str | None:
         value = payload.get(key)
         if isinstance(value, str) and value.strip():
             return value.strip()
-    bucket = payload.get("bucket")
-    object_key = payload.get("key")
+    _, _, bucket, object_key, _, _ = _payload_identity_fields(payload, resolve_source_meta=True)
     bibtex = _load_bibtex_metadata(bucket, object_key)
     if not bibtex:
         return None
@@ -541,12 +495,19 @@ def _enrich_chunk_payload(
 def _chunk_summary(payload: Dict[str, Any], point_id: str | None = None) -> Dict[str, Any]:
     """Build a compact chunk summary object used by chunk-level fetch helpers."""
     page_start, page_end = _payload_page_range(payload)
+    doc_hash, source_id_value, bucket, key, source, version_id = _payload_identity_fields(
+        payload,
+        resolve_source_meta=True,
+    )
     summary = {
         "point_id": point_id,
-        "document_id": payload.get("document_id"),
-        "bucket": payload.get("bucket"),
-        "key": payload.get("key"),
-        "source": payload.get("source"),
+        "document_id": doc_hash,
+        "doc_hash": doc_hash,
+        "source_id": source_id_value,
+        "bucket": bucket,
+        "key": key,
+        "source": source,
+        "version_id": version_id,
         "chunk_index": _coerce_int(payload.get("chunk_index")),
         "page_start": page_start,
         "page_end": page_end,
@@ -799,6 +760,10 @@ def search(
     bundle_cache: Dict[str, Dict[str, Any]] = {}
     for point in response.points:
         payload = point.payload or {}
+        doc_hash, source_id_value, bucket, key, source, version_id = _payload_identity_fields(
+            payload,
+            resolve_source_meta=True,
+        )
         source_ref = _source_ref_from_payload(payload)
         citation_url = (
             build_citation_url(source_ref, CITATION_BASE_URL, CITATION_REF_PATH)
@@ -843,14 +808,16 @@ def search(
             {
                 "id": str(point.id),
                 "score": point.score,
-                "document_id": payload.get("document_id"),
-                "source": payload.get("source"),
+                "document_id": doc_hash,
+                "doc_hash": doc_hash,
+                "source_id": source_id_value,
+                "source": source,
                 "source_ref": source_ref,
                 "citation_url": citation_url,
                 "citation_key": citation_key,
-                "bucket": payload.get("bucket"),
-                "key": payload.get("key"),
-                "version_id": payload.get("version_id"),
+                "bucket": bucket,
+                "key": key,
+                "version_id": version_id,
                 "chunk_index": _coerce_int(payload.get("chunk_index")),
                 "pages": payload.get("pages", []),
                 "page_start": payload.get("page_start"),
@@ -886,18 +853,24 @@ def fetch(id: str, collection: str | None = None) -> Dict[str, Any]:
         else None
     )
     citation_key = _citation_key_from_payload(payload)
+    doc_hash, source_id_value, bucket, key, source, version_id = _payload_identity_fields(
+        payload,
+        resolve_source_meta=True,
+    )
     return {
         "id": str(id),
         "found": True,
         "collection": collection_name,
-        "document_id": payload.get("document_id"),
-        "source": payload.get("source"),
+        "document_id": doc_hash,
+        "doc_hash": doc_hash,
+        "source_id": source_id_value,
+        "source": source,
         "source_ref": source_ref,
         "citation_url": citation_url,
         "citation_key": citation_key,
-        "bucket": payload.get("bucket"),
-        "key": payload.get("key"),
-        "version_id": payload.get("version_id"),
+        "bucket": bucket,
+        "key": key,
+        "version_id": version_id,
         "chunk_index": _coerce_int(payload.get("chunk_index")),
         "pages": payload.get("pages", []),
         "page_start": payload.get("page_start"),

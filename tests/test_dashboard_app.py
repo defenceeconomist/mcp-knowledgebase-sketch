@@ -24,6 +24,10 @@ class _FakePipeline:
         self._ops.append(("get", key))
         return self
 
+    def zcard(self, key):
+        self._ops.append(("zcard", key))
+        return self
+
     def execute(self):
         out = []
         for op, key in self._ops:
@@ -31,16 +35,19 @@ class _FakePipeline:
                 out.append(self._client.hgetall(key))
             elif op == "get":
                 out.append(self._client.get(key))
+            elif op == "zcard":
+                out.append(self._client.zcard(key))
             else:
                 out.append(None)
         return out
 
 
 class _FakeRedis:
-    def __init__(self, *, smembers=None, values=None, hashes=None):
+    def __init__(self, *, smembers=None, values=None, hashes=None, zsets=None):
         self._smembers = smembers or {}
         self._values = values or {}
         self._hashes = hashes or {}
+        self._zsets = zsets or {}
 
     def pipeline(self):
         return _FakePipeline(self)
@@ -53,6 +60,9 @@ class _FakeRedis:
 
     def hgetall(self, key):
         return self._hashes.get(key, {})
+
+    def zcard(self, key):
+        return self._zsets.get(key, 0)
 
 
 class _DummyPoint:
@@ -275,30 +285,26 @@ class DashboardAppTests(unittest.TestCase):
         source = "bucket1/file.pdf"
         doc_id = "doc123"
         redis_client = _FakeRedis(
-            smembers={dashboard_app._source_key(prefix, source): {doc_id.encode("utf-8")}},
-            values={
-                dashboard_app._redis_key(prefix, doc_id, "partitions"): b'[{"a":1},{"b":2},{"c":3}]',
-            },
             hashes={
-                dashboard_app._redis_key(prefix, doc_id, "meta"): {
-                    b"chunks": b"7",
-                    b"partitions_key": dashboard_app._redis_key(prefix, doc_id, "partitions").encode("utf-8"),
+                f"{prefix}:v2:doc:{doc_id}:meta": {
+                    b"chunks_count": b"7",
                 }
+            },
+            zsets={
+                f"{prefix}:v2:doc:{doc_id}:chunk_hashes": 7,
+                f"{prefix}:v2:doc:{doc_id}:partition_hashes": 3,
             },
         )
 
         files = [{"bucket": "bucket1", "key": "file.pdf", "document_id": None, "source": None, "qdrant_chunks": 4}]
-        dashboard_app.enrich_files_with_redis(redis_client, prefix, "bucket1", files)
+        with mock.patch("mcp_research.dashboard_app.read_v2_source_doc_hash", return_value=doc_id):
+            dashboard_app.enrich_files_with_redis(redis_client, prefix, "bucket1", files)
 
         self.assertEqual(files[0]["redis_doc_ids"], [doc_id])
         self.assertEqual(files[0]["redis_chunks"], 7)
         self.assertEqual(files[0]["redis_partitions"], 3)
-        self.assertEqual(files[0]["redis_meta_key"], dashboard_app._redis_key(prefix, doc_id, "meta"))
-        self.assertEqual(files[0]["redis_metadata"]["chunks"], "7")
-        self.assertEqual(
-            files[0]["redis_metadata"]["partitions_key"],
-            dashboard_app._redis_key(prefix, doc_id, "partitions"),
-        )
+        self.assertEqual(files[0]["redis_meta_key"], f"{prefix}:v2:doc:{doc_id}:meta")
+        self.assertEqual(files[0]["redis_metadata"]["chunks_count"], "7")
 
     def test_build_original_file_url_from_bucket_key(self):
         entry = {"bucket": "bucket1", "key": "folder/file.pdf", "version_id": "v1"}

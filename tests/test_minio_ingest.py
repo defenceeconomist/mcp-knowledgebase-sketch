@@ -59,17 +59,17 @@ class MinioIngestTests(unittest.TestCase):
 
     def test_source_doc_ids_prefers_set_members(self):
         redis_client = _FakeRedis()
-        redis_client.sets["unit:pdf:source:bucket/file.pdf"] = {b"doc1", b"doc2"}
-        result = minio_ingest._source_doc_ids(redis_client, "unit", "bucket/file.pdf")
-        self.assertEqual(sorted(result), ["doc1", "doc2"])
+        with mock.patch("mcp_research.minio_ingest.read_v2_source_doc_hash", return_value="doc1"):
+            result = minio_ingest._source_doc_ids(redis_client, "unit", "bucket/file.pdf")
+        self.assertEqual(result, ["doc1"])
 
     def test_remove_source_mapping_deletes_empty_set(self):
         redis_client = _FakeRedis()
-        redis_client.sets["unit:pdf:source:bucket/file.pdf"] = {"doc"}
 
         minio_ingest._remove_source_mapping(redis_client, "unit", "bucket/file.pdf", "doc")
 
-        self.assertIn("unit:pdf:source:bucket/file.pdf", redis_client.deleted)
+        self.assertEqual(len(redis_client.deleted), 2)
+        self.assertTrue(redis_client.deleted[0].startswith("unit:v2:source:"))
 
     def test_delete_from_qdrant_skips_missing_collection(self):
         client = mock.Mock()

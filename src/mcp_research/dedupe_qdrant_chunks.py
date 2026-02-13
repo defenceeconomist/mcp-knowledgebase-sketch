@@ -54,12 +54,15 @@ def _text_fingerprint(payload: Dict[str, Any]) -> str:
 
 
 def _doc_identity(payload: Dict[str, Any]) -> str:
-    document_id = payload.get("document_id")
+    document_id = payload.get("doc_hash") or payload.get("document_id")
+    sid = payload.get("source_id")
     source = payload.get("source")
     bucket = payload.get("bucket")
     key = payload.get("key")
     if document_id:
         return f"doc:{document_id}"
+    if sid:
+        return f"source_id:{sid}"
     if source:
         return f"source:{source}"
     if bucket and key:

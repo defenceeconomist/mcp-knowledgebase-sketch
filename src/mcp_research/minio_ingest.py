@@ -1,5 +1,4 @@
 import argparse
-import json
 import logging
 import os
 import threading
@@ -17,7 +16,6 @@ from qdrant_client.models import FieldCondition, Filter, MatchValue
 
 from mcp_research.ingest_unstructured import (
     _hash_bytes,
-    _redis_key,
     elements_to_chunks,
     load_dotenv,
     load_env_bool,
@@ -29,16 +27,19 @@ from mcp_research.ingest_unstructured import (
 )
 from mcp_research.link_resolver import build_source_ref
 from mcp_research.runtime_utils import (
-    decode_redis_value as _decode_redis_value,
     load_env_list as _load_env_list,
 )
 from mcp_research.schema_v2 import (
     chunk_hash,
     partition_hash,
     read_v2_doc_chunks,
-    redis_schema_read_mode,
-    should_fallback_v1,
-    should_read_v2,
+    read_v2_source_doc_hash,
+    redis_v2_doc_collections_key,
+    redis_v2_doc_sources_key,
+    redis_v2_source_doc_key,
+    redis_v2_source_meta_key,
+    source_id,
+    split_source_path,
 )
 from mcp_research.upsert_chunks import ensure_collection, upsert_items
 
@@ -125,11 +126,6 @@ def _get_minio_client(endpoint: str, access_key: str, secret_key: str, secure: b
     )
 
 
-def _source_key(prefix: str, source: str) -> str:
-    """Build the Redis key for a source-to-document mapping."""
-    return f"{prefix}:pdf:source:{source}"
-
-
 def _normalize_events(events: Iterable[str]) -> List[str]:
     """Normalize MinIO event names by stripping whitespace and dropping blanks."""
     return [event.strip() for event in events if event and event.strip()]
@@ -147,30 +143,30 @@ def _get_redis_client(redis_url: str):
 
 
 def _source_doc_ids(redis_client, redis_prefix: str, source: str) -> List[str]:
-    """Look up document ids in Redis for a given source file."""
-    source_key = _source_key(redis_prefix, source)
-    if hasattr(redis_client, "smembers"):
-        raw_members = redis_client.smembers(source_key)
-        members = []
-        for entry in raw_members or []:
-            decoded = _decode_redis_value(entry)
-            if decoded:
-                members.append(decoded)
-        if members:
-            return members
-    raw = _decode_redis_value(redis_client.get(source_key))
-    return [raw] if raw else []
+    """Look up document hashes in Redis v2 for a given source file."""
+    bucket, key = split_source_path(source)
+    if not bucket or not key:
+        return []
+    doc_hash = read_v2_source_doc_hash(
+        redis_client=redis_client,
+        prefix=redis_prefix,
+        bucket=bucket,
+        key=key,
+        version_id=None,
+    )
+    return [doc_hash] if doc_hash else []
 
 
 def _remove_source_mapping(redis_client, redis_prefix: str, source: str, doc_id: str) -> None:
-    """Remove a doc id from the Redis source mapping and clean up empty sets."""
-    source_key = _source_key(redis_prefix, source)
+    """Remove Redis v2 source mapping keys for a source/doc pair."""
+    bucket, key = split_source_path(source)
+    if not bucket or not key:
+        return
+    sid = source_id(bucket, key, None)
+    redis_client.delete(redis_v2_source_doc_key(redis_prefix, sid))
+    redis_client.delete(redis_v2_source_meta_key(redis_prefix, sid))
     if hasattr(redis_client, "srem"):
-        redis_client.srem(source_key, doc_id)
-        if redis_client.scard(source_key) == 0:
-            redis_client.delete(source_key)
-    else:
-        redis_client.delete(source_key)
+        redis_client.srem(redis_v2_doc_sources_key(redis_prefix, doc_id), sid)
 
 
 def process_object_from_env(
@@ -268,7 +264,7 @@ def delete_object_from_env(
     if redis_client:
         source = f"{bucket}/{object_name}"
         for doc_id in _source_doc_ids(redis_client, redis_prefix, source):
-            redis_client.srem(f"{redis_prefix}:pdf:{doc_id}:collections", bucket)
+            redis_client.srem(redis_v2_doc_collections_key(redis_prefix, doc_id), bucket)
             _remove_source_mapping(redis_client, redis_prefix, source, doc_id)
     logger.info("Delete request for %s/%s (deleted=%d)", bucket, object_name, deleted)
 
@@ -323,26 +319,13 @@ class MinioIngestor:
         """Load previously processed chunks from Redis for a document id."""
         if not self.redis_client:
             return None
-        read_mode = redis_schema_read_mode()
-        if should_read_v2(read_mode):
-            v2_chunks = read_v2_doc_chunks(self.redis_client, self.redis_prefix, doc_id)
-            if v2_chunks:
-                return v2_chunks
-            if not should_fallback_v1(read_mode):
-                return []
-        chunks_key = _redis_key(self.redis_prefix, doc_id, "chunks")
-        raw = self.redis_client.get(chunks_key)
-        raw = _decode_redis_value(raw)
-        if not raw:
-            return None
-        payload = json.loads(raw)
-        return payload if isinstance(payload, list) else None
+        return read_v2_doc_chunks(self.redis_client, self.redis_prefix, doc_id)
 
     def _collection_mapping_exists(self, doc_id: str, collection: str) -> bool:
         """Check whether a document id is already mapped to a collection in Redis."""
         if not self.redis_client:
             return False
-        collections_key = f"{self.redis_prefix}:pdf:{doc_id}:collections"
+        collections_key = redis_v2_doc_collections_key(self.redis_prefix, doc_id)
         return bool(self.redis_client.sismember(collections_key, collection))
 
     def _get_unstructured_client(self):
@@ -395,9 +378,6 @@ class MinioIngestor:
 
         doc_id = _hash_bytes(file_bytes)
 
-        if self.redis_client:
-            self.redis_client.sadd(_source_key(self.redis_prefix, source), doc_id)
-
         chunk_items = self._load_chunks_from_redis(doc_id)
         if self.skip_existing and self._collection_mapping_exists(doc_id, bucket):
             logger.info("Skipping %s (already mapped to %s)", source, bucket)
@@ -421,14 +401,13 @@ class MinioIngestor:
                 )
                 chunk_items.append(
                     {
-                        "document_id": doc_id,
-                        "source": source,
+                        "doc_hash": doc_id,
                         "source_ref": source_ref,
                         "bucket": bucket,
                         "key": object_name,
                         "version_id": version_id,
+                        "source_id": source_id(bucket, object_name, version_id),
                         "chunk_index": idx,
-                        "pages": page_list,
                         "page_start": page_start,
                         "page_end": page_end,
                         "text": chunk,
@@ -458,7 +437,8 @@ class MinioIngestor:
                 page_end = max(page_list) if page_list else None
                 entry.update(
                     {
-                        "source": entry.get("source") or source,
+                        "doc_hash": entry.get("doc_hash") or doc_id,
+                        "source_id": entry.get("source_id") or source_id(bucket, object_name, version_id),
                         "source_ref": build_source_ref(
                             bucket=bucket,
                             key=object_name,
@@ -504,7 +484,7 @@ class MinioIngestor:
         if self.redis_client:
             source = f"{bucket}/{object_name}"
             for doc_id in _source_doc_ids(self.redis_client, self.redis_prefix, source):
-                self.redis_client.srem(f"{self.redis_prefix}:pdf:{doc_id}:collections", bucket)
+                self.redis_client.srem(redis_v2_doc_collections_key(self.redis_prefix, doc_id), bucket)
                 _remove_source_mapping(self.redis_client, self.redis_prefix, source, doc_id)
         deleted = _delete_from_qdrant(self.qdrant_client, bucket, object_name, version_id=version_id)
         logger.info("Delete request for %s/%s (deleted=%d)", bucket, object_name, deleted)

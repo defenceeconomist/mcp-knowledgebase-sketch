@@ -13,6 +13,7 @@ from mcp_research.runtime_utils import (
     load_env_bool as _load_env_bool,
     load_env_list as _load_env_list,
 )
+from mcp_research.schema_v2 import read_v2_source_doc_hash, redis_v2_source_meta_key
 
 try:
     from minio import Minio
@@ -71,26 +72,16 @@ def _get_qdrant_client() -> QdrantClient | None:
 
 def _load_partition_count(redis_client, partitions_key: str) -> int:
     """Return the number of partitions stored in Redis for a document."""
-    raw = _decode_redis_value(redis_client.get(partitions_key))
-    if not raw:
-        return 0
-    try:
-        payload = json.loads(raw)
-    except json.JSONDecodeError:
-        return 0
-    return len(payload) if isinstance(payload, list) else 0
+    if hasattr(redis_client, "zcard"):
+        return int(redis_client.zcard(partitions_key))
+    return 0
 
 
 def _load_chunk_count(redis_client, chunks_key: str) -> int:
     """Return the number of chunks stored in Redis for a document."""
-    raw = _decode_redis_value(redis_client.get(chunks_key))
-    if not raw:
-        return 0
-    try:
-        payload = json.loads(raw)
-    except json.JSONDecodeError:
-        return 0
-    return len(payload) if isinstance(payload, list) else 0
+    if hasattr(redis_client, "zcard"):
+        return int(redis_client.zcard(chunks_key))
+    return 0
 
 
 def _qdrant_uploaded(
@@ -114,7 +105,7 @@ def _qdrant_uploaded(
             return "no"
         must = []
         if document_id:
-            must.append(models.FieldCondition(key="document_id", match=models.MatchValue(value=document_id)))
+            must.append(models.FieldCondition(key="doc_hash", match=models.MatchValue(value=document_id)))
         elif bucket and key:
             must.extend(
                 [
@@ -141,18 +132,17 @@ def _qdrant_uploaded(
 
 def _source_doc_ids(redis_client, redis_prefix: str, source: str) -> List[str]:
     """Look up document ids for a source path in Redis."""
-    source_key = f"{redis_prefix}:pdf:source:{source}"
-    if hasattr(redis_client, "smembers"):
-        raw_members = redis_client.smembers(source_key)
-        members = []
-        for entry in raw_members or []:
-            decoded = _decode_redis_value(entry)
-            if decoded:
-                members.append(decoded)
-        if members:
-            return members
-    raw = _decode_redis_value(redis_client.get(source_key))
-    return [raw] if raw else []
+    bucket, key = _split_source(source)
+    if not bucket or not key:
+        return []
+    doc_hash = read_v2_source_doc_hash(
+        redis_client=redis_client,
+        prefix=redis_prefix,
+        bucket=bucket,
+        key=key,
+        version_id=None,
+    )
+    return [doc_hash] if doc_hash else []
 
 
 def _resolve_minio_buckets(minio_client: Any | None) -> Tuple[List[str], str | None]:
@@ -282,17 +272,14 @@ def _redis_has_doc(redis_client, redis_prefix: str, doc_id: str | None, source: 
     if not redis_client:
         return "unknown"
     if doc_id:
-        meta_key = f"{redis_prefix}:pdf:{doc_id}:meta"
+        meta_key = f"{redis_prefix}:v2:doc:{doc_id}:meta"
         if redis_client.exists(meta_key):
             return "yes"
     if source:
-        source_key = f"{redis_prefix}:pdf:source:{source}"
-        if hasattr(redis_client, "sismember"):
-            if doc_id:
-                return "yes" if redis_client.sismember(source_key, doc_id) else "no"
-            return "yes" if redis_client.scard(source_key) > 0 else "no"
-        if redis_client.get(source_key):
-            return "yes"
+        doc_ids = _source_doc_ids(redis_client, redis_prefix, source)
+        if doc_id:
+            return "yes" if doc_id in doc_ids else "no"
+        return "yes" if doc_ids else "no"
     return "no"
 
 
@@ -301,13 +288,18 @@ def _build_redis_source_index(redis_client, redis_prefix: str) -> Dict[str, str]
     index: Dict[str, str] = {}
     if not redis_client:
         return index
-    raw_doc_ids = redis_client.smembers(f"{redis_prefix}:pdf:hashes") or []
+    raw_doc_ids = redis_client.smembers(f"{redis_prefix}:v2:doc_hashes") or []
     doc_ids = filter(None, (_decode_redis_value(val) for val in raw_doc_ids))
     for doc_id in doc_ids:
-        meta_key = f"{redis_prefix}:pdf:{doc_id}:meta"
+        meta_key = f"{redis_prefix}:v2:doc:{doc_id}:meta"
         meta_raw = redis_client.hgetall(meta_key)
         meta = {_decode_redis_value(k): _decode_redis_value(v) for k, v in meta_raw.items()}
-        source = meta.get("source")
+        primary_sid = meta.get("primary_source_id")
+        source = None
+        if primary_sid:
+            source_meta_raw = redis_client.hgetall(redis_v2_source_meta_key(redis_prefix, str(primary_sid)))
+            source_meta = {_decode_redis_value(k): _decode_redis_value(v) for k, v in source_meta_raw.items()}
+            source = source_meta.get("source_path")
         if source:
             index[doc_id] = source
     return index
@@ -352,7 +344,7 @@ def _load_qdrant_inventory() -> Tuple[List[dict], List[str]]:
                 break
             for point in points:
                 payload = point.payload or {}
-                doc_id = payload.get("document_id")
+                doc_id = payload.get("doc_hash") or payload.get("document_id")
                 source = payload.get("source")
                 if not source:
                     bucket = payload.get("bucket")
@@ -445,14 +437,19 @@ def _load_redis_inventory() -> Tuple[List[dict], List[str]]:
     if not redis_client:
         return entries, errors
     minio_index = _build_minio_index(minio_client, errors)
-    raw_doc_ids = redis_client.smembers(f"{redis_prefix}:pdf:hashes") or []
+    raw_doc_ids = redis_client.smembers(f"{redis_prefix}:v2:doc_hashes") or []
     doc_ids = sorted(filter(None, (_decode_redis_value(val) for val in raw_doc_ids)))
     for doc_id in doc_ids:
-        meta_key = f"{redis_prefix}:pdf:{doc_id}:meta"
+        meta_key = f"{redis_prefix}:v2:doc:{doc_id}:meta"
         meta_raw = redis_client.hgetall(meta_key)
         meta = {_decode_redis_value(k): _decode_redis_value(v) for k, v in meta_raw.items()}
-        source = meta.get("source") or ""
-        collections_key = meta.get("collections_key") or f"{redis_prefix}:pdf:{doc_id}:collections"
+        source = ""
+        primary_sid = meta.get("primary_source_id")
+        if primary_sid:
+            source_meta_raw = redis_client.hgetall(redis_v2_source_meta_key(redis_prefix, str(primary_sid)))
+            source_meta = {_decode_redis_value(k): _decode_redis_value(v) for k, v in source_meta_raw.items()}
+            source = source_meta.get("source_path") or ""
+        collections_key = meta.get("collections_key") or f"{redis_prefix}:v2:doc:{doc_id}:collections"
         collections_raw = redis_client.smembers(collections_key) or []
         collections = sorted(filter(None, (_decode_redis_value(val) for val in collections_raw)))
         bucket, _ = _split_source(source)
@@ -559,13 +556,13 @@ def _load_inventory() -> Tuple[Dict[str, List[dict]], List[str]]:
                 partitions_count = None
                 chunks_count_value = None
                 if redis_client and doc_id:
-                    meta_key = f"{redis_prefix}:pdf:{doc_id}:meta"
+                    meta_key = f"{redis_prefix}:v2:doc:{doc_id}:meta"
                     meta_raw = redis_client.hgetall(meta_key)
                     meta = { _decode_redis_value(k): _decode_redis_value(v) for k, v in meta_raw.items() }
-                    partitions_key = meta.get("partitions_key") or f"{redis_prefix}:pdf:{doc_id}:partitions"
-                    chunks_key = meta.get("chunks_key") or f"{redis_prefix}:pdf:{doc_id}:chunks"
+                    partitions_key = f"{redis_prefix}:v2:doc:{doc_id}:partition_hashes"
+                    chunks_key = f"{redis_prefix}:v2:doc:{doc_id}:chunk_hashes"
                     partitions_count = _load_partition_count(redis_client, partitions_key)
-                    chunks_count = meta.get("chunks")
+                    chunks_count = meta.get("chunks_count")
                     chunks_count_value = int(chunks_count) if str(chunks_count).isdigit() else None
                     if chunks_count_value is None:
                         chunks_count_value = _load_chunk_count(redis_client, chunks_key)

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import json
 import logging
 import os
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import quote
 
 from mcp_research.runtime_utils import decode_redis_value as _decode_redis_value, load_dotenv
+from mcp_research.schema_v2 import read_v2_source_doc_hash
 
 try:
     from qdrant_client import QdrantClient, models
@@ -68,12 +68,16 @@ def _get_redis_client():
         _redis_client = redis.from_url(REDIS_URL)
     return _redis_client
 
-def _redis_key(prefix: str, doc_id: str, suffix: str) -> str:
-    return f"{prefix}:pdf:{doc_id}:{suffix}"
+def _v2_doc_meta_key(prefix: str, doc_id: str) -> str:
+    return f"{prefix}:v2:doc:{doc_id}:meta"
 
 
-def _source_key(prefix: str, source: str) -> str:
-    return f"{prefix}:pdf:source:{source}"
+def _v2_doc_partitions_key(prefix: str, doc_id: str) -> str:
+    return f"{prefix}:v2:doc:{doc_id}:partition_hashes"
+
+
+def _v2_doc_chunks_key(prefix: str, doc_id: str) -> str:
+    return f"{prefix}:v2:doc:{doc_id}:chunk_hashes"
 
 
 def _split_source(source: str | None) -> Tuple[str | None, str | None]:
@@ -94,12 +98,15 @@ def _coerce_qdrant_offset(offset: str | None):
 
 
 def _file_identity(payload: Dict[str, Any]) -> Optional[Tuple[str, Dict[str, Any]]]:
-    document_id = payload.get("document_id")
+    document_id = payload.get("doc_hash") or payload.get("document_id")
+    source_id = payload.get("source_id")
     source = payload.get("source")
     bucket = payload.get("bucket")
     key = payload.get("key")
     if document_id:
         identity = f"doc:{document_id}"
+    elif source_id:
+        identity = f"source_id:{source_id}"
     elif source:
         identity = f"source:{source}"
     elif bucket and key:
@@ -108,20 +115,12 @@ def _file_identity(payload: Dict[str, Any]) -> Optional[Tuple[str, Dict[str, Any
         return None
     return identity, {
         "document_id": document_id,
+        "doc_hash": document_id,
+        "source_id": source_id,
         "source": source,
         "bucket": bucket,
         "key": key,
     }
-
-
-def _safe_json_list_len(raw: str | None) -> Optional[int]:
-    if not raw:
-        return None
-    try:
-        payload = json.loads(raw)
-    except json.JSONDecodeError:
-        return None
-    return len(payload) if isinstance(payload, list) else None
 
 
 def _normalize_metadata_value(value: Any) -> Any:
@@ -350,9 +349,20 @@ def _build_qdrant_chunk_filter(
 
     must: List[Any] = []
     if document_id:
-        must.append(models.FieldCondition(key="document_id", match=models.MatchValue(value=document_id)))
+        must.append(models.FieldCondition(key="doc_hash", match=models.MatchValue(value=document_id)))
+    elif source and len(source) == 40 and all(ch in "0123456789abcdef" for ch in source.lower()):
+        must.append(models.FieldCondition(key="source_id", match=models.MatchValue(value=source)))
     elif source:
-        must.append(models.FieldCondition(key="source", match=models.MatchValue(value=source)))
+        bucket_name, object_key = _split_source(source)
+        if bucket_name and object_key:
+            must.extend(
+                [
+                    models.FieldCondition(key="bucket", match=models.MatchValue(value=bucket_name)),
+                    models.FieldCondition(key="key", match=models.MatchValue(value=object_key)),
+                ]
+            )
+        else:
+            raise ValueError("source must be in 'bucket/key' form when provided")
     elif key:
         must.extend(
             [
@@ -361,7 +371,7 @@ def _build_qdrant_chunk_filter(
             ]
         )
     else:
-        raise ValueError("document_id, source, or key is required")
+        raise ValueError("document_id (doc_hash), source, or key is required")
     return models.Filter(must=must)
 
 
@@ -628,18 +638,17 @@ def scan_collection_files(
 
 
 def _source_doc_ids(redis_client, prefix: str, source: str) -> List[str]:
-    source_key = _source_key(prefix, source)
-    doc_ids: List[str] = []
-    if hasattr(redis_client, "smembers"):
-        raw_members = redis_client.smembers(source_key)
-        for entry in raw_members or []:
-            decoded = _decode_redis_value(entry)
-            if decoded:
-                doc_ids.append(decoded)
-        if doc_ids:
-            return doc_ids
-    raw = _decode_redis_value(redis_client.get(source_key))
-    return [raw] if raw else []
+    bucket, key = _split_source(source)
+    if not bucket or not key:
+        return []
+    doc_hash = read_v2_source_doc_hash(
+        redis_client=redis_client,
+        prefix=prefix,
+        bucket=bucket,
+        key=key,
+        version_id=None,
+    )
+    return [doc_hash] if doc_hash else []
 
 
 def enrich_files_with_redis(
@@ -671,53 +680,39 @@ def enrich_files_with_redis(
 
     idx_with_doc: List[int] = [idx for idx, doc_id in enumerate(primary_doc_ids) if doc_id]
     raw_metas: List[Any] = [None] * len(primary_doc_ids)
+    redis_chunks: List[int | None] = [None] * len(primary_doc_ids)
+    redis_partitions: List[int | None] = [None] * len(primary_doc_ids)
     if idx_with_doc:
         pipe = redis_client.pipeline()
         for idx in idx_with_doc:
-            pipe.hgetall(_redis_key(prefix, primary_doc_ids[idx], "meta"))
+            doc_id = primary_doc_ids[idx]
+            pipe.hgetall(_v2_doc_meta_key(prefix, doc_id))
+            pipe.zcard(_v2_doc_chunks_key(prefix, doc_id))
+            pipe.zcard(_v2_doc_partitions_key(prefix, doc_id))
         results = pipe.execute()
-        for idx, raw_meta in zip(idx_with_doc, results):
-            raw_metas[idx] = raw_meta
+        cursor = 0
+        for idx in idx_with_doc:
+            raw_metas[idx] = results[cursor]
+            redis_chunks[idx] = int(results[cursor + 1]) if results[cursor + 1] is not None else None
+            redis_partitions[idx] = int(results[cursor + 2]) if results[cursor + 2] is not None else None
+            cursor += 3
 
-    partition_keys: List[str | None] = []
     decoded_metas: List[Dict[str, Any] | None] = []
-    for doc_id, raw_meta in zip(primary_doc_ids, raw_metas):
-        if not doc_id:
+    for raw_meta in raw_metas:
+        if not isinstance(raw_meta, dict):
             decoded_metas.append(None)
-            partition_keys.append(None)
             continue
         meta: Dict[str, Any] = {}
-        if isinstance(raw_meta, dict):
-            for k, v in raw_meta.items():
-                meta[_decode_redis_value(k)] = _decode_redis_value(v)
+        for k, v in raw_meta.items():
+            meta[_decode_redis_value(k)] = _decode_redis_value(v)
         decoded_metas.append(meta)
-        partition_keys.append(meta.get("partitions_key") or _redis_key(prefix, doc_id, "partitions"))
 
-    idx_with_partitions: List[int] = [idx for idx, pkey in enumerate(partition_keys) if pkey]
-    raw_partitions: List[Any] = [None] * len(partition_keys)
-    if idx_with_partitions:
-        pipe = redis_client.pipeline()
-        for idx in idx_with_partitions:
-            pipe.get(partition_keys[idx])
-        results = pipe.execute()
-        for idx, raw in zip(idx_with_partitions, results):
-            raw_partitions[idx] = raw
-
-    for entry, meta, partitions_raw in zip(files, decoded_metas, raw_partitions):
-        partitions_decoded = _decode_redis_value(partitions_raw)
-        redis_partitions = _safe_json_list_len(partitions_decoded)
-
-        redis_chunks = None
-        if meta and meta.get("chunks") is not None:
-            try:
-                redis_chunks = int(str(meta.get("chunks")))
-            except ValueError:
-                redis_chunks = None
-
-        entry["redis_chunks"] = redis_chunks
-        entry["redis_partitions"] = redis_partitions
+    for idx, entry in enumerate(files):
+        meta = decoded_metas[idx]
+        entry["redis_chunks"] = redis_chunks[idx]
+        entry["redis_partitions"] = redis_partitions[idx]
         entry["redis_meta_key"] = (
-            _redis_key(prefix, entry["redis_doc_ids"][0], "meta") if entry.get("redis_doc_ids") else None
+            _v2_doc_meta_key(prefix, entry["redis_doc_ids"][0]) if entry.get("redis_doc_ids") else None
         )
         entry["redis_metadata"] = {k: _normalize_metadata_value(v) for k, v in (meta or {}).items()} if meta else None
 

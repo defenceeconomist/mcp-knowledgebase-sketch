@@ -14,9 +14,9 @@ from mcp_research.link_resolver import build_source_ref
 from mcp_research.runtime_utils import load_dotenv, load_env_bool
 from mcp_research.schema_v2 import (
     SourceDescriptor,
-    redis_schema_write_mode,
-    should_write_v1,
-    should_write_v2,
+    redis_v2_doc_collections_key,
+    redis_v2_doc_meta_key,
+    source_id,
     split_source_path,
     write_v2_document_payloads,
 )
@@ -77,34 +77,19 @@ def _get_redis_client(redis_url: str):
     return redis.from_url(redis_url)
 
 
-def _redis_key(prefix: str, doc_id: str, suffix: str) -> str:
-    """Build a Redis key for a document and suffix."""
-    return f"{prefix}:pdf:{doc_id}:{suffix}"
-
-
-def _collections_key(prefix: str, doc_id: str) -> str:
-    """Build a Redis key for the document collection set."""
-    return f"{prefix}:pdf:{doc_id}:collections"
-
-
-def _source_key(prefix: str, source: str) -> str:
-    """Build a Redis key for a source-to-document mapping."""
-    return f"{prefix}:pdf:source:{source}"
-
-
 def record_collection_mapping(
     redis_client,
     doc_id: str,
     collection: str,
     prefix: str = "unstructured",
 ) -> str | None:
-    """Record that a document id appears in a Qdrant collection."""
+    """Record that a v2 doc_hash appears in a Qdrant collection."""
     if not redis_client or not collection:
         return None
-    collections_key = _collections_key(prefix, doc_id)
+    collections_key = redis_v2_doc_collections_key(prefix, doc_id)
     redis_client.sadd(collections_key, collection)
     redis_client.hset(
-        _redis_key(prefix, doc_id, "meta"),
+        redis_v2_doc_meta_key(prefix, doc_id),
         mapping={"collections_key": collections_key},
     )
     return collections_key
@@ -119,62 +104,24 @@ def upload_to_redis(
     prefix: str = "unstructured",
     collection: str | None = None,
 ) -> dict:
-    """Store partition + chunk payloads and metadata for a PDF in Redis."""
-    mode = redis_schema_write_mode()
-    meta_key = _redis_key(prefix, doc_id, "meta")
-    partitions_key = _redis_key(prefix, doc_id, "partitions")
-    chunks_key = _redis_key(prefix, doc_id, "chunks")
-    collections_key = _collections_key(prefix, doc_id)
+    """Store partition + chunk payloads and metadata in Redis v2 schema."""
     if not redis_client:
         raise ValueError("redis_client is required to upload data to Redis")
 
-    result = {}
-    if should_write_v1(mode):
-        redis_client.set(partitions_key, json.dumps(partitions_payload, ensure_ascii=True))
-        redis_client.set(chunks_key, json.dumps(chunks_payload, ensure_ascii=True))
-        redis_client.hset(
-            meta_key,
-            mapping={
-                "document_id": doc_id,
-                "source": source,
-                "chunks": str(len(chunks_payload)),
-                "partitions_key": partitions_key,
-                "chunks_key": chunks_key,
-                "collections_key": collections_key,
-            },
-        )
-        redis_client.sadd(f"{prefix}:pdf:hashes", doc_id)
-        redis_client.sadd(_source_key(prefix, source), doc_id)
-        if collection:
-            redis_client.sadd(collections_key, collection)
-        result.update(
-            {
-                "meta_key": meta_key,
-                "partitions_key": partitions_key,
-                "chunks_key": chunks_key,
-                "collections_key": collections_key,
-            }
-        )
-
-    if should_write_v2(mode):
-        bucket, key = split_source_path(source)
-        if not bucket or not key:
-            bucket = os.getenv("SOURCE_BUCKET", "local")
-            key = source
-        source_desc = SourceDescriptor(bucket=bucket, key=key, version_id=None)
-        result.update(
-            write_v2_document_payloads(
-                redis_client=redis_client,
-                prefix=prefix,
-                doc_hash=doc_id,
-                source=source_desc,
-                partitions_payload=partitions_payload if isinstance(partitions_payload, list) else [],
-                chunks_payload=chunks_payload if isinstance(chunks_payload, list) else [],
-                collection=collection,
-            )
-        )
-
-    return result
+    bucket, key = split_source_path(source)
+    if not bucket or not key:
+        bucket = os.getenv("SOURCE_BUCKET", "local")
+        key = source
+    source_desc = SourceDescriptor(bucket=bucket, key=key, version_id=None)
+    return write_v2_document_payloads(
+        redis_client=redis_client,
+        prefix=prefix,
+        doc_hash=doc_id,
+        source=source_desc,
+        partitions_payload=partitions_payload if isinstance(partitions_payload, list) else [],
+        chunks_payload=chunks_payload if isinstance(chunks_payload, list) else [],
+        collection=collection,
+    )
 
 
 def upload_json_files_to_redis(
@@ -199,13 +146,18 @@ def upload_json_files_to_redis(
 
     if doc_id is None:
         if chunks_payload:
-            doc_id = chunks_payload[0].get("document_id")
+            doc_id = chunks_payload[0].get("doc_hash") or chunks_payload[0].get("document_id")
         if not doc_id:
             raise ValueError("doc_id is required or must exist in chunks JSON")
 
     if source is None:
         if chunks_payload:
             source = chunks_payload[0].get("source")
+            if not source:
+                bucket = chunks_payload[0].get("bucket")
+                key = chunks_payload[0].get("key")
+                if bucket and key:
+                    source = f"{bucket}/{key}"
         if not source:
             source = chunks_path.stem
 
@@ -363,9 +315,7 @@ def ingest_pdfs(
             continue
 
         doc_id = _hash_bytes(file_bytes)
-        meta_key = _redis_key(redis_prefix, doc_id, "meta")
-        chunks_key = _redis_key(redis_prefix, doc_id, "chunks")
-        partitions_key = _redis_key(redis_prefix, doc_id, "partitions")
+        meta_key = redis_v2_doc_meta_key(redis_prefix, doc_id)
 
         if redis_client and redis_skip_processed:
             try:
@@ -454,14 +404,13 @@ def ingest_pdfs(
             )
             chunk_items.append(
                 {
-                    "document_id": doc_id,
-                    "source": pdf_path.name,
+                    "doc_hash": doc_id,
+                    "source_id": source_id(source_bucket, source_key, None),
                     "source_ref": source_ref,
                     "bucket": source_bucket,
                     "key": source_key,
                     "version_id": None,
                     "chunk_index": idx,
-                    "pages": page_list,
                     "page_start": page_start,
                     "page_end": page_end,
                     "text": chunk,

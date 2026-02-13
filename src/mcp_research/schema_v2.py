@@ -17,15 +17,18 @@ def _env_mode(key: str, default: str, allowed: Iterable[str]) -> str:
 
 
 def redis_schema_write_mode() -> str:
-    return _env_mode("REDIS_SCHEMA_WRITE_MODE", "v1", {"v1", "dual", "v2"})
+    # Redis document payloads are v2-only after schema migration.
+    return _env_mode("REDIS_SCHEMA_WRITE_MODE", "v2", {"v2"})
 
 
 def redis_schema_read_mode() -> str:
-    return _env_mode("REDIS_SCHEMA_READ_MODE", "v1", {"v1", "prefer_v2", "v2"})
+    # Redis document payloads are v2-only after schema migration.
+    return _env_mode("REDIS_SCHEMA_READ_MODE", "v2", {"v2"})
 
 
 def qdrant_payload_schema_mode() -> str:
-    return _env_mode("QDRANT_PAYLOAD_SCHEMA", "v1", {"v1", "dual", "v2"})
+    # Qdrant payloads are v2-only after schema migration.
+    return _env_mode("QDRANT_PAYLOAD_SCHEMA", "v2", {"v2"})
 
 
 def qdrant_point_id_mode() -> str:

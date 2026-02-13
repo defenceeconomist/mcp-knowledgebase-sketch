@@ -17,11 +17,11 @@ Flow:
 1. Read PDF(s) from `PDF_PATH` or `DATA_DIR`.
 2. Call Unstructured API (`UNSTRUCTURED_API_KEY` required) to partition/chunk.
 3. Build chunk payloads with:
-   - `document_id` (SHA-256 of PDF bytes)
-   - page metadata (`pages`, `page_start`, `page_end`)
-   - source metadata (`source`, `bucket`, `key`, `source_ref`)
+   - `doc_hash` (SHA-256 of PDF bytes)
+   - page metadata (`page_start`, `page_end`)
+   - source metadata (`source_id`, `bucket`, `key`, `source_ref`)
 4. Optionally write partitions/chunks JSON to disk (`STORE_PARTITIONS_DISK`, `STORE_CHUNKS_DISK`).
-5. Write metadata/chunks to Redis via `upload_to_redis()` (schema mode controlled by `REDIS_SCHEMA_WRITE_MODE`).
+5. Write metadata/chunks to Redis v2 via `upload_to_redis()`.
 6. Upsert chunk vectors into Qdrant via `mcp_cli.py upsert-chunks` (dense + sparse vectors).
 
 Typical commands:
@@ -44,9 +44,9 @@ Flow:
 1. Listen to MinIO notifications (`s3:ObjectCreated:*`, `s3:ObjectRemoved:*` by default).
 2. For created/updated PDFs:
    - download object bytes from MinIO
-   - derive `document_id` (SHA-256)
+   - derive `doc_hash` (SHA-256)
    - partition/chunk with Unstructured (if not already reusable from Redis)
-   - write Redis metadata/chunks
+   - write Redis v2 metadata/chunks
    - upsert vectors into Qdrant collection named after bucket
 3. For removed objects:
    - delete matching Qdrant points by `{bucket, key, version_id}`
@@ -64,30 +64,22 @@ Celery mode:
   upload partition/chunk JSON payloads into Redis.
 - `src/mcp_research/ingest_missing_minio.py`:
   detect MinIO files missing in Redis and enqueue ingest tasks.
+- `mcp_cli.py purge-v1-schema`:
+  removes legacy Redis v1 keys and Qdrant v1 payload fields.
 
 ## 2) Data Schema
 
 ## 2.1 Core identity and hash fields
 
-- `document_id`/`doc_hash`: SHA-256 of PDF bytes
+- `doc_hash`: SHA-256 of PDF bytes
 - `source_id`: SHA-1 of `s3://{bucket}/{key}?version_id={version_id}`
 - `partition_hash`: SHA-256 of normalized partition identity
 - `chunk_hash`: SHA-256 of normalized chunk identity
 - `source_ref`: `doc://{bucket}/{key}[?version_id=...][#page=...]`
 
-## 2.2 Redis schema (v1)
+## 2.2 Redis schema (v2)
 
 Prefix default: `unstructured`.
-
-Primary keys:
-- `{prefix}:pdf:{doc_id}:meta` (hash)
-- `{prefix}:pdf:{doc_id}:partitions` (JSON list)
-- `{prefix}:pdf:{doc_id}:chunks` (JSON list)
-- `{prefix}:pdf:{doc_id}:collections` (set)
-- `{prefix}:pdf:hashes` (set of doc ids)
-- `{prefix}:pdf:source:{bucket}/{key}` (set or scalar mapping to doc id)
-
-## 2.3 Redis schema (v2)
 
 Normalized keys:
 - `{prefix}:v2:doc_hashes`
@@ -102,26 +94,18 @@ Normalized keys:
 - `{prefix}:v2:doc:{doc_hash}:chunk_hashes` (zset)
 - `{prefix}:v2:chunk:{chunk_hash}` (JSON)
 
-Schema switches:
-- `REDIS_SCHEMA_WRITE_MODE`: `v1`, `dual`, `v2`
-- `REDIS_SCHEMA_READ_MODE`: `v1`, `prefer_v2`, `v2`
-
-## 2.4 Qdrant schema
+## 2.3 Qdrant schema
 
 Collection layout:
 - named dense vector: `dense` (cosine distance)
 - named sparse vector: `sparse` (IDF modifier)
 
-Point payload (v1 fields):
-- `document_id`, `source`, `chunk_index`, `pages`, `text`
-- optional: `source_ref`, `bucket`, `key`, `version_id`, `page_start`, `page_end`
+Point payload fields:
+- required identity: `doc_hash`, `partition_hash`, `chunk_hash`
+- source identity: `source_id`
+- optional metadata: `source_ref`, `bucket`, `key`, `version_id`, `chunk_index`, `page_start`, `page_end`, `text`
 
-Point payload (v2 fields):
-- `doc_hash`, `partition_hash`, `chunk_hash`
-- optional: `source_id`
-
-Payload/ID switches:
-- `QDRANT_PAYLOAD_SCHEMA`: `v1`, `dual`, `v2`
+Point ID mode:
 - `QDRANT_POINT_ID_MODE`: `uuid` or `deterministic`
 
 Deterministic ID mode uses UUIDv5 of:
@@ -161,7 +145,7 @@ Tool list:
    - resolves to portal/CDN/presigned URL depending on resolver mode
 
 8. `fetch_document_chunks(document_id=None, bucket=None, key=None)`
-   - returns all chunks for a document from Redis (supports v1/v2 read modes)
+   - returns all chunks for a document from Redis v2
 
 9. `fetch_chunk_document(id, collection=None)`
    - for one chunk id, returns the chunk plus full document chunk bundle from Redis

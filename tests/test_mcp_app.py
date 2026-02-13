@@ -54,7 +54,6 @@ class _FakeQdrant:
 class McpAppTests(unittest.TestCase):
     def setUp(self):
         self._env_backup = os.environ.copy()
-        os.environ["REDIS_SCHEMA_READ_MODE"] = "v1"
 
     def tearDown(self):
         os.environ.clear()
@@ -105,43 +104,42 @@ class McpAppTests(unittest.TestCase):
             self.assertEqual(mcp_app._citation_key_from_payload(payload), "doe2024paper")
 
     def test_fetch_document_chunks_uses_meta_chunks_key_override(self):
-        fake_redis = _FakeRedis(
-            values={
-                "custom:chunks:key": b'[{"text":"chunk-a"}]',
-            },
-            smembers={
-                "unstructured:pdf:source:bucket-a/paper.pdf": {b"doc-1"},
-            },
-            hashes={
-                "unstructured:pdf:doc-1:meta": {
-                    b"chunks_key": b"custom:chunks:key",
-                },
-            },
-        )
-        with mock.patch.object(mcp_app, "_get_redis_client", return_value=fake_redis):
-            result = mcp_app.fetch_document_chunks(bucket="bucket-a", key="paper.pdf")
-        self.assertTrue(result["found"])
-        self.assertEqual(result["count"], 1)
-        self.assertEqual(result["chunks_key"], "custom:chunks:key")
-        self.assertEqual(result["chunks"][0]["text"], "chunk-a")
-
-    def test_fetch_document_chunks_reads_v2_when_enabled(self):
         fake_redis = _FakeRedis()
-        with mock.patch.dict(os.environ, {"REDIS_SCHEMA_READ_MODE": "v2"}, clear=False):
-            with mock.patch.object(mcp_app, "_get_redis_client", return_value=fake_redis):
+        with mock.patch.object(mcp_app, "_get_redis_client", return_value=fake_redis):
+            with mock.patch(
+                "mcp_research.mcp_app.read_v2_source_doc_hash",
+                return_value="doc-1",
+            ):
                 with mock.patch(
-                    "mcp_research.mcp_app.read_v2_source_doc_hash",
-                    return_value="doc-1",
+                    "mcp_research.mcp_app.read_v2_doc_chunks",
+                    return_value=[{"text": "chunk-a"}],
                 ):
                     with mock.patch(
-                        "mcp_research.mcp_app.read_v2_doc_chunks",
-                        return_value=[{"text": "chunk-v2"}],
+                        "mcp_research.mcp_app.read_v2_doc_partitions",
+                        return_value=[],
                     ):
-                        with mock.patch(
-                            "mcp_research.mcp_app.read_v2_doc_partitions",
-                            return_value=[{"text": "partition-v2"}],
-                        ):
-                            result = mcp_app.fetch_document_chunks(bucket="bucket-a", key="paper.pdf")
+                        result = mcp_app.fetch_document_chunks(bucket="bucket-a", key="paper.pdf")
+        self.assertTrue(result["found"])
+        self.assertEqual(result["count"], 1)
+        self.assertIn("v2:doc:doc-1:chunk_hashes", str(result["chunks_key"]))
+        self.assertEqual(result["chunks"][0]["text"], "chunk-a")
+
+    def test_fetch_document_chunks_reads_v2(self):
+        fake_redis = _FakeRedis()
+        with mock.patch.object(mcp_app, "_get_redis_client", return_value=fake_redis):
+            with mock.patch(
+                "mcp_research.mcp_app.read_v2_source_doc_hash",
+                return_value="doc-1",
+            ):
+                with mock.patch(
+                    "mcp_research.mcp_app.read_v2_doc_chunks",
+                    return_value=[{"text": "chunk-v2"}],
+                ):
+                    with mock.patch(
+                        "mcp_research.mcp_app.read_v2_doc_partitions",
+                        return_value=[{"text": "partition-v2"}],
+                    ):
+                        result = mcp_app.fetch_document_chunks(bucket="bucket-a", key="paper.pdf")
         self.assertTrue(result["found"])
         self.assertEqual(result["count"], 1)
         self.assertIn("v2:doc:doc-1:chunk_hashes", str(result.get("chunks_key")))
@@ -164,7 +162,7 @@ class McpAppTests(unittest.TestCase):
     def test_fetch_chunk_partition_returns_partition_chunks_for_chunk_page(self):
         fake_qdrant = _FakeQdrant(
             {
-                "document_id": "doc-1",
+                "doc_hash": "doc-1",
                 "bucket": "bucket-a",
                 "key": "paper.pdf",
                 "page_start": 1,
@@ -173,15 +171,24 @@ class McpAppTests(unittest.TestCase):
                 "text": "seed chunk",
             }
         )
-        fake_redis = _FakeRedis(
-            values={
-                "unstructured:pdf:doc-1:chunks": b'[{"page_start":1,"page_end":1,"chunk_index":0,"text":"chunk page 1"},{"page_start":2,"page_end":2,"chunk_index":1,"text":"chunk page 2"}]',
-                "unstructured:pdf:doc-1:partitions": b'[{"page_start":1,"page_end":1,"text":"partition 1"},{"page_start":2,"page_end":2,"text":"partition 2"}]',
-            }
-        )
+        fake_redis = _FakeRedis()
         with mock.patch.object(mcp_app, "_get_qdrant_client", return_value=fake_qdrant):
             with mock.patch.object(mcp_app, "_get_redis_client", return_value=fake_redis):
-                result = mcp_app.fetch_chunk_partition("42", collection="research_2026")
+                with mock.patch(
+                    "mcp_research.mcp_app.read_v2_doc_chunks",
+                    return_value=[
+                        {"page_start": 1, "page_end": 1, "chunk_index": 0, "text": "chunk page 1"},
+                        {"page_start": 2, "page_end": 2, "chunk_index": 1, "text": "chunk page 2"},
+                    ],
+                ):
+                    with mock.patch(
+                        "mcp_research.mcp_app.read_v2_doc_partitions",
+                        return_value=[
+                            {"page_start": 1, "page_end": 1, "text": "partition 1"},
+                            {"page_start": 2, "page_end": 2, "text": "partition 2"},
+                        ],
+                    ):
+                        result = mcp_app.fetch_chunk_partition("42", collection="research_2026")
         self.assertTrue(result["found"])
         self.assertEqual(result["count"], 1)
         self.assertEqual(result["partition"]["page_start"], 1)

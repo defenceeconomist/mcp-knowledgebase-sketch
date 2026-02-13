@@ -44,16 +44,29 @@ class _FakeTools:
         self.default_collection = name
         return {"default_collection": name}
 
-    def search(self, query, top_k=5, prefetch_k=40, collection=None, retrieval_mode="hybrid"):
+    def search(
+        self,
+        query,
+        top_k=5,
+        prefetch_k=40,
+        collection=None,
+        retrieval_mode="hybrid",
+        include_partition=False,
+        include_document=False,
+    ):
         self.last_search = {
             "query": query,
             "top_k": top_k,
             "prefetch_k": prefetch_k,
             "collection": collection,
             "retrieval_mode": retrieval_mode,
+            "include_partition": include_partition,
+            "include_document": include_document,
         }
         return {
             "retrieval_mode": retrieval_mode,
+            "include_partition": include_partition,
+            "include_document": include_document,
             "results": [
                 {
                     "id": "42",

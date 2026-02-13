@@ -61,7 +61,6 @@ class _FakeRedis:
 class UpsertChunksTests(unittest.TestCase):
     def setUp(self):
         self._env_backup = os.environ.copy()
-        os.environ["QDRANT_PAYLOAD_SCHEMA"] = "dual"
         os.environ["QDRANT_POINT_ID_MODE"] = "uuid"
 
     def tearDown(self):
@@ -91,17 +90,17 @@ class UpsertChunksTests(unittest.TestCase):
         self.assertEqual(items[0]["text"], " alpha ")
 
     def test_load_chunk_items_from_redis(self):
-        redis_store = {
-            "unit:pdf:hashes": {b"doc1"},
-            "unit:pdf:doc1:chunks": b"[{\"text\": \"hello\"}]",
-        }
+        redis_store = {"unit:v2:doc_hashes": {b"doc1"}}
         redis_client = _FakeRedis(redis_store)
-
-        items = upsert_chunks.load_chunk_items_from_redis(
-            redis_client=redis_client,
-            prefix="unit",
-            doc_ids=None,
-        )
+        with unittest.mock.patch(
+            "mcp_research.upsert_chunks.read_v2_doc_chunks",
+            return_value=[{"text": "hello"}],
+        ):
+            items = upsert_chunks.load_chunk_items_from_redis(
+                redis_client=redis_client,
+                prefix="unit",
+                doc_ids=None,
+            )
 
         self.assertEqual(len(items), 1)
         self.assertEqual(items[0]["text"], "hello")
@@ -134,7 +133,7 @@ class UpsertChunksTests(unittest.TestCase):
         collection_name, points = client.upsert_calls[0]
         self.assertEqual(collection_name, "demo")
         self.assertIsInstance(points[0], models.PointStruct)
-        self.assertEqual(points[0].payload["document_id"], "doc")
+        self.assertEqual(points[0].payload["doc_hash"], "doc")
 
     def test_upsert_items_v2_payload_and_deterministic_id(self):
         client = _Client()
@@ -154,7 +153,7 @@ class UpsertChunksTests(unittest.TestCase):
 
         with unittest.mock.patch.dict(
             os.environ,
-            {"QDRANT_PAYLOAD_SCHEMA": "v2", "QDRANT_POINT_ID_MODE": "deterministic"},
+            {"QDRANT_POINT_ID_MODE": "deterministic"},
             clear=False,
         ):
             first_total = upsert_chunks.upsert_items(
