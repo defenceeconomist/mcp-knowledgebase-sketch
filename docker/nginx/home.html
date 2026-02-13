@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MCP Research Tools</title>
+    <style>
+      :root {
+        --bg: #f4efe3;
+        --panel: #fffaf0;
+        --line: #d4c7ad;
+        --ink: #1f1c16;
+        --muted: #685f50;
+        --brand: #1b6a60;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 0% 0%, rgba(27, 106, 96, 0.16), transparent 35%),
+          radial-gradient(circle at 100% 100%, rgba(151, 87, 29, 0.16), transparent 38%),
+          var(--bg);
+        padding: 24px;
+      }
+
+      .shell {
+        margin: 0 auto;
+        max-width: 920px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 32px;
+      }
+
+      .subtitle {
+        margin-top: 8px;
+        color: var(--muted);
+      }
+
+      .grid {
+        margin-top: 20px;
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+
+      .card {
+        display: block;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        text-decoration: none;
+        color: inherit;
+        background: var(--panel);
+        padding: 14px;
+      }
+
+      .card:hover {
+        border-color: var(--brand);
+      }
+
+      .name {
+        font-weight: 700;
+      }
+
+      .hint {
+        margin-top: 6px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .mono {
+        margin-top: 14px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        color: var(--muted);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <h1>MCP Research Toolkit</h1>
+      <p class="subtitle">One front door for the project tools.</p>
+
+      <section class="grid">
+        <a class="card" href="/dashboard/">
+          <div class="name">Dashboard</div>
+          <div class="hint">Browse Qdrant collections and file-level metadata.</div>
+        </a>
+        <a class="card" href="/search/">
+          <div class="name">Search UI</div>
+          <div class="hint">Run hybrid/cosine search and inspect chunk payloads.</div>
+        </a>
+        <a class="card" href="/bibtex/">
+          <div class="name">BibTeX UI</div>
+          <div class="hint">Review and edit BibTeX metadata stored in Redis.</div>
+        </a>
+        <a class="card" href="/resolver/ui">
+          <div class="name">Resolver UI</div>
+          <div class="hint">Inspect citation resolver state across Redis/Qdrant/MinIO.</div>
+        </a>
+        <a class="card" href="/docs/">
+          <div class="name">Documentation</div>
+          <div class="hint">Read ingest flow, schema, and MCP tool documentation.</div>
+        </a>
+        <a class="card" href="/mcp">
+          <div class="name">MCP Endpoint</div>
+          <div class="hint">HTTP MCP endpoint used by MCP clients and integrations.</div>
+        </a>
+      </section>
+
+      <p class="mono">Base URL: http://localhost:8080</p>
+    </main>
+  </body>
+</html>

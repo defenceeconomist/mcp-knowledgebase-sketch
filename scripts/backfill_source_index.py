@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 
 from mcp_research.ingest_unstructured import _get_redis_client, _redis_key, _source_key, load_dotenv
+from mcp_research.runtime_utils import decode_redis_value as _decode
 
 
 logging.basicConfig(
@@ -12,12 +13,6 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
 )
 logger = logging.getLogger(__name__)
-
-
-def _decode(value):
-    if value is None:
-        return None
-    return value.decode("utf-8") if isinstance(value, (bytes, bytearray)) else value
 
 
 def _source_from_chunks(redis_client, prefix: str, doc_id: str) -> str | None:

@@ -18,6 +18,12 @@ from mcp_research.schema_v2 import (
     should_write_v2,
     source_id,
 )
+from mcp_research.runtime_utils import (
+    decode_redis_value as _decode_redis_value,
+    load_dotenv,
+    load_env_bool as _load_env_bool,
+    load_env_list as _load_env_list,
+)
 
 try:
     from fastapi import FastAPI, HTTPException, Query
@@ -114,23 +120,6 @@ ALLOWED_ENTRY_TYPES = {
     "unpublished",
 }
 
-
-def load_dotenv(path: str = ".env") -> None:
-    """Load a .env file into the process environment if present."""
-    if not os.path.isfile(path):
-        return
-    with open(path, "r", encoding="utf-8") as handle:
-        for raw_line in handle:
-            line = raw_line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, value = line.split("=", 1)
-            key = key.strip()
-            value = value.strip().strip('"').strip("'")
-            if key and key not in os.environ:
-                os.environ[key] = value
-
-
 def _load_ui_html() -> str:
     try:
         from importlib.resources import files as pkg_files  # Python 3.9+
@@ -140,27 +129,6 @@ def _load_ui_html() -> str:
         )
     except Exception:  # pragma: no cover
         return "<html><body><h1>BibTeX UI assets missing</h1></body></html>"
-
-
-def _decode_redis_value(value):
-    if value is None:
-        return None
-    return value.decode("utf-8") if isinstance(value, (bytes, bytearray)) else value
-
-
-def _load_env_bool(key: str, default: bool = False) -> bool:
-    raw = os.getenv(key)
-    if raw is None:
-        return default
-    return raw.strip().lower() in {"1", "true", "yes", "y", "on"}
-
-
-def _load_env_list(key: str) -> List[str]:
-    raw = os.getenv(key, "").strip()
-    if not raw:
-        return []
-    return [entry.strip() for entry in raw.split(",") if entry.strip()]
-
 
 def _get_redis_client() -> Tuple[Any | None, str | None]:
     redis_url = os.getenv("BIBTEX_REDIS_URL") or os.getenv("REDIS_URL", "")

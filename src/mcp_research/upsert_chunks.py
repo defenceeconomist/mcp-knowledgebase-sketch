@@ -10,6 +10,7 @@ from fastembed import SparseTextEmbedding, TextEmbedding
 from qdrant_client import QdrantClient, models
 
 from mcp_research.ingest_unstructured import record_collection_mapping
+from mcp_research.runtime_utils import decode_redis_value as _decode_redis_value, load_dotenv
 from mcp_research.schema_v2 import (
     chunk_hash,
     partition_hash,
@@ -30,21 +31,6 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
 )
 logger = logging.getLogger(__name__)
-
-
-def load_dotenv(path: Path) -> None:
-    """Load a .env file into the process environment if present."""
-    if not path.is_file():
-        return
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip().strip('"').strip("'")
-        if key and key not in os.environ:
-            os.environ[key] = value
 
 
 def _to_list(x) -> List[float]:
@@ -85,13 +71,6 @@ def _get_redis_client(redis_url: str):
     if redis is None:
         raise RuntimeError("redis package is required for Redis upserts")
     return redis.from_url(redis_url)
-
-
-def _decode_redis_value(value):
-    """Decode Redis bytes payloads into strings when needed."""
-    if value is None:
-        return None
-    return value.decode("utf-8") if isinstance(value, (bytes, bytearray)) else value
 
 
 def load_chunk_items(chunks_dir: Path) -> List[dict]:

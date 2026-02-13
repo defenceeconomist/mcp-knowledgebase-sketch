@@ -32,8 +32,6 @@ services:
   mcp:
     build: .
     restart: unless-stopped
-    ports:
-      - "8000:8000"
     environment:
       - DATA_DIR=/app/data
       - PDF_PATH=${PDF_PATH:-}
@@ -62,8 +60,6 @@ services:
   resolver:
     build: .
     restart: unless-stopped
-    ports:
-      - "8080:8080"
     depends_on:
       - minio
       - redis
@@ -93,8 +89,6 @@ services:
   dashboard:
     build: .
     restart: unless-stopped
-    ports:
-      - "8002:8002"
     depends_on:
       - redis
       - qdrant
@@ -111,8 +105,6 @@ services:
   bibtex_ui:
     build: .
     restart: unless-stopped
-    ports:
-      - "8003:8003"
     depends_on:
       - minio
       - redis
@@ -132,8 +124,6 @@ services:
   search_ui:
     build: .
     restart: unless-stopped
-    ports:
-      - "8004:8004"
     depends_on:
       - qdrant
     environment:
@@ -147,6 +137,26 @@ services:
       - CITATION_BASE_URL=${CITATION_BASE_URL:-http://localhost:8080}
       - CITATION_REF_PATH=${CITATION_REF_PATH:-/r/doc}
     command: -m mcp_research.search_ui_app
+  docs:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    volumes:
+      - ./docs:/usr/share/nginx/html:ro
+  reverse_proxy:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      - mcp
+      - resolver
+      - dashboard
+      - bibtex_ui
+      - search_ui
+      - docs
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/home.html:/usr/share/nginx/html/home.html:ro
   minio_ingest:
     build: .
     restart: unless-stopped
@@ -178,7 +188,7 @@ services:
       - UNSTRUCTURED_STRATEGY=${UNSTRUCTURED_STRATEGY:-hi_res}
       - UNSTRUCTURED_CHUNKING_STRATEGY=${UNSTRUCTURED_CHUNKING_STRATEGY:-basic}
       - UNSTRUCTURED_LANGUAGES=${UNSTRUCTURED_LANGUAGES:-}
-    command: minio_ingest.py
+    command: mcp_cli.py minio-ingest
   celery:
     build: .
     restart: unless-stopped

@@ -9,6 +9,7 @@ from qdrant_client import QdrantClient
 
 from mcp_research import hybrid_search
 from mcp_research.link_resolver import build_citation_url, build_source_ref, resolve_link
+from mcp_research.runtime_utils import decode_redis_value as _decode_redis_value, load_dotenv
 from mcp_research.schema_v2 import (
     read_v2_doc_chunks,
     read_v2_doc_partitions,
@@ -33,21 +34,6 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
 )
 logger = logging.getLogger(__name__)
-
-def load_dotenv(path: str = ".env") -> None:
-    """Load a .env file into the process environment if present."""
-    if not os.path.isfile(path):
-        return
-    with open(path, "r", encoding="utf-8") as handle:
-        for raw_line in handle:
-            line = raw_line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, value = line.split("=", 1)
-            key = key.strip()
-            value = value.strip().strip('"').strip("'")
-            if key and key not in os.environ:
-                os.environ[key] = value
 
 load_dotenv()
 
@@ -124,13 +110,6 @@ def _redis_key(prefix: str, doc_id: str, suffix: str) -> str:
 def _source_key(prefix: str, source: str) -> str:
     """Build a Redis key for a source-to-document mapping."""
     return f"{prefix}:pdf:source:{source}"
-
-
-def _decode_redis_value(value):
-    """Convert Redis bytes payloads into UTF-8 strings when needed."""
-    if value is None:
-        return None
-    return value.decode("utf-8") if isinstance(value, (bytes, bytearray)) else value
 
 
 def _get_default_collection() -> str | None:

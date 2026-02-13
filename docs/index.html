@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MCP Research Documentation</title>
+    <style>
+      :root {
+        --bg: #f7f4ed;
+        --panel: #ffffff;
+        --line: #ddd2bb;
+        --ink: #201b11;
+        --muted: #685f50;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        color: var(--ink);
+        background: var(--bg);
+        padding: 24px;
+      }
+
+      .shell {
+        max-width: 980px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        margin: 0;
+      }
+
+      .subtle {
+        color: var(--muted);
+        margin-top: 8px;
+      }
+
+      .panel {
+        margin-top: 16px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--panel);
+        padding: 16px;
+      }
+
+      pre {
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      a {
+        color: inherit;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <h1>MCP Research Documentation</h1>
+      <p class="subtle">
+        Source file:
+        <a href="/docs/tool-documentation.md">tool-documentation.md</a>
+      </p>
+      <section class="panel">
+        <pre id="content">Loading documentation...</pre>
+      </section>
+    </main>
+    <script>
+      fetch("tool-documentation.md")
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error("HTTP " + response.status);
+          }
+          return response.text();
+        })
+        .then((text) => {
+          const target = document.getElementById("content");
+          if (target) target.textContent = text;
+        })
+        .catch((error) => {
+          const target = document.getElementById("content");
+          if (target) target.textContent = "Failed to load documentation: " + error.message;
+        });
+    </script>
+  </body>
+</html>

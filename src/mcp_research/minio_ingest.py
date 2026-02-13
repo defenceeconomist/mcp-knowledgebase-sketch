@@ -28,6 +28,10 @@ from mcp_research.ingest_unstructured import (
     upload_to_redis,
 )
 from mcp_research.link_resolver import build_source_ref
+from mcp_research.runtime_utils import (
+    decode_redis_value as _decode_redis_value,
+    load_env_list as _load_env_list,
+)
 from mcp_research.schema_v2 import (
     chunk_hash,
     partition_hash,
@@ -121,24 +125,9 @@ def _get_minio_client(endpoint: str, access_key: str, secret_key: str, secure: b
     )
 
 
-def _decode_redis_value(value):
-    """Convert Redis bytes payloads into UTF-8 strings when needed."""
-    if value is None:
-        return None
-    return value.decode("utf-8") if isinstance(value, (bytes, bytearray)) else value
-
-
 def _source_key(prefix: str, source: str) -> str:
     """Build the Redis key for a source-to-document mapping."""
     return f"{prefix}:pdf:source:{source}"
-
-
-def _load_env_list(key: str) -> List[str]:
-    """Parse a comma-delimited environment variable into a list of values."""
-    raw = os.getenv(key, "").strip()
-    if not raw:
-        return []
-    return [entry.strip() for entry in raw.split(",") if entry.strip()]
 
 
 def _normalize_events(events: Iterable[str]) -> List[str]:

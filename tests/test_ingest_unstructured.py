@@ -3,8 +3,9 @@ import os
 import sys
 import tempfile
 import unittest
-from contextlib import redirect_stderr
+from contextlib import redirect_stdout
 from pathlib import Path
+from unittest import mock
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 SRC_ROOT = os.path.join(PROJECT_ROOT, "src")
@@ -129,6 +130,25 @@ class IngestUnstructuredTests(unittest.TestCase):
             )
 
         self.assertIn("unit:pdf:docxyz:meta", result["meta_key"])
+
+    def test_main_help_uses_argparse_and_does_not_ingest(self):
+        output = io.StringIO()
+        with mock.patch.object(ingest_unstructured, "run_from_env") as mocked_run:
+            with redirect_stdout(output):
+                with self.assertRaises(SystemExit) as exc:
+                    ingest_unstructured.main(["--help"])
+        self.assertEqual(exc.exception.code, 0)
+        self.assertIn("usage:", output.getvalue().lower())
+        mocked_run.assert_not_called()
+
+    def test_main_forwards_pdf_path_and_data_dir_overrides(self):
+        with mock.patch.object(ingest_unstructured, "run_from_env", return_value=[]) as mocked_run:
+            ingest_unstructured.main(["--pdf-path", "sample.pdf", "--data-dir", "/tmp/data"])
+
+        mocked_run.assert_called_once_with(
+            pdf_path_override="sample.pdf",
+            data_dir_override="/tmp/data",
+        )
 
 
 if __name__ == "__main__":

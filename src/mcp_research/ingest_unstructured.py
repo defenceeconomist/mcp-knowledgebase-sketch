@@ -1,3 +1,4 @@
+import argparse
 import hashlib
 import json
 import logging
@@ -10,6 +11,7 @@ from unstructured_client.models import operations, shared
 from unstructured_client.models.errors import SDKError
 
 from mcp_research.link_resolver import build_source_ref
+from mcp_research.runtime_utils import load_dotenv, load_env_bool
 from mcp_research.schema_v2 import (
     SourceDescriptor,
     redis_schema_write_mode,
@@ -31,21 +33,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def load_dotenv(path: Path) -> None:
-    """Load a simple KEY=VALUE .env file into the process environment."""
-    if not path.is_file():
-        return
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip().strip('"').strip("'")
-        if key and key not in os.environ:
-            os.environ[key] = value
-
-
 def load_env_int(key: str, default: int) -> int:
     """Parse an integer from the environment with a default fallback."""
     raw = os.getenv(key)
@@ -56,14 +43,6 @@ def load_env_int(key: str, default: int) -> int:
     except ValueError:
         logger.warning("Invalid integer for %s=%s, using %d", key, raw, default)
         return default
-
-
-def load_env_bool(key: str, default: bool = False) -> bool:
-    """Parse a boolean from the environment with a default fallback."""
-    raw = os.getenv(key)
-    if raw is None:
-        return default
-    return raw.strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
 def collect_pdfs(target: Path) -> List[Path]:
@@ -609,9 +588,33 @@ def run_from_env(
     )
 
 
-def main() -> None:
+def build_arg_parser() -> argparse.ArgumentParser:
+    """Build the CLI argument parser for Unstructured PDF ingestion."""
+    parser = argparse.ArgumentParser(
+        description="Ingest PDFs using Unstructured API with env-based defaults.",
+    )
+    parser.add_argument(
+        "--pdf-path",
+        default=None,
+        help="Override PDF path (file or directory). Falls back to PDF_PATH env, then DATA_DIR.",
+    )
+    parser.add_argument(
+        "--data-dir",
+        default=None,
+        help="Override DATA_DIR fallback when --pdf-path/PDF_PATH are not set.",
+    )
+    return parser
+
+
+def main(argv: Sequence[str] | None = None) -> None:
     """CLI entry point for Unstructured PDF ingestion."""
-    results = run_from_env()
+    parser = build_arg_parser()
+    args = parser.parse_args(argv)
+
+    results = run_from_env(
+        pdf_path_override=args.pdf_path,
+        data_dir_override=args.data_dir,
+    )
     summary = json.dumps(results, indent=2)
     logger.info("Ingestion complete:\n%s", summary)
 

@@ -447,6 +447,44 @@
     </div>
 
     <script>
+      const APP_BASE_PATH = (() => {
+        const path = window.location.pathname.replace(/\/+$/, "");
+        return path || "";
+      })();
+
+      function rewriteApiRequestUrl(input) {
+        if (!APP_BASE_PATH) {
+          return input;
+        }
+        try {
+          if (typeof input === "string") {
+            if (input.startsWith("/api/")) {
+              return `${APP_BASE_PATH}${input}`;
+            }
+            const parsed = new URL(input, window.location.origin);
+            if (parsed.origin === window.location.origin && parsed.pathname.startsWith("/api/")) {
+              parsed.pathname = `${APP_BASE_PATH}${parsed.pathname}`;
+              return parsed.toString();
+            }
+            return input;
+          }
+          if (input instanceof URL) {
+            if (input.origin === window.location.origin && input.pathname.startsWith("/api/")) {
+              const rewritten = new URL(input.toString());
+              rewritten.pathname = `${APP_BASE_PATH}${input.pathname}`;
+              return rewritten;
+            }
+            return input;
+          }
+        } catch (_err) {
+          return input;
+        }
+        return input;
+      }
+
+      const rawFetch = window.fetch.bind(window);
+      window.fetch = (input, init) => rawFetch(rewriteApiRequestUrl(input), init);
+
       const state = {
         collections: [],
         defaultCollection: "",

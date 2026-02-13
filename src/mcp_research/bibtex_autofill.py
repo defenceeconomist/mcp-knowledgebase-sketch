@@ -24,6 +24,12 @@ from mcp_research.schema_v2 import (
     should_write_v2,
     source_id,
 )
+from mcp_research.runtime_utils import (
+    decode_redis_value as _decode_redis_value,
+    load_dotenv,
+    load_env_bool as _load_env_bool,
+    load_env_list as _load_env_list,
+)
 
 try:
     from minio import Minio
@@ -86,41 +92,6 @@ ALLOWED_ENTRY_TYPES = {
     "techreport",
     "unpublished",
 }
-
-
-def load_dotenv(path: Path) -> None:
-    if not path.is_file():
-        return
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip().strip('"').strip("'")
-        if key and key not in os.environ:
-            os.environ[key] = value
-
-
-def _decode_redis_value(value: Any) -> Any:
-    if isinstance(value, (bytes, bytearray)):
-        return value.decode("utf-8")
-    return value
-
-
-def _load_env_bool(key: str, default: bool = False) -> bool:
-    raw = os.getenv(key)
-    if raw is None:
-        return default
-    return raw.strip().lower() in {"1", "true", "yes", "y", "on"}
-
-
-def _load_env_list(key: str) -> List[str]:
-    raw = os.getenv(key, "").strip()
-    if not raw:
-        return []
-    return [entry.strip() for entry in raw.split(",") if entry.strip()]
-
 
 def _normalize_text(value: Any) -> str:
     if value is None:

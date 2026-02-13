@@ -13,6 +13,11 @@ from qdrant_client.models import FieldCondition, Filter, MatchValue
 
 from mcp_research.ingest_unstructured import _hash_bytes, load_dotenv
 from mcp_research.link_resolver import build_source_ref
+from mcp_research.runtime_utils import (
+    decode_redis_value as _decode_redis_value,
+    load_env_bool,
+    load_env_list as _load_env_list,
+)
 
 
 logging.basicConfig(
@@ -20,12 +25,6 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
 )
 logger = logging.getLogger(__name__)
-
-
-def _decode_redis_value(value):
-    if value is None:
-        return None
-    return value.decode("utf-8") if isinstance(value, (bytes, bytearray)) else value
 
 
 def _decode_redis_hash(raw: Dict) -> Dict:
@@ -47,7 +46,7 @@ def _get_minio_client() -> Minio:
     endpoint = os.getenv("MINIO_ENDPOINT", "localhost:9000")
     access_key = os.getenv("MINIO_ACCESS_KEY") or os.getenv("MINIO_ROOT_USER")
     secret_key = os.getenv("MINIO_SECRET_KEY") or os.getenv("MINIO_ROOT_PASSWORD")
-    secure = os.getenv("MINIO_SECURE", "false").strip().lower() in {"1", "true", "yes", "y", "on"}
+    secure = load_env_bool("MINIO_SECURE", False)
     if not access_key or not secret_key:
         raise RuntimeError("MINIO_ACCESS_KEY/MINIO_SECRET_KEY are required")
     return Minio(endpoint, access_key=access_key, secret_key=secret_key, secure=secure)
@@ -61,13 +60,6 @@ def _get_redis_client(redis_url: str):
     except ImportError as exc:  # pragma: no cover - optional dependency
         raise RuntimeError("redis package is required for Redis usage") from exc
     return redis.from_url(redis_url)
-
-
-def _load_env_list(key: str) -> List[str]:
-    raw = os.getenv(key, "").strip()
-    if not raw:
-        return []
-    return [entry.strip() for entry in raw.split(",") if entry.strip()]
 
 
 def _list_objects(minio_client: Minio, bucket: str, prefix: str, suffix: str) -> Iterable[str]:
@@ -253,13 +245,7 @@ def main() -> None:
     buckets = list(args.bucket)
     if not buckets:
         buckets = _load_env_list("MINIO_BUCKETS")
-    if args.all_buckets or os.getenv("MINIO_ALL_BUCKETS", "").strip().lower() in {
-        "1",
-        "true",
-        "yes",
-        "y",
-        "on",
-    }:
+    if args.all_buckets or load_env_bool("MINIO_ALL_BUCKETS", False):
         buckets = [bucket.name for bucket in minio_client.list_buckets()]
     if not buckets:
         raise RuntimeError("No buckets specified. Use --bucket or MINIO_BUCKETS.")

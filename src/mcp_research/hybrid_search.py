@@ -8,20 +8,7 @@ from typing import Iterable, List, Tuple
 from fastembed import SparseTextEmbedding, TextEmbedding
 from qdrant_client import QdrantClient, models
 
-
-def load_dotenv(path: Path) -> None:
-    """Load a .env file into the process environment if present."""
-    if not path.is_file():
-        return
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip().strip('"').strip("'")
-        if key and key not in os.environ:
-            os.environ[key] = value
+from mcp_research.runtime_utils import load_dotenv
 
 
 def _to_list(x) -> List[float]:

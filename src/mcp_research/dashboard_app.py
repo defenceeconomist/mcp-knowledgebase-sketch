@@ -6,6 +6,8 @@ import os
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import quote
 
+from mcp_research.runtime_utils import decode_redis_value as _decode_redis_value, load_dotenv
+
 try:
     from qdrant_client import QdrantClient, models
 except ImportError:  # pragma: no cover - allow importing helpers without Qdrant
@@ -32,22 +34,6 @@ except ImportError:  # pragma: no cover - allow importing helpers without FastAP
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
-
-
-def load_dotenv(path: str = ".env") -> None:
-    """Load a .env file into the process environment if present."""
-    if not os.path.isfile(path):
-        return
-    with open(path, "r", encoding="utf-8") as handle:
-        for raw_line in handle:
-            line = raw_line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, value = line.split("=", 1)
-            key = key.strip()
-            value = value.strip().strip('"').strip("'")
-            if key and key not in os.environ:
-                os.environ[key] = value
 
 
 load_dotenv()
@@ -81,13 +67,6 @@ def _get_redis_client():
     if _redis_client is None:
         _redis_client = redis.from_url(REDIS_URL)
     return _redis_client
-
-
-def _decode_redis_value(value):
-    if value is None:
-        return None
-    return value.decode("utf-8") if isinstance(value, (bytes, bytearray)) else value
-
 
 def _redis_key(prefix: str, doc_id: str, suffix: str) -> str:
     return f"{prefix}:pdf:{doc_id}:{suffix}"

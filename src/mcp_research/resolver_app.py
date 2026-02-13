@@ -8,6 +8,11 @@ from fastapi.responses import RedirectResponse, JSONResponse, HTMLResponse
 from qdrant_client import QdrantClient, models
 
 from mcp_research.link_resolver import resolve_link
+from mcp_research.runtime_utils import (
+    decode_redis_value as _decode_redis_value,
+    load_env_bool as _load_env_bool,
+    load_env_list as _load_env_list,
+)
 
 try:
     from minio import Minio
@@ -22,29 +27,6 @@ except ImportError:  # pragma: no cover - optional dependency
     redis = None
 
 app = FastAPI(title="Citation Link Resolver", version="0.1.0")
-
-
-def _decode_redis_value(value):
-    """Convert Redis bytes payloads into UTF-8 strings when needed."""
-    if value is None:
-        return None
-    return value.decode("utf-8") if isinstance(value, (bytes, bytearray)) else value
-
-
-def _load_env_bool(key: str, default: bool = False) -> bool:
-    """Parse a boolean environment variable with a default fallback."""
-    raw = os.getenv(key)
-    if raw is None:
-        return default
-    return raw.strip().lower() in {"1", "true", "yes", "y", "on"}
-
-
-def _load_env_list(key: str) -> List[str]:
-    """Parse a comma-separated environment variable into a list."""
-    raw = os.getenv(key, "").strip()
-    if not raw:
-        return []
-    return [entry.strip() for entry in raw.split(",") if entry.strip()]
 
 
 def _get_redis_client() -> Tuple[object | None, str | None]:
