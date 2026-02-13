@@ -1236,43 +1236,6 @@ def resolve_doc_json(
     return JSONResponse(content=result)
 
 
-@app.get("/ui")
-def inventory_ui(notice: Optional[str] = Query(default=None)):
-    """Render the inventory dashboard UI."""
-    buckets, errors = _load_inventory()
-    infos = [notice] if notice else None
-    html = _render_dashboard(buckets, errors, infos=infos)
-    return HTMLResponse(content=html)
-
-
-@app.post("/ui/ingest-missing")
-def ingest_missing_ui():
-    """Enqueue missing ingests and return the refreshed dashboard."""
-    missing, enqueue_errors = _find_missing_minio_objects()
-    count = _enqueue_missing_ingests(missing)
-    buckets, errors = _load_inventory()
-    errors.extend(enqueue_errors)
-    infos = [f"Enqueued {count} ingest task(s) for missing MinIO files."]
-    html = _render_dashboard(buckets, errors, infos=infos)
-    return HTMLResponse(content=html)
-
-
-@app.get("/ui/redis")
-def redis_inventory_ui():
-    """Render the Redis inventory UI."""
-    entries, errors = _load_redis_inventory()
-    html = _render_redis_dashboard(entries, errors)
-    return HTMLResponse(content=html)
-
-
-@app.get("/ui/qdrant")
-def qdrant_inventory_ui():
-    """Render the Qdrant inventory UI."""
-    entries, errors = _load_qdrant_inventory()
-    html = _render_qdrant_dashboard(entries, errors)
-    return HTMLResponse(content=html)
-
-
 def main() -> None:
     """CLI entry point for the resolver API server."""
     host = os.getenv("RESOLVER_HOST", "0.0.0.0")

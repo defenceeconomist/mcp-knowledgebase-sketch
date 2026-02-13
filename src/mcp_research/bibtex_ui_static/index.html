@@ -1628,8 +1628,12 @@
     <script src="https://cdn.jsdelivr.net/npm/handsontable@14.5.0/dist/handsontable.full.min.js"></script>
     <script>
       const APP_BASE_PATH = (() => {
-        const path = window.location.pathname.replace(/\/+$/, "");
-        return path || "";
+        const path = String(window.location.pathname || "").replace(/\/+$/, "");
+        if (!path || path === "/") {
+          return "";
+        }
+        const [firstSegment] = path.split("/").filter(Boolean);
+        return firstSegment ? `/${firstSegment}` : "";
       })();
 
       function rewriteApiRequestUrl(input) {
