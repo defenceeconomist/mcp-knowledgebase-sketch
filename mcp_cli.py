@@ -14,7 +14,6 @@ COMMAND_MODULES: dict[str, str] = {
     "ingest-missing-minio": "mcp_research.ingest_missing_minio",
     "upload-data-to-redis": "mcp_research.upload_data_to_redis",
     "hybrid-search": "mcp_research.hybrid_search",
-    "dedupe-qdrant-chunks": "mcp_research.dedupe_qdrant_chunks",
     "purge-v1-schema": "mcp_research.purge_v1_schema",
     "bibtex-autofill": "mcp_research.bibtex_autofill",
 }

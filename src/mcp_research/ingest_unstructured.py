@@ -11,7 +11,7 @@ from unstructured_client.models import operations, shared
 from unstructured_client.models.errors import SDKError
 
 from mcp_research.citation_utils import build_source_ref
-from mcp_research.runtime_utils import load_dotenv, load_env_bool
+from mcp_research.runtime_utils import load_dotenv, load_env_bool, load_env_int
 from mcp_research.schema_v2 import (
     SourceDescriptor,
     redis_v2_doc_collections_key,
@@ -31,18 +31,6 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
 )
 logger = logging.getLogger(__name__)
-
-
-def load_env_int(key: str, default: int) -> int:
-    """Parse an integer from the environment with a default fallback."""
-    raw = os.getenv(key)
-    if not raw:
-        return default
-    try:
-        return int(raw)
-    except ValueError:
-        logger.warning("Invalid integer for %s=%s, using %d", key, raw, default)
-        return default
 
 
 def collect_pdfs(target: Path) -> List[Path]:

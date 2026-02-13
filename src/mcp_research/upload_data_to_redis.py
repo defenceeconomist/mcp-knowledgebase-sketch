@@ -5,9 +5,9 @@ from pathlib import Path
 
 from mcp_research.ingest_unstructured import (
     _get_redis_client,
-    load_dotenv,
     upload_json_files_to_redis,
 )
+from mcp_research.runtime_utils import load_dotenv
 
 
 logging.basicConfig(

@@ -2732,7 +2732,7 @@
         renderAll();
         try {
           await apiRequest(
-            `/api/buckets/${encodeURIComponent(normalizedBucketId)}?force=true&delete_ingested=true`,
+            `/api/buckets/${encodeURIComponent(normalizedBucketId)}?force=true&delete_ingested=false`,
             { method: "DELETE" }
           );
           await loadBuckets();
@@ -2897,12 +2897,12 @@
       async function deleteFileFromBucket(file) {
         if (!file || !file.bucket || !file.objectName) return;
         const confirmed = window.confirm(
-          `Remove "${file.fileName}" from bucket "${file.bucket}" and delete ingested data?`
+          `Remove "${file.fileName}" from bucket "${file.bucket}"? Redis data will be preserved.`
         );
         if (!confirmed) return;
         try {
           await apiRequest(
-            `/api/buckets/${encodeURIComponent(file.bucket)}/files/${encodeObjectPath(file.objectName)}?delete_ingested=true`,
+            `/api/buckets/${encodeURIComponent(file.bucket)}/files/${encodeObjectPath(file.objectName)}?delete_ingested=false`,
             { method: "DELETE" }
           );
           const bucket = bucketById(file.bucket);

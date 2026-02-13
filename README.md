@@ -53,7 +53,6 @@ Key commands:
 - `python mcp_cli.py ingest-missing-minio --dry-run`
 - `python mcp_cli.py upsert-chunks --help`
 - `python mcp_cli.py upload-data-to-redis --help`
-- `python mcp_cli.py dedupe-qdrant-chunks --help`
 - `python mcp_cli.py purge-v1-schema --help`
 - `python mcp_cli.py hybrid-search --help`
 - `python mcp_cli.py bibtex-autofill --help`

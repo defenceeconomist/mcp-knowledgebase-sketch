@@ -8,6 +8,7 @@ if SRC_ROOT not in sys.path:
     sys.path.insert(0, SRC_ROOT)
 
 from mcp_research import celery_app
+from mcp_research.runtime_utils import load_env_int
 
 
 class CeleryAppTests(unittest.TestCase):
@@ -20,7 +21,7 @@ class CeleryAppTests(unittest.TestCase):
 
     def test_env_int_invalid_returns_default(self):
         os.environ["CELERY_VISIBILITY_TIMEOUT"] = "nope"
-        value = celery_app._env_int("CELERY_VISIBILITY_TIMEOUT", 3600)
+        value = load_env_int("CELERY_VISIBILITY_TIMEOUT", 3600)
         self.assertEqual(value, 3600)
 
     def test_make_celery_uses_env_urls(self):

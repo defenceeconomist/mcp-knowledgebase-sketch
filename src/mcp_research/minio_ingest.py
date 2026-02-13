@@ -17,9 +17,6 @@ from qdrant_client.models import FieldCondition, Filter, MatchValue
 from mcp_research.ingest_unstructured import (
     _hash_bytes,
     elements_to_chunks,
-    load_dotenv,
-    load_env_bool,
-    load_env_int,
     parse_languages,
     partition_pdf,
     record_collection_mapping,
@@ -27,6 +24,9 @@ from mcp_research.ingest_unstructured import (
 )
 from mcp_research.citation_utils import build_source_ref
 from mcp_research.runtime_utils import (
+    load_dotenv,
+    load_env_bool,
+    load_env_int,
     load_env_list as _load_env_list,
 )
 from mcp_research.schema_v2 import (

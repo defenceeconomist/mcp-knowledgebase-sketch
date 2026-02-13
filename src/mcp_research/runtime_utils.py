@@ -36,6 +36,17 @@ def load_env_bool(key: str, default: bool = False) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
+def load_env_int(key: str, default: int) -> int:
+    """Parse an integer environment variable with default fallback."""
+    raw = os.getenv(key)
+    if not raw:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        return default
+
+
 def load_env_list(key: str) -> list[str]:
     """Parse a comma-separated environment variable into a stripped list."""
     raw = os.getenv(key, "").strip()

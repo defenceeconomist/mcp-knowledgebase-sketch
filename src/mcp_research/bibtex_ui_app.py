@@ -590,6 +590,13 @@ def _normalize_text(value: Any) -> str:
     return str(value).strip()
 
 
+def _normalize_metadata_text(value: Any) -> str:
+    """Normalize metadata text while preserving user-entered surrounding spaces."""
+    if value is None:
+        return ""
+    return str(value)
+
+
 def _normalize_authors(value: Any) -> List[Dict[str, str]]:
     authors: List[Dict[str, str]] = []
 
@@ -683,7 +690,7 @@ def _normalize_metadata(
         "abstract",
         "note",
     ):
-        value = _normalize_text(metadata.get(key))
+        value = _normalize_metadata_text(metadata.get(key))
         if value:
             payload[key] = value
         elif key in {"title", "citationKey"} and payload.get(key):
@@ -1356,7 +1363,7 @@ if app is not None:
     def api_delete_bucket(
         bucket: str,
         force: bool = Query(False),
-        delete_ingested: bool = Query(True),
+        delete_ingested: bool = Query(False),
     ) -> Dict[str, Any]:
         minio_client, minio_error = _get_minio_client()
         if minio_error or not minio_client:
@@ -1409,6 +1416,7 @@ if app is not None:
             "bucket": bucket_name,
             "deleted": True,
             "force": force,
+            "delete_ingested": delete_ingested,
             "removed_objects": removed_objects,
             "cleanup_errors": cleanup_errors,
         }
@@ -1598,7 +1606,7 @@ if app is not None:
         bucket: str,
         object_name: str,
         version_id: str | None = Query(default=None),
-        delete_ingested: bool = Query(default=True),
+        delete_ingested: bool = Query(default=False),
     ) -> Dict[str, Any]:
         minio_client, minio_error = _get_minio_client()
         if minio_error or not minio_client:

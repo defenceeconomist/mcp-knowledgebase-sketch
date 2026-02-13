@@ -1,17 +1,7 @@
 import os
 
 from celery import Celery
-
-
-def _env_int(key: str, default: int) -> int:
-    """Parse an integer from the environment with a default fallback."""
-    raw = os.getenv(key)
-    if not raw:
-        return default
-    try:
-        return int(raw)
-    except ValueError:
-        return default
+from mcp_research.runtime_utils import load_env_int
 
 
 def make_celery() -> Celery:
@@ -30,7 +20,7 @@ def make_celery() -> Celery:
         task_reject_on_worker_lost=True,
         worker_prefetch_multiplier=1,
         broker_transport_options={
-            "visibility_timeout": _env_int("CELERY_VISIBILITY_TIMEOUT", 3600),
+            "visibility_timeout": load_env_int("CELERY_VISIBILITY_TIMEOUT", 3600),
         },
         result_extended=True,
     )

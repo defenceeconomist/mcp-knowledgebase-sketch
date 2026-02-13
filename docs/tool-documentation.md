@@ -155,7 +155,6 @@ Core commands:
 - `ingest-missing-minio`
 - `upsert-chunks`
 - `upload-data-to-redis`
-- `dedupe-qdrant-chunks`
 - `purge-v1-schema`
 - `hybrid-search`
 - `bibtex-autofill`

@@ -11,10 +11,11 @@ from minio.error import S3Error
 from qdrant_client import QdrantClient
 from qdrant_client.models import FieldCondition, Filter, MatchValue
 
-from mcp_research.ingest_unstructured import _hash_bytes, load_dotenv
+from mcp_research.ingest_unstructured import _hash_bytes
 from mcp_research.link_resolver import build_source_ref
 from mcp_research.runtime_utils import (
     decode_redis_value as _decode_redis_value,
+    load_dotenv,
     load_env_bool,
     load_env_list as _load_env_list,
 )

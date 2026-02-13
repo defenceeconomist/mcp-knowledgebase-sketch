@@ -351,6 +351,20 @@ class BibtexUiAppTests(unittest.TestCase):
         self.assertEqual(payload["removed_objects"], 2)
         self.assertIn("bucket-a", fake_minio.removed_buckets)
         self.assertEqual(cleanup.call_count, 2)
+        self.assertTrue(payload["delete_ingested"])
+
+    def test_api_delete_bucket_force_preserves_ingested_data_by_default(self):
+        fake_minio = _FakeMinio({"bucket-a": ["alpha.pdf", "beta.pdf"]})
+        with mock.patch.object(bibtex_ui_app, "_get_minio_client", return_value=(fake_minio, None)):
+            with mock.patch.object(bibtex_ui_app, "_delete_ingested_object_from_env") as cleanup:
+                response = self.client.delete("/api/buckets/bucket-a?force=true")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["removed_objects"], 2)
+        self.assertFalse(payload["delete_ingested"])
+        self.assertIn("bucket-a", fake_minio.removed_buckets)
+        cleanup.assert_not_called()
 
     def test_api_delete_file_removes_object_and_ingested_data(self):
         fake_minio = _FakeMinio({"bucket-a": ["folder/alpha.pdf"]})
@@ -364,6 +378,19 @@ class BibtexUiAppTests(unittest.TestCase):
         self.assertEqual(response.json()["deleted"], True)
         self.assertNotIn("folder/alpha.pdf", fake_minio._buckets["bucket-a"])
         cleanup.assert_called_once_with(bucket="bucket-a", object_name="folder/alpha.pdf", version_id=None)
+
+    def test_api_delete_file_preserves_ingested_data_by_default(self):
+        fake_minio = _FakeMinio({"bucket-a": ["folder/alpha.pdf"]})
+        with mock.patch.object(bibtex_ui_app, "_get_minio_client", return_value=(fake_minio, None)):
+            with mock.patch.object(bibtex_ui_app, "_delete_ingested_object_from_env") as cleanup:
+                response = self.client.delete("/api/buckets/bucket-a/files/folder/alpha.pdf")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertTrue(payload["deleted"])
+        self.assertFalse(payload["delete_ingested"])
+        self.assertNotIn("folder/alpha.pdf", fake_minio._buckets["bucket-a"])
+        cleanup.assert_not_called()
 
     def test_api_upload_file_forces_ingest_job_even_when_flag_is_false(self):
         fake_minio = _FakeMinio({"bucket-a": []})
@@ -473,6 +500,24 @@ class BibtexUiAppTests(unittest.TestCase):
         self.assertEqual(payload["partition_count"], 2)
         self.assertEqual(payload["chunk_count"], 3)
         self.assertEqual(payload["doc_ids"], ["doc1"])
+
+    def test_api_save_file_bibtex_preserves_trailing_spaces_in_title(self):
+        fake_redis = _FakeRedis()
+        trailing_title = "Updated Alpha "
+
+        with mock.patch.object(bibtex_ui_app, "_get_redis_client", return_value=(fake_redis, None)):
+            with mock.patch.dict(os.environ, {"BIBTEX_REDIS_PREFIX": "bibtex"}, clear=False):
+                response = self.client.put(
+                    "/api/buckets/bucket-a/files/folder%2Falpha.pdf/bibtex",
+                    json={"title": trailing_title, "year": "2025"},
+                )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["file"]["title"], trailing_title)
+
+        stored = json.loads(fake_redis.get("bibtex:file:bucket-a/folder/alpha.pdf"))
+        self.assertEqual(stored["title"], trailing_title)
 
     def test_api_file_redis_data_lazy_limits_items(self):
         fake_redis = _FakeRedis()
