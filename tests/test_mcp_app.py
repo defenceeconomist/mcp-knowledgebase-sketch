@@ -103,6 +103,10 @@ class McpAppTests(unittest.TestCase):
             payload = {"bucket": "bucket-a", "key": "paper.pdf"}
             self.assertEqual(mcp_app._citation_key_from_payload(payload), "doe2024paper")
 
+    def test_highlight_query_from_text_normalizes_chunk_text(self):
+        query = mcp_app._highlight_query_from_text("Transfer-pricing:\nOffsets, OECD rules 2024 edition.")
+        self.assertEqual(query, "transfer pricing offsets oecd rules 2024 edition")
+
     def test_fetch_document_chunks_uses_meta_chunks_key_override(self):
         fake_redis = _FakeRedis()
         with mock.patch.object(mcp_app, "_get_redis_client", return_value=fake_redis):
@@ -243,6 +247,38 @@ class McpAppTests(unittest.TestCase):
         self.assertEqual(partition["page_end"], 3)
         self.assertEqual(partition["chunk_count"], 1)
         self.assertEqual(partition["partition_payload"]["text"], "partition 3")
+
+    def test_search_normalizes_page_range_and_text_for_results(self):
+        point = _DummyPoint(
+            "p-2",
+            {
+                "document_id": "doc-2",
+                "bucket": "bucket-a",
+                "key": "paper.pdf",
+                "metadata": {"page_number": 5},
+                "chunk_text": "normalized chunk text",
+            },
+            score=0.44,
+        )
+        response = _DummySearchResponse([point])
+
+        with mock.patch.object(mcp_app, "_get_qdrant_client", return_value=object()):
+            with mock.patch.object(mcp_app, "_get_dense_model", return_value=object()):
+                with mock.patch.object(mcp_app, "_cosine_search", return_value=response):
+                    with mock.patch.object(mcp_app, "_get_redis_client", return_value=None):
+                        result = mcp_app.search(
+                            query="normalized",
+                            retrieval_mode="cosine",
+                            include_partition=False,
+                            include_document=False,
+                        )
+
+        self.assertEqual(len(result["results"]), 1)
+        entry = result["results"][0]
+        self.assertEqual(entry["page_start"], 5)
+        self.assertEqual(entry["page_end"], 5)
+        self.assertEqual(entry["pages"], [5])
+        self.assertEqual(entry["text"], "normalized chunk text")
 
 
 if __name__ == "__main__":

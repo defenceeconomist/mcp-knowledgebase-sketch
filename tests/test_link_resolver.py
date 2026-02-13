@@ -74,6 +74,24 @@ class LinkResolverTests(unittest.TestCase):
         )
         self.assertEqual(result["mode"], "portal")
 
+    def test_resolve_link_portal_appends_page_and_highlight_query(self):
+        os.environ["CITATION_BASE_URL"] = "https://docs.example"
+        os.environ["CITATION_REF_PATH"] = "/r/doc"
+
+        result = link_resolver.resolve_link(
+            source_ref="doc://bucket/file.pdf",
+            page_start=7,
+            page_end=7,
+            highlight="transfer pricing",
+            mode="portal",
+        )
+
+        self.assertEqual(
+            result["url"],
+            "https://docs.example/r/doc?ref=doc%3A%2F%2Fbucket%2Ffile.pdf&page=7&page_start=7&page_end=7&highlight=transfer+pricing",
+        )
+        self.assertEqual(result["mode"], "portal")
+
     def test_resolve_link_cdn_builds_url(self):
         os.environ["CDN_BASE_URL"] = "https://cdn.example"
 
@@ -85,6 +103,23 @@ class LinkResolverTests(unittest.TestCase):
 
         self.assertEqual(result["mode"], "cdn")
         self.assertEqual(result["url"], "https://cdn.example/nested/file.txt")
+
+    def test_resolve_link_proxy_builds_reverse_proxy_url(self):
+        os.environ["CITATION_BASE_URL"] = "https://resolver.example"
+        os.environ["CITATION_PDF_PROXY_PATH"] = "/r/pdf-proxy"
+
+        result = link_resolver.resolve_link(
+            source_ref="doc://bucket/path/file.pdf",
+            page=4,
+            highlight="transfer pricing",
+            mode="proxy",
+        )
+
+        self.assertEqual(result["mode"], "proxy")
+        self.assertEqual(
+            result["url"],
+            "https://resolver.example/r/pdf-proxy?ref=doc%3A%2F%2Fbucket%2Fpath%2Ffile.pdf#page=4&search=transfer%20pricing",
+        )
 
     def test_resolve_link_presign_uses_minio_client(self):
         os.environ["MINIO_PRESIGN_EXPIRY_SECONDS"] = "120"
@@ -184,6 +219,98 @@ class ResolverAppTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), payload)
+
+    def test_resolve_doc_focus_params_render_embed_page_for_presign(self):
+        payload = {
+            "source_ref": "doc://bucket/file.pdf#page=7",
+            "url": "https://example.test/file.pdf#page=7&search=transfer%20pricing",
+            "mode": "presign",
+        }
+        with mock.patch("mcp_research.resolver_app.resolve_link", return_value=payload):
+            response = self.client.get(
+                "/r/doc",
+                params={
+                    "ref": "doc://bucket/file.pdf#page=7",
+                    "page_start": 7,
+                    "page_end": 7,
+                    "highlight": "transfer pricing",
+                },
+                follow_redirects=False,
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("<iframe", response.text)
+        self.assertIn("Open direct PDF", response.text)
+        self.assertIn("file.pdf#page=7&amp;search=transfer%20pricing", response.text)
+
+    def test_resolve_doc_proxy_mode_redirects_to_pdf_proxy(self):
+        payload = {
+            "source_ref": "doc://bucket/path/file.pdf",
+            "url": "https://resolver.example/r/pdf-proxy?ref=doc%3A%2F%2Fbucket%2Fpath%2Ffile.pdf",
+            "mode": "proxy",
+        }
+        with mock.patch("mcp_research.resolver_app.resolve_link", return_value=payload):
+            response = self.client.get(
+                "/r/doc",
+                params={"ref": "doc://bucket/path/file.pdf", "mode": "proxy"},
+                follow_redirects=False,
+            )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response.headers.get("location"),
+            "https://resolver.example/r/pdf-proxy?ref=doc%3A%2F%2Fbucket%2Fpath%2Ffile.pdf",
+        )
+
+    def test_resolve_pdf_proxy_returns_pdf_payload(self):
+        class _FakeUpstream:
+            def __init__(self):
+                self.headers = {"Content-Type": "application/pdf"}
+
+            def read(self):
+                return b"%PDF-1.7\\n"
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                del exc_type, exc, tb
+                return False
+
+        with mock.patch("mcp_research.resolver_app.urllib.request.urlopen", return_value=_FakeUpstream()):
+            response = self.client.get("/r/pdf-proxy", params={"url": "http://example.test/file.pdf"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers.get("content-type"), "application/pdf")
+        self.assertEqual(response.content, b"%PDF-1.7\\n")
+
+    def test_resolve_pdf_proxy_rejects_non_http_url(self):
+        response = self.client.get("/r/pdf-proxy", params={"url": "file:///tmp/demo.pdf"})
+        self.assertEqual(response.status_code, 400)
+
+    def test_resolve_pdf_proxy_with_ref_reads_from_minio(self):
+        class _FakeObject:
+            def read(self):
+                return b"%PDF-ref\\n"
+
+            def close(self):
+                return None
+
+            def release_conn(self):
+                return None
+
+        class _FakeMinio:
+            def get_object(self, bucket, key, version_id=None):
+                self.last_call = (bucket, key, version_id)
+                return _FakeObject()
+
+        fake_minio = _FakeMinio()
+        with mock.patch("mcp_research.resolver_app._get_minio_client", return_value=(fake_minio, None)):
+            response = self.client.get("/r/pdf-proxy", params={"ref": "doc://bucket/path/file.pdf?version_id=v1"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, b"%PDF-ref\\n")
+        self.assertEqual(fake_minio.last_call, ("bucket", "path/file.pdf", "v1"))
 
 
 if __name__ == "__main__":

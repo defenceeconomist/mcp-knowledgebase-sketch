@@ -83,6 +83,15 @@ Point ID mode:
 Deterministic ID mode uses UUIDv5 of:
 - `{collection}|{doc_hash}|{chunk_hash}`
 
+## 2.4 Shared citation helpers
+
+Canonical source-reference and citation URL helpers:
+- `src/mcp_research/citation_utils.py`
+- `build_source_ref(...)`
+- `build_citation_url(...)`
+
+These helpers are reused by ingest, MCP tools, dashboard, and BibTeX UI to avoid divergent URL/source reference formatting.
+
 ## 3) Exposed MCP Tools
 
 Source:
@@ -114,7 +123,8 @@ Tool list:
    - fetch one chunk payload by Qdrant point id
 
 7. `resolve_citation(source_ref=None, bucket=None, key=None, version_id=None, page=None, page_start=None, page_end=None, highlight=None, mode=None)`
-   - resolves to portal/CDN/presigned URL depending on resolver mode
+   - resolves to portal/CDN/presigned/proxy URL depending on resolver mode
+   - resolver mode defaults to `proxy` in Docker Compose so links stay inside reverse proxy routes (`/r/*`)
 
 8. `fetch_document_chunks(document_id=None, bucket=None, key=None)`
    - returns all chunks for a document from Redis v2
@@ -132,3 +142,43 @@ Operational requirements:
 - Qdrant is required for search/fetch by point id.
 - Redis is required for default collection storage and all document/partition enrichment tools.
 - BibTeX lookup requires Redis keys under `BIBTEX_REDIS_PREFIX` (default `bibtex`).
+
+## 4) CLI Commands
+
+Unified entrypoint:
+- `python mcp_cli.py <command> [args...]`
+
+Core commands:
+- `mcp-app`
+- `minio-ingest`
+- `minio-ops`
+- `ingest-missing-minio`
+- `upsert-chunks`
+- `upload-data-to-redis`
+- `dedupe-qdrant-chunks`
+- `purge-v1-schema`
+- `hybrid-search`
+- `bibtex-autofill`
+
+### 4.1 MinIO bucket/file commands
+
+1. Add a bucket:
+- `python mcp_cli.py minio-ops add-bucket <bucket>`
+
+2. Delete a bucket:
+- `python mcp_cli.py minio-ops delete-bucket <bucket>`
+- `python mcp_cli.py minio-ops delete-bucket <bucket> --force` (empties bucket first)
+
+3. Upload a file and ingest with Unstructured:
+- `python mcp_cli.py minio-ops upload-file <bucket> <local_file.pdf> --create-bucket`
+- ingest is on by default; disable with `--no-ingest`
+
+4. Remove a file from a MinIO bucket:
+- `python mcp_cli.py minio-ops remove-file <bucket> <object_name>`
+- cleanup of Qdrant/Redis ingest artifacts is on by default; disable with `--no-delete-ingested`
+
+Connection overrides for `minio-ops`:
+- `--endpoint host:port`
+- `--access-key ...`
+- `--secret-key ...`
+- `--secure` / `--no-secure`

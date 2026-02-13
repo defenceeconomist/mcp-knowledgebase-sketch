@@ -63,7 +63,7 @@ services:
       - PYTHONPATH=/app/src
       - RESOLVER_HOST=0.0.0.0
       - RESOLVER_PORT=8080
-      - LINK_RESOLVER_MODE=${LINK_RESOLVER_MODE:-presign}
+      - LINK_RESOLVER_MODE=${LINK_RESOLVER_MODE:-proxy}
       - CITATION_BASE_URL=${CITATION_BASE_URL:-http://localhost:8080}
       - CITATION_REF_PATH=${CITATION_REF_PATH:-/r/doc}
       - CDN_BASE_URL=${CDN_BASE_URL:-}
@@ -103,10 +103,13 @@ services:
     depends_on:
       - minio
       - redis
+      - qdrant
     environment:
       - PYTHONPATH=/app/src
       - BIBTEX_UI_HOST=0.0.0.0
       - BIBTEX_UI_PORT=8003
+      - QDRANT_URL=${QDRANT_URL:-http://qdrant:6333}
+      - QDRANT_COLLECTION=${QDRANT_COLLECTION:-pdf_chunks}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - BIBTEX_REDIS_PREFIX=${BIBTEX_REDIS_PREFIX:-bibtex}
       - MINIO_ENDPOINT=minio:9000

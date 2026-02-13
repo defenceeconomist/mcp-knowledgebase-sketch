@@ -4,34 +4,7 @@ from typing import Optional
 from urllib.parse import parse_qs, quote, unquote, urlencode, urlparse
 
 from minio import Minio
-
-
-def build_source_ref(
-    bucket: str,
-    key: str,
-    page_start: Optional[int] = None,
-    page_end: Optional[int] = None,
-    version_id: Optional[str] = None,
-) -> str:
-    """Build a doc:// source reference for a bucket/key with optional page range."""
-    if not bucket:
-        raise ValueError("bucket is required to build source_ref")
-    if not key:
-        raise ValueError("key is required to build source_ref")
-    safe_key = quote(key.lstrip("/"), safe="/")
-    fragment = ""
-    if page_start is not None:
-        if page_end is not None and page_end != page_start:
-            fragment = f"page={page_start}-{page_end}"
-        else:
-            fragment = f"page={page_start}"
-    query = urlencode({"version_id": version_id}) if version_id else ""
-    ref = f"doc://{bucket}/{safe_key}"
-    if query:
-        ref = f"{ref}?{query}"
-    if fragment:
-        ref = f"{ref}#{fragment}"
-    return ref
+from mcp_research.citation_utils import build_citation_url, build_source_ref
 
 
 def _normalize_source_ref(source_ref: str) -> str:
@@ -94,26 +67,6 @@ def parse_source_ref(source_ref: str) -> dict:
     }
 
 
-def build_citation_url(
-    source_ref: str,
-    base_url: Optional[str] = None,
-    ref_path: Optional[str] = None,
-) -> Optional[str]:
-    """Build a citation portal URL that wraps a source reference."""
-    base = (
-        base_url
-        or os.getenv("CITATION_BASE_URL")
-        or os.getenv("DOCS_BASE_URL")
-        or "http://localhost:8080"
-    )
-    path = ref_path or os.getenv("CITATION_REF_PATH", "/r/doc")
-    base = base.rstrip("/")
-    if not path.startswith("/"):
-        path = "/" + path
-    encoded_ref = quote(source_ref, safe="")
-    return f"{base}{path}?ref={encoded_ref}"
-
-
 def _get_minio_client() -> Minio:
     """Create a MinIO client for generating presigned URLs."""
     endpoint = os.getenv("MINIO_PRESIGN_ENDPOINT") or os.getenv("MINIO_ENDPOINT", "localhost:9000")
@@ -164,6 +117,31 @@ def _append_url_fragment(url: str, fragment: str) -> str:
     extra_parts = [part for part in fragment.split("&") if part and part not in existing_parts]
     merged = "&".join(existing_parts + extra_parts)
     return parsed._replace(fragment=merged).geturl()
+
+
+def _append_url_query(url: str, params: dict[str, Optional[str]]) -> str:
+    """Append query params when missing, preserving existing query values."""
+    parsed = urlparse(url)
+    query = parse_qs(parsed.query or "", keep_blank_values=True)
+    for key, value in params.items():
+        if value is None or key in query:
+            continue
+        query[key] = [value]
+    encoded = urlencode(query, doseq=True)
+    return parsed._replace(query=encoded).geturl()
+
+
+def _build_pdf_proxy_url(source_ref: str) -> str:
+    """Build a resolver-local PDF proxy URL for a source reference."""
+    base = (
+        os.getenv("CITATION_BASE_URL")
+        or os.getenv("DOCS_BASE_URL")
+        or "http://localhost:8080"
+    ).rstrip("/")
+    proxy_path = os.getenv("CITATION_PDF_PROXY_PATH", "/r/pdf-proxy")
+    if not proxy_path.startswith("/"):
+        proxy_path = "/" + proxy_path
+    return f"{base}{proxy_path}?ref={quote(source_ref, safe='')}"
 
 
 def resolve_link(
@@ -219,8 +197,25 @@ def resolve_link(
         safe_key = quote(key.lstrip("/"), safe="/")
         url = _append_url_fragment(f"{base}/{safe_key}", _build_pdf_fragment(page_start, page_end, highlight))
         return {"source_ref": source_ref, "url": url, "mode": resolved_mode}
+    if resolved_mode in {"proxy", "pdf-proxy"}:
+        url = _build_pdf_proxy_url(source_ref)
+        url = _append_url_fragment(url, _build_pdf_fragment(page_start, page_end, highlight))
+        return {"source_ref": source_ref, "url": url, "mode": "proxy"}
 
     url = build_citation_url(source_ref)
     if not url:
         raise RuntimeError("CITATION_BASE_URL (or DOCS_BASE_URL) is required for portal links")
+    portal_page = str(page_start) if page_start is not None else (str(page_end) if page_end is not None else None)
+    portal_page_start = str(page_start) if page_start is not None else None
+    portal_page_end = str(page_end) if page_end is not None else None
+    portal_highlight = (highlight or "").strip() or None
+    url = _append_url_query(
+        url,
+        {
+            "page": portal_page,
+            "page_start": portal_page_start,
+            "page_end": portal_page_end,
+            "highlight": portal_highlight,
+        },
+    )
     return {"source_ref": source_ref, "url": url, "mode": "portal"}

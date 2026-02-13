@@ -6,6 +6,19 @@ import os
 import sys
 from typing import Sequence
 
+COMMAND_MODULES: dict[str, str] = {
+    "mcp-app": "mcp_research.mcp_app",
+    "upsert-chunks": "mcp_research.upsert_chunks",
+    "minio-ingest": "mcp_research.minio_ingest",
+    "minio-ops": "mcp_research.minio_ops",
+    "ingest-missing-minio": "mcp_research.ingest_missing_minio",
+    "upload-data-to-redis": "mcp_research.upload_data_to_redis",
+    "hybrid-search": "mcp_research.hybrid_search",
+    "dedupe-qdrant-chunks": "mcp_research.dedupe_qdrant_chunks",
+    "purge-v1-schema": "mcp_research.purge_v1_schema",
+    "bibtex-autofill": "mcp_research.bibtex_autofill",
+}
+
 
 def _ensure_src_on_path() -> None:
     project_root = os.path.abspath(os.path.dirname(__file__))
@@ -36,17 +49,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "command",
-        choices=(
-            "mcp-app",
-            "upsert-chunks",
-            "minio-ingest",
-            "ingest-missing-minio",
-            "upload-data-to-redis",
-            "hybrid-search",
-            "dedupe-qdrant-chunks",
-            "purge-v1-schema",
-            "bibtex-autofill",
-        ),
+        choices=tuple(COMMAND_MODULES.keys()),
         help="Command to run.",
     )
     parser.add_argument(
@@ -60,19 +63,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_arg_parser()
     ns = parser.parse_args(argv)
-
-    modules = {
-        "mcp-app": "mcp_research.mcp_app",
-        "upsert-chunks": "mcp_research.upsert_chunks",
-        "minio-ingest": "mcp_research.minio_ingest",
-        "ingest-missing-minio": "mcp_research.ingest_missing_minio",
-        "upload-data-to-redis": "mcp_research.upload_data_to_redis",
-        "hybrid-search": "mcp_research.hybrid_search",
-        "dedupe-qdrant-chunks": "mcp_research.dedupe_qdrant_chunks",
-        "purge-v1-schema": "mcp_research.purge_v1_schema",
-        "bibtex-autofill": "mcp_research.bibtex_autofill",
-    }
-    return _run_module_main(modules[ns.command], ns.args)
+    return _run_module_main(COMMAND_MODULES[ns.command], ns.args)
 
 
 if __name__ == "__main__":

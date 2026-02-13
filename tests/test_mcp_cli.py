@@ -32,6 +32,22 @@ class McpCliTests(unittest.TestCase):
             ["mcp_research.upsert_chunks", "--batch-size", "123"],
         )
 
+    def test_dispatch_minio_ops_command(self):
+        seen_argv = {}
+
+        def fake_main():
+            seen_argv["value"] = list(sys.argv)
+
+        fake_module = type("FakeModule", (), {"main": staticmethod(fake_main)})
+        with mock.patch.object(mcp_cli.importlib, "import_module", return_value=fake_module):
+            code = mcp_cli.main(["minio-ops", "add-bucket", "papers"])
+
+        self.assertEqual(code, 0)
+        self.assertEqual(
+            seen_argv["value"],
+            ["mcp_research.minio_ops", "add-bucket", "papers"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

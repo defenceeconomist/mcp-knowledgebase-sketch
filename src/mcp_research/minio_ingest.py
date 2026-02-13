@@ -25,7 +25,7 @@ from mcp_research.ingest_unstructured import (
     record_collection_mapping,
     upload_to_redis,
 )
-from mcp_research.link_resolver import build_source_ref
+from mcp_research.citation_utils import build_source_ref
 from mcp_research.runtime_utils import (
     load_env_list as _load_env_list,
 )

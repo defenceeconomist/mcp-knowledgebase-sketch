@@ -54,6 +54,14 @@
         display: none;
       }
 
+      .app-shell.search-mode {
+        grid-template-columns: 260px 1fr;
+      }
+
+      .app-shell.search-mode .right-pane {
+        display: none;
+      }
+
       .pane {
         background: color-mix(in oklab, var(--panel) 88%, white 12%);
         border: 1px solid var(--line);
@@ -88,6 +96,58 @@
         display: flex;
         flex-direction: column;
         gap: 8px;
+      }
+
+      .pane-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .bucket-header-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+      }
+
+      .bucket-icon-btn {
+        width: 30px;
+        height: 30px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: var(--panel-alt);
+        color: var(--ink);
+        font: inherit;
+        font-size: 16px;
+        line-height: 1;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+      }
+
+      .bucket-icon-btn:hover {
+        border-color: color-mix(in oklab, var(--brand) 45%, var(--line));
+      }
+
+      .bucket-icon-btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
+      .bucket-icon-btn.danger {
+        color: color-mix(in oklab, #8d2c1b 82%, var(--ink));
+        background: color-mix(in oklab, #f6d9cf 78%, white 22%);
+        border-color: color-mix(in oklab, #b54b31 45%, var(--line));
+      }
+
+      .bucket-manager-status {
+        margin: 2px 10px 8px;
+        font-size: 11px;
+        color: var(--muted);
       }
 
       .bucket-btn {
@@ -134,6 +194,41 @@
         display: flex;
         flex-direction: column;
         height: calc(100% - 70px);
+      }
+
+      .workspace-tabs {
+        margin-top: 8px;
+        display: inline-flex;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        overflow: hidden;
+        width: fit-content;
+        background: color-mix(in oklab, var(--panel-alt) 78%, white 22%);
+      }
+
+      .workspace-tab-btn {
+        border: none;
+        border-right: 1px solid var(--line);
+        background: transparent;
+        color: var(--muted);
+        font: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 6px 10px;
+        cursor: pointer;
+      }
+
+      .workspace-tab-btn:last-child {
+        border-right: none;
+      }
+
+      .workspace-tab-btn.active {
+        background: color-mix(in oklab, var(--brand-soft) 78%, white 22%);
+        color: color-mix(in oklab, var(--brand) 75%, #4c2318);
+      }
+
+      .metadata-header-tools[hidden] {
+        display: none !important;
       }
 
       .table-wrap {
@@ -243,6 +338,12 @@
         background: color-mix(in oklab, #d9efe5 74%, white 26%);
         color: color-mix(in oklab, #1f7c60 80%, var(--ink));
         border-color: color-mix(in oklab, #2e7a57 42%, var(--line));
+      }
+
+      .file-action-chip-del {
+        background: color-mix(in oklab, #f4d0cc 78%, white 22%);
+        color: color-mix(in oklab, #8d2c1b 82%, var(--ink));
+        border-color: color-mix(in oklab, #b54b31 48%, var(--line));
       }
 
       .file-actions {
@@ -390,6 +491,25 @@
         align-items: center;
       }
 
+      .upload-tools {
+        margin-top: 8px;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .upload-file-input {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        color: var(--ink);
+        font: inherit;
+        font-size: 12px;
+        padding: 6px 8px;
+      }
+
       .view-toggle {
         margin-top: 8px;
         display: inline-flex;
@@ -442,6 +562,16 @@
         cursor: not-allowed;
       }
 
+      .upload-icon-btn {
+        min-width: 30px;
+        width: 30px;
+        height: 28px;
+        padding: 0;
+        border-radius: 8px;
+        font-size: 14px;
+        line-height: 1;
+      }
+
       .autofill-status {
         font-size: 12px;
         color: var(--muted);
@@ -477,7 +607,8 @@
       }
 
       .bulk-view[hidden],
-      .detail-view[hidden] {
+      .detail-view[hidden],
+      .search-view[hidden] {
         display: none !important;
       }
 
@@ -493,6 +624,177 @@
       .detail-view .table-wrap {
         flex: 1;
         min-height: 0;
+      }
+
+      .search-view {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 0;
+      }
+
+      .search-controls {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--line);
+        display: grid;
+        gap: 8px;
+      }
+
+      .search-form {
+        display: grid;
+        grid-template-columns: minmax(0, 1.2fr) 110px 130px 180px 92px;
+        gap: 8px;
+        align-items: end;
+      }
+
+      .search-field {
+        display: grid;
+        gap: 5px;
+      }
+
+      .search-field-label {
+        font-size: 11px;
+        color: var(--muted);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .search-input,
+      .search-select {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        padding: 7px 8px;
+        font: inherit;
+        font-size: 12px;
+        background: var(--panel);
+        color: var(--ink);
+      }
+
+      .search-input:focus,
+      .search-select:focus {
+        border-color: color-mix(in oklab, var(--brand) 55%, var(--line));
+        box-shadow: 0 0 0 3px rgba(168, 67, 43, 0.13);
+        outline: none;
+      }
+
+      .search-secondary-row {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 8px;
+        align-items: end;
+      }
+
+      .search-status-line {
+        font-size: 12px;
+        color: var(--muted);
+        justify-self: end;
+        text-align: right;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .search-results-wrap {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+        padding: 10px 12px;
+      }
+
+      .search-meta {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .search-error {
+        margin-top: 6px;
+        font-size: 12px;
+        color: color-mix(in oklab, #b53c31 82%, var(--ink));
+      }
+
+      .search-results {
+        margin-top: 10px;
+        display: grid;
+        gap: 9px;
+      }
+
+      .search-result-card {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: color-mix(in oklab, var(--panel) 88%, white 12%);
+        padding: 10px 11px;
+      }
+
+      .search-result-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .search-result-id {
+        min-width: 0;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+
+      .search-score {
+        border: 1px solid color-mix(in oklab, var(--brand) 35%, var(--line));
+        border-radius: 999px;
+        background: color-mix(in oklab, var(--brand-soft) 78%, white 22%);
+        color: color-mix(in oklab, var(--brand) 75%, #4c2318);
+        padding: 2px 7px;
+        font-size: 11px;
+      }
+
+      .search-result-path {
+        margin-top: 5px;
+        font-size: 11px;
+        color: var(--muted);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+
+      .search-result-snippet {
+        margin: 8px 0 0;
+        font-size: 12px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+      }
+
+      .search-actions {
+        margin-top: 8px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .search-fetch-box {
+        margin-top: 8px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        background: color-mix(in oklab, var(--panel-alt) 78%, white 22%);
+        padding: 8px 9px;
+      }
+
+      .search-fetch-label {
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+
+      .search-fetch-title {
+        margin-top: 4px;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .search-fetch-text {
+        margin: 6px 0 0;
+        font-size: 12px;
+        line-height: 1.5;
+        white-space: pre-wrap;
       }
 
       .bulk-toolbar {
@@ -874,6 +1176,72 @@
         overflow: auto;
       }
 
+      .modal-card.compact {
+        width: min(460px, 100%);
+      }
+
+      .modal-field {
+        display: grid;
+        gap: 6px;
+      }
+
+      .modal-label {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .modal-input {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        padding: 8px 9px;
+        font: inherit;
+        background: var(--panel);
+        color: var(--ink);
+      }
+
+      .modal-input:focus {
+        border-color: color-mix(in oklab, var(--brand) 55%, var(--line));
+        box-shadow: 0 0 0 3px rgba(168, 67, 43, 0.13);
+        outline: none;
+      }
+
+      .modal-actions {
+        margin-top: 12px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+      }
+
+      .modal-action-btn {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel-alt);
+        color: var(--ink);
+        font: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 7px 10px;
+      }
+
+      .modal-action-btn.primary {
+        border-color: color-mix(in oklab, var(--brand) 40%, var(--line));
+        background: color-mix(in oklab, var(--brand-soft) 75%, white 25%);
+        color: color-mix(in oklab, var(--brand) 78%, #4c2318);
+      }
+
+      .modal-action-btn.danger {
+        border-color: color-mix(in oklab, #b54b31 45%, var(--line));
+        background: color-mix(in oklab, #f6d9cf 78%, white 22%);
+        color: color-mix(in oklab, #8d2c1b 82%, var(--ink));
+      }
+
+      .modal-action-btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+
       .modal-note {
         color: var(--muted);
         font-size: 12px;
@@ -921,6 +1289,57 @@
         .pane {
           min-height: 280px;
         }
+
+        .search-form {
+          grid-template-columns: 1fr 1fr;
+        }
+
+        .search-field.search-field-query {
+          grid-column: 1 / -1;
+        }
+
+        .search-run-btn {
+          grid-column: 1 / -1;
+          width: 100%;
+        }
+
+        .search-secondary-row {
+          grid-template-columns: 1fr;
+        }
+
+        .search-status-line {
+          justify-self: start;
+          text-align: left;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .search-controls {
+          padding: 9px 10px;
+        }
+
+        .search-form {
+          grid-template-columns: 1fr;
+        }
+
+        .search-field.search-field-query,
+        .search-run-btn {
+          grid-column: 1;
+        }
+
+        .search-results-wrap {
+          padding: 9px 10px;
+        }
+
+        .search-result-head {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .search-actions .bulk-btn {
+          flex: 1 1 100%;
+          text-align: center;
+        }
       }
     </style>
   </head>
@@ -928,29 +1347,77 @@
     <div class="app-shell" id="appShell">
       <aside class="pane left-pane">
         <div class="pane-header">
-          <h1 class="pane-title">Buckets</h1>
+          <div class="pane-header-row">
+            <h1 class="pane-title">Buckets</h1>
+            <div class="bucket-header-actions">
+              <button
+                type="button"
+                id="openAddBucketModalBtn"
+                class="bucket-icon-btn"
+                title="Add bucket"
+                aria-label="Add bucket"
+              >
+                +
+              </button>
+              <button
+                type="button"
+                id="openDeleteBucketModalBtn"
+                class="bucket-icon-btn danger"
+                title="Delete selected bucket"
+                aria-label="Delete selected bucket"
+              >
+                -
+              </button>
+            </div>
+          </div>
           <div class="pane-subtitle">Choose a collection of files</div>
         </div>
         <div class="left-pane-content" id="bucketList"></div>
+        <div class="bucket-manager-status" id="bucketManagerStatus">Ready.</div>
       </aside>
 
       <main class="pane main-pane">
         <div class="pane-header">
           <h2 class="pane-title" id="tableTitle">Files</h2>
-          <div class="pane-subtitle">Table shows title, year, authors, and journal/book context, plus PDF and text links. If title is empty, filename is used.</div>
-          <div class="view-toggle" id="viewToggle">
-            <button type="button" class="view-toggle-btn" id="viewToggleBulk">Bulk Edit</button>
-            <button type="button" class="view-toggle-btn" id="viewToggleDetail">Detail Edit</button>
+          <div class="workspace-tabs" id="workspaceTabs">
+            <button type="button" class="workspace-tab-btn active" id="workspaceTabMetadata">BibTeX Manager</button>
+            <button type="button" class="workspace-tab-btn" id="workspaceTabSearch">Qdrant Search</button>
           </div>
-          <div class="main-tools">
-            <button type="button" id="autofillMissingBtn" class="main-action-btn">Autofill Missing Metadata</button>
-            <div id="autofillStatus" class="autofill-status">Ready.</div>
-          </div>
-          <div class="autofill-progress" id="autofillProgress" hidden>
-            <div class="autofill-progress-track">
-              <div class="autofill-progress-fill" id="autofillProgressFill"></div>
+          <div class="pane-subtitle" id="mainPaneSubtitle">Table shows title, year, authors, and journal/book context, plus PDF and text links. If title is empty, filename is used.</div>
+          <div class="metadata-header-tools" id="metadataHeaderTools">
+            <div class="view-toggle" id="viewToggle">
+              <button type="button" class="view-toggle-btn" id="viewToggleBulk">Bulk Edit</button>
+              <button type="button" class="view-toggle-btn" id="viewToggleDetail">Detail Edit</button>
             </div>
-            <div class="autofill-progress-text" id="autofillProgressText"></div>
+            <div class="main-tools">
+              <button type="button" id="autofillMissingBtn" class="main-action-btn">Autofill Missing Metadata</button>
+              <div id="autofillStatus" class="autofill-status">Ready.</div>
+            </div>
+            <div class="autofill-progress" id="autofillProgress" hidden>
+              <div class="autofill-progress-track">
+                <div class="autofill-progress-fill" id="autofillProgressFill"></div>
+              </div>
+              <div class="autofill-progress-text" id="autofillProgressText"></div>
+            </div>
+            <div class="upload-tools">
+              <button
+                type="button"
+                id="openUploadModalBtn"
+                class="main-action-btn upload-icon-btn"
+                title="Upload PDF files"
+                aria-label="Upload PDF files"
+              >
+                ⤴
+              </button>
+              <div class="autofill-status">Upload PDFs (multi-file supported).</div>
+            </div>
+            <div id="uploadStatus" class="autofill-status">Use Upload PDF Files to add one or more PDFs.</div>
+            <div class="autofill-progress" id="uploadProgress" hidden>
+              <div class="autofill-progress-track">
+                <div class="autofill-progress-fill" id="uploadProgressFill"></div>
+              </div>
+              <div class="autofill-progress-text" id="uploadProgressText"></div>
+            </div>
           </div>
         </div>
         <div class="main-pane-body">
@@ -1012,6 +1479,56 @@
               <div id="selectionHint">Select a file to edit extra BibTeX fields</div>
             </div>
           </div>
+
+          <div class="search-view" id="searchView" hidden>
+            <div class="search-controls">
+              <form id="searchForm" class="search-form">
+                <div class="search-field search-field-query">
+                  <label class="search-field-label" for="searchQueryInput">query</label>
+                  <input
+                    id="searchQueryInput"
+                    class="search-input"
+                    placeholder="Ask a question about your indexed corpus"
+                    autocomplete="off"
+                  />
+                </div>
+                <div class="search-field">
+                  <label class="search-field-label" for="searchTopKInput">top_k</label>
+                  <input id="searchTopKInput" class="search-input" type="number" min="1" max="50" value="8" />
+                </div>
+                <div class="search-field" id="searchPrefetchField">
+                  <label class="search-field-label" for="searchPrefetchKInput">prefetch_k</label>
+                  <input
+                    id="searchPrefetchKInput"
+                    class="search-input"
+                    type="number"
+                    min="1"
+                    max="500"
+                    value="60"
+                  />
+                </div>
+                <div class="search-field">
+                  <label class="search-field-label" for="searchRetrievalModeInput">retrieval mode</label>
+                  <select id="searchRetrievalModeInput" class="search-select">
+                    <option value="hybrid" selected>hybrid</option>
+                    <option value="cosine">cosine</option>
+                  </select>
+                </div>
+                <button type="submit" class="main-action-btn search-run-btn" id="searchRunBtn">Search</button>
+              </form>
+
+              <div class="search-secondary-row">
+                <button type="button" class="bulk-btn" id="searchRefreshBtn">Refresh</button>
+                <div class="search-status-line" id="searchStatusLine">Status: waiting to initialize search tools.</div>
+              </div>
+            </div>
+            <div class="search-results-wrap">
+              <div class="search-meta" id="searchMeta">Run a search to see results.</div>
+              <div class="search-error" id="searchError"></div>
+              <section class="search-results" id="searchResults"></section>
+              <div class="editor-empty" id="searchEmptyState">Run a search query to see ranked chunks.</div>
+            </div>
+          </div>
         </div>
       </main>
 
@@ -1031,6 +1548,80 @@
           <button type="button" class="modal-close" id="dataModalClose">Close</button>
         </div>
         <div class="modal-body" id="dataModalBody"></div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="addBucketModal" hidden>
+      <div class="modal-card compact" role="dialog" aria-modal="true" aria-labelledby="addBucketModalTitle">
+        <div class="modal-head">
+          <h3 class="modal-title" id="addBucketModalTitle">Add Bucket</h3>
+          <button type="button" class="modal-close" id="addBucketModalClose">Close</button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-field">
+            <label class="modal-label" for="addBucketModalInput">Bucket name</label>
+            <input
+              id="addBucketModalInput"
+              class="modal-input"
+              type="text"
+              placeholder="new-bucket-name"
+              autocomplete="off"
+            />
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="modal-action-btn" id="addBucketModalCancel">Cancel</button>
+            <button type="button" class="modal-action-btn primary" id="addBucketConfirmBtn">Create Bucket</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="deleteBucketModal" hidden>
+      <div class="modal-card compact" role="dialog" aria-modal="true" aria-labelledby="deleteBucketModalTitle">
+        <div class="modal-head">
+          <h3 class="modal-title" id="deleteBucketModalTitle">Delete Bucket</h3>
+          <button type="button" class="modal-close" id="deleteBucketModalClose">Close</button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-note" id="deleteBucketModalText">
+            This removes the selected bucket and all files in it.
+          </div>
+          <div class="modal-note">
+            Ingested Redis/Qdrant data for those files is deleted as well.
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="modal-action-btn" id="deleteBucketModalCancel">Cancel</button>
+            <button type="button" class="modal-action-btn danger" id="deleteBucketConfirmBtn">Delete Bucket</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="uploadModal" hidden>
+      <div class="modal-card compact" role="dialog" aria-modal="true" aria-labelledby="uploadModalTitle">
+        <div class="modal-head">
+          <h3 class="modal-title" id="uploadModalTitle">Upload PDF Files</h3>
+          <button type="button" class="modal-close" id="uploadModalClose">Close</button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-field">
+            <label class="modal-label" for="uploadModalFilesInput">Files (PDF only)</label>
+            <input
+              id="uploadModalFilesInput"
+              class="upload-file-input"
+              type="file"
+              accept=".pdf,application/pdf"
+              multiple
+            />
+          </div>
+          <div class="modal-note" style="margin-top: 8px">
+            Ingest runs automatically after upload. Multiple files are queued in Celery.
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="modal-action-btn" id="uploadModalCancel">Cancel</button>
+            <button type="button" class="modal-action-btn primary" id="uploadModalSubmit">Upload</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1305,6 +1896,7 @@
       const saveTimers = new Map();
       const saveInFlightByFileId = new Map();
       const autofillBatchSize = 20;
+      const ingestPollDelayMs = 900;
       const selectedBucketCookieName = "mcp_research_selected_bucket";
       const selectedBucketCookieMaxAgeSec = 60 * 60 * 24 * 365;
       const bulkWidthDefaults = { min: 120, max: 420 };
@@ -1320,6 +1912,7 @@
       let bulkHot = null;
 
       const state = {
+        workspaceTab: "metadata",
         viewMode: "detail",
         buckets: [],
         activeBucketId: null,
@@ -1360,6 +1953,30 @@
           running: false,
           fileId: null,
           message: "",
+          error: "",
+        },
+        bucketOps: {
+          running: false,
+          message: "Ready.",
+          error: "",
+        },
+        upload: {
+          running: false,
+          message: "Use Upload PDF Files to add one or more PDFs.",
+          error: "",
+          progress: 0,
+          phase: "idle",
+        },
+        search: {
+          initialized: false,
+          loading: false,
+          statusOk: false,
+          qdrantUrl: "",
+          activeCollection: "",
+          retrievalMode: "hybrid",
+          results: [],
+          details: {},
+          meta: "Run a search to see results.",
           error: "",
         },
       };
@@ -1621,6 +2238,19 @@
           }
         }
         renderAll();
+      }
+
+      function setWorkspaceTab(tab) {
+        if (tab !== "metadata" && tab !== "search") return;
+        if (state.workspaceTab === tab) return;
+        if (tab === "search" && state.viewMode === "bulk") {
+          finalizeBulkEditing();
+        }
+        state.workspaceTab = tab;
+        renderAll();
+        if (tab === "search") {
+          ensureSearchWorkspaceLoaded();
+        }
       }
 
       function bulkFilesForBucket(bucket) {
@@ -1948,6 +2578,352 @@
         renderAll();
       }
 
+      function sleep(ms) {
+        return new Promise((resolve) => {
+          window.setTimeout(resolve, ms);
+        });
+      }
+
+      async function uploadFormRequest(path, formData, onProgress) {
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("POST", rewriteApiRequestUrl(path), true);
+          xhr.upload.onprogress = (event) => {
+            if (!event.lengthComputable) return;
+            if (typeof onProgress === "function") {
+              onProgress(event.loaded, event.total);
+            }
+          };
+          xhr.onerror = () => reject(new Error("Network error while uploading file."));
+          xhr.onload = () => {
+            const text = String(xhr.responseText || "");
+            let payload = null;
+            if (text) {
+              try {
+                payload = JSON.parse(text);
+              } catch (_error) {
+                payload = null;
+              }
+            }
+            if (xhr.status < 200 || xhr.status >= 300) {
+              const detail = payload?.detail || text || `HTTP ${xhr.status}`;
+              reject(new Error(detail));
+              return;
+            }
+            resolve(payload || {});
+          };
+          xhr.send(formData);
+        });
+      }
+
+      async function refreshBucketData(bucketId, preferredObjectName = "") {
+        const bucket = bucketById(bucketId);
+        if (!bucket) return;
+        bucket.loaded = false;
+        bucket.loading = false;
+        bucket.error = "";
+        await ensureBucketLoaded(bucketId);
+        if (preferredObjectName) {
+          const refreshed = bucketById(bucketId);
+          const match = refreshed?.files.find((entry) => entry.objectName === preferredObjectName);
+          if (match) {
+            state.activeFileId = match.id;
+          }
+        }
+      }
+
+      function closeAddBucketModal() {
+        const modal = document.getElementById("addBucketModal");
+        const input = document.getElementById("addBucketModalInput");
+        if (modal) modal.hidden = true;
+        if (input) input.value = "";
+      }
+
+      function openAddBucketModal() {
+        if (state.bucketOps.running) return;
+        const modal = document.getElementById("addBucketModal");
+        const input = document.getElementById("addBucketModalInput");
+        if (!modal || !input) return;
+        modal.hidden = false;
+        window.setTimeout(() => {
+          input.focus();
+          input.select();
+        }, 0);
+      }
+
+      function closeDeleteBucketModal() {
+        const modal = document.getElementById("deleteBucketModal");
+        const confirmBtn = document.getElementById("deleteBucketConfirmBtn");
+        if (modal) modal.hidden = true;
+        if (confirmBtn) {
+          confirmBtn.removeAttribute("data-bucket-id");
+        }
+      }
+
+      function openDeleteBucketModal() {
+        if (state.bucketOps.running) return;
+        const bucket = getActiveBucket();
+        if (!bucket) {
+          state.bucketOps.error = "Select a bucket first.";
+          state.bucketOps.message = "Select a bucket first.";
+          renderAll();
+          return;
+        }
+        const modal = document.getElementById("deleteBucketModal");
+        const text = document.getElementById("deleteBucketModalText");
+        const confirmBtn = document.getElementById("deleteBucketConfirmBtn");
+        if (!modal || !text || !confirmBtn) return;
+        text.textContent = `Delete bucket "${bucket.name}" and all files in it?`;
+        confirmBtn.setAttribute("data-bucket-id", bucket.id);
+        modal.hidden = false;
+      }
+
+      async function addBucketByName(rawName) {
+        const raw = String(rawName || "").trim();
+        if (!raw) {
+          state.bucketOps.error = "Bucket name is required.";
+          state.bucketOps.message = "Bucket name is required.";
+          renderAll();
+          return false;
+        }
+        state.bucketOps.running = true;
+        state.bucketOps.error = "";
+        state.bucketOps.message = `Creating bucket "${raw}"...`;
+        renderAll();
+        try {
+          await apiRequest("/api/buckets", {
+            method: "POST",
+            body: JSON.stringify({ bucket: raw }),
+          });
+          await loadBuckets();
+          if (bucketById(raw)) {
+            selectBucket(raw);
+          }
+          state.bucketOps.message = `Bucket ready: ${raw}`;
+          state.bucketOps.error = "";
+          return true;
+        } catch (error) {
+          state.bucketOps.error = String(error.message || error);
+          state.bucketOps.message = `Bucket create failed: ${state.bucketOps.error}`;
+          return false;
+        } finally {
+          state.bucketOps.running = false;
+          renderAll();
+        }
+      }
+
+      async function confirmAddBucketFromModal() {
+        const input = document.getElementById("addBucketModalInput");
+        const raw = input ? String(input.value || "").trim() : "";
+        const ok = await addBucketByName(raw);
+        if (ok) {
+          closeAddBucketModal();
+        }
+      }
+
+      async function deleteBucketById(bucketId) {
+        const normalizedBucketId = String(bucketId || "").trim();
+        if (!normalizedBucketId || state.bucketOps.running) return false;
+        const bucket = bucketById(normalizedBucketId);
+        const bucketName = String(bucket?.name || normalizedBucketId);
+        state.bucketOps.running = true;
+        state.bucketOps.error = "";
+        state.bucketOps.message = `Deleting bucket "${bucketName}"...`;
+        renderAll();
+        try {
+          await apiRequest(
+            `/api/buckets/${encodeURIComponent(normalizedBucketId)}?force=true&delete_ingested=true`,
+            { method: "DELETE" }
+          );
+          await loadBuckets();
+          state.bucketOps.message = `Deleted bucket: ${bucketName}`;
+          state.bucketOps.error = "";
+          return true;
+        } catch (error) {
+          state.bucketOps.error = String(error.message || error);
+          state.bucketOps.message = `Bucket delete failed: ${state.bucketOps.error}`;
+          return false;
+        } finally {
+          state.bucketOps.running = false;
+          renderAll();
+        }
+      }
+
+      async function confirmDeleteBucketFromModal() {
+        const confirmBtn = document.getElementById("deleteBucketConfirmBtn");
+        if (!confirmBtn) return;
+        const bucketId = String(confirmBtn.getAttribute("data-bucket-id") || "").trim();
+        const ok = await deleteBucketById(bucketId);
+        if (ok) {
+          closeDeleteBucketModal();
+        }
+      }
+
+      function closeUploadModal() {
+        const modal = document.getElementById("uploadModal");
+        const filesInput = document.getElementById("uploadModalFilesInput");
+        if (modal) modal.hidden = true;
+        if (filesInput) filesInput.value = "";
+      }
+
+      function openUploadModal() {
+        const bucket = getActiveBucket();
+        if (!bucket) {
+          state.upload.error = "Select a bucket first.";
+          state.upload.message = "Select a bucket first.";
+          renderAll();
+          return;
+        }
+        if (state.upload.running) return;
+        const modal = document.getElementById("uploadModal");
+        const filesInput = document.getElementById("uploadModalFilesInput");
+        if (!modal || !filesInput) return;
+        modal.hidden = false;
+        window.setTimeout(() => {
+          filesInput.focus();
+        }, 0);
+      }
+
+      async function pollIngestJob(jobId) {
+        while (true) {
+          const payload = await apiRequest(`/api/ingest-jobs/${encodeURIComponent(jobId)}`);
+          const status = String(payload.status || "").toLowerCase();
+          const serverProgress = Number(payload.progress || 0);
+          state.upload.phase = status || "ingesting";
+          state.upload.progress = Math.max(55, Math.min(99, serverProgress || 55));
+          state.upload.message = String(payload.message || "Running ingest...");
+          state.upload.error = "";
+          renderAll();
+          if (status === "completed") {
+            state.upload.phase = "completed";
+            state.upload.progress = 100;
+            state.upload.message = String(payload.message || "Ingest completed.");
+            return payload;
+          }
+          if (status === "failed") {
+            const detail = String(payload.error || payload.message || "Ingest failed.");
+            throw new Error(detail);
+          }
+          await sleep(ingestPollDelayMs);
+        }
+      }
+
+      async function uploadFileToActiveBucket() {
+        const bucket = getActiveBucket();
+        const filesInput = document.getElementById("uploadModalFilesInput");
+        if (!bucket || !filesInput) return;
+        if (state.upload.running || bucket.loading) return;
+
+        const files = filesInput.files ? Array.from(filesInput.files) : [];
+        if (files.length === 0) {
+          state.upload.error = "Choose at least one PDF file to upload.";
+          state.upload.message = "Choose at least one PDF file to upload.";
+          renderAll();
+          return;
+        }
+        const invalid = files.find((entry) => !String(entry.name || "").toLowerCase().endsWith(".pdf"));
+        if (invalid) {
+          state.upload.error = `Only PDF files are supported: ${invalid.name}`;
+          state.upload.message = state.upload.error;
+          renderAll();
+          return;
+        }
+
+        const formData = new FormData();
+        for (const entry of files) {
+          formData.append("files", entry);
+        }
+        formData.append("create_bucket", "false");
+
+        state.upload.running = true;
+        state.upload.phase = "uploading";
+        state.upload.progress = 1;
+        state.upload.error = "";
+        state.upload.message = `Uploading ${files.length} PDF file(s)...`;
+        renderAll();
+
+        try {
+          const payload = await uploadFormRequest(
+            `/api/buckets/${encodeURIComponent(bucket.id)}/files/upload`,
+            formData,
+            (loaded, total) => {
+              if (!total) return;
+              const percent = Math.max(1, Math.min(65, Math.round((loaded / total) * 65)));
+              state.upload.phase = "uploading";
+              state.upload.progress = percent;
+              state.upload.message = `Uploading ${files.length} file(s)...`;
+              renderUploadControls();
+            }
+          );
+
+          const uploaded = Array.isArray(payload.uploaded) ? payload.uploaded : [];
+          const uploadedCount = Number(payload.uploaded_count || uploaded.length || files.length);
+          state.upload.progress = 70;
+          state.upload.phase = "uploaded";
+          state.upload.message = "Upload complete. Starting ingest...";
+          renderAll();
+
+          const jobId = String(payload.job_id || "").trim();
+          const queuedCount = Number(payload.queued_count || 0);
+          if (jobId) {
+            await pollIngestJob(jobId);
+          } else if (uploadedCount > 1) {
+            state.upload.phase = "queued";
+            state.upload.progress = 100;
+            state.upload.message = `Uploaded ${uploadedCount} file(s). Queued ${queuedCount} ingest task(s) in Celery.`;
+            const queueErrors = Array.isArray(payload.queue_errors) ? payload.queue_errors : [];
+            state.upload.error = queueErrors.length > 0 ? String(queueErrors[0]) : "";
+          } else {
+            state.upload.phase = "completed";
+            state.upload.progress = 100;
+            state.upload.message = `Upload complete (${uploadedCount} file(s)).`;
+          }
+
+          await refreshBucketData(bucket.id);
+          if (!state.upload.error) {
+            closeUploadModal();
+          }
+        } catch (error) {
+          state.upload.phase = "failed";
+          state.upload.progress = 100;
+          state.upload.error = String(error.message || error);
+          state.upload.message = `Upload failed: ${state.upload.error}`;
+        } finally {
+          state.upload.running = false;
+          renderAll();
+        }
+      }
+
+      async function deleteFileFromBucket(file) {
+        if (!file || !file.bucket || !file.objectName) return;
+        const confirmed = window.confirm(
+          `Remove "${file.fileName}" from bucket "${file.bucket}" and delete ingested data?`
+        );
+        if (!confirmed) return;
+        try {
+          await apiRequest(
+            `/api/buckets/${encodeURIComponent(file.bucket)}/files/${encodeObjectPath(file.objectName)}?delete_ingested=true`,
+            { method: "DELETE" }
+          );
+          const bucket = bucketById(file.bucket);
+          if (bucket) {
+            bucket.files = bucket.files.filter((entry) => entry.id !== file.id);
+            if (state.activeFileId === file.id) {
+              state.activeFileId = bucket.files.length > 0 ? bucket.files[0].id : null;
+            }
+          }
+          delete state.redisSummaryByFile[file.id];
+          delete state.redisDetailCache[file.id];
+          state.bucketOps.error = "";
+          state.bucketOps.message = `Removed file: ${file.fileName}`;
+          renderAll();
+        } catch (error) {
+          state.bucketOps.error = String(error.message || error);
+          state.bucketOps.message = `File delete failed: ${state.bucketOps.error}`;
+          renderAll();
+        }
+      }
+
       async function apiRequest(path, options = {}) {
         const requestOptions = {
           ...options,
@@ -1978,6 +2954,460 @@
           .split("/")
           .map((part) => encodeURIComponent(part))
           .join("/");
+      }
+
+      function safeSearchText(value) {
+        if (value === undefined || value === null) return "";
+        return String(value);
+      }
+
+      function searchTruncate(text, maxLen = 6000) {
+        const raw = safeSearchText(text).trim();
+        if (!raw) return "";
+        if (raw.length <= maxLen) return raw;
+        return `${raw.slice(0, maxLen - 3)}...`;
+      }
+
+      function searchSourcePath(item) {
+        if (item && item.bucket && item.key) return `${item.bucket}/${item.key}`;
+        if (item && item.source) return safeSearchText(item.source);
+        if (item && item.document_id) return `document:${item.document_id}`;
+        return "unknown source";
+      }
+
+      function searchPrettyJson(value) {
+        try {
+          return JSON.stringify(value, null, 2);
+        } catch (_err) {
+          return safeSearchText(value);
+        }
+      }
+
+      function searchKeyRef(payload) {
+        if (!payload || typeof payload !== "object") return "-";
+        if (payload.bucket && payload.key) return `${safeSearchText(payload.bucket)}/${safeSearchText(payload.key)}`;
+        if (payload.source) return safeSearchText(payload.source);
+        return "-";
+      }
+
+      function searchExtractChunkText(entry) {
+        if (!entry || typeof entry !== "object") return "";
+        for (const key of ["text", "chunk_text", "content", "chunk", "page_content", "raw_text"]) {
+          const value = entry[key];
+          if (typeof value === "string" && value.trim()) {
+            return value.trim();
+          }
+        }
+        return "";
+      }
+
+      function searchFormatChunkTexts(chunks) {
+        if (!Array.isArray(chunks) || chunks.length === 0) return "";
+        const texts = [];
+        for (const chunk of chunks) {
+          const text = searchExtractChunkText(chunk);
+          if (text) texts.push(text);
+        }
+        return texts.join("\n\n---\n\n");
+      }
+
+      function searchSetError(message) {
+        state.search.error = safeSearchText(message);
+      }
+
+      function searchSelectedCollection() {
+        const activeBucket = getActiveBucket();
+        if (activeBucket && activeBucket.id) return safeSearchText(activeBucket.id);
+        return "";
+      }
+
+      async function loadSearchStatus() {
+        const payload = await apiRequest("/api/search/status");
+        state.search.statusOk = Boolean(payload.ok);
+        state.search.qdrantUrl = safeSearchText(payload.qdrant_url || "");
+      }
+
+      async function ensureSearchWorkspaceLoaded(force = false) {
+        if (state.search.loading) return;
+        if (!force && state.search.initialized) return;
+        state.search.loading = true;
+        if (force) {
+          state.search.error = "";
+        }
+        renderAll();
+        try {
+          await loadSearchStatus();
+          state.search.initialized = true;
+          state.search.error = "";
+        } catch (error) {
+          searchSetError(error.message || "Failed to initialize search workspace");
+        } finally {
+          state.search.loading = false;
+          renderAll();
+        }
+      }
+
+      async function runSearchQuery() {
+        const collection = searchSelectedCollection();
+        if (!collection) {
+          searchSetError("Select a bucket first.");
+          renderAll();
+          return;
+        }
+
+        const queryInput = document.getElementById("searchQueryInput");
+        const topKInput = document.getElementById("searchTopKInput");
+        const prefetchKInput = document.getElementById("searchPrefetchKInput");
+        const retrievalModeInput = document.getElementById("searchRetrievalModeInput");
+        if (!queryInput || !topKInput || !prefetchKInput || !retrievalModeInput) return;
+
+        const query = safeSearchText(queryInput.value).trim();
+        if (!query) {
+          searchSetError("Enter a search query.");
+          renderAll();
+          return;
+        }
+
+        const retrievalMode = safeSearchText(retrievalModeInput.value || "hybrid").toLowerCase();
+        state.search.retrievalMode = retrievalMode === "cosine" ? "cosine" : "hybrid";
+        const topK = Number.parseInt(safeSearchText(topKInput.value || "8"), 10);
+        const body = {
+          query,
+          topK: Number.isFinite(topK) ? topK : 8,
+          retrievalMode: state.search.retrievalMode,
+          collection,
+        };
+        if (state.search.retrievalMode === "hybrid") {
+          const prefetchK = Number.parseInt(safeSearchText(prefetchKInput.value || "60"), 10);
+          body.prefetchK = Number.isFinite(prefetchK) ? prefetchK : 60;
+        }
+
+        state.search.loading = true;
+        state.search.error = "";
+        state.search.meta = "Running search...";
+        renderAll();
+        try {
+          const payload = await apiRequest("/api/search", {
+            method: "POST",
+            body: JSON.stringify(body),
+          });
+          state.search.results = Array.isArray(payload.results) ? payload.results : [];
+          state.search.activeCollection = safeSearchText(payload.collection || body.collection || "");
+          state.search.retrievalMode = safeSearchText(payload.retrieval_mode || state.search.retrievalMode || "hybrid").toLowerCase();
+          state.search.details = {};
+          state.search.meta =
+            `Mode: ${state.search.retrievalMode} | Collection: ${state.search.activeCollection || "-"} | ` +
+            `Results: ${state.search.results.length} | Latency: ${safeSearchText(payload.latency_ms)}ms`;
+        } catch (error) {
+          searchSetError(error.message || "Search failed");
+          state.search.results = [];
+          state.search.meta = "Search failed.";
+        } finally {
+          state.search.loading = false;
+          renderAll();
+        }
+      }
+
+      function searchPrimaryPage(item) {
+        const rawStart = Number.parseInt(safeSearchText(item && item.page_start), 10);
+        if (Number.isFinite(rawStart) && rawStart > 0) return rawStart;
+        const pages = Array.isArray(item && item.pages) ? item.pages : [];
+        const pageValues = pages
+          .map((entry) => Number.parseInt(safeSearchText(entry), 10))
+          .filter((entry) => Number.isFinite(entry) && entry > 0);
+        if (pageValues.length > 0) return pageValues[0];
+        const rawEnd = Number.parseInt(safeSearchText(item && item.page_end), 10);
+        if (Number.isFinite(rawEnd) && rawEnd > 0) return rawEnd;
+        return null;
+      }
+
+      function searchHighlightText(item) {
+        const text = searchExtractChunkText(item);
+        if (!text) return "";
+        const normalized = text
+          .toLowerCase()
+          .replace(/[^0-9a-z]+/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        if (!normalized) return "";
+        let words = normalized.split(" ").filter((entry) => entry.length >= 3);
+        if (words.length === 0) {
+          words = normalized.split(" ").filter((entry) => entry.length > 0);
+        }
+        if (words.length === 0) return "";
+        return words.slice(0, 8).join(" ");
+      }
+
+      function searchCitationHref(item) {
+        let citationUrl =
+          safeSearchText(item && item.citation_url_match) ||
+          safeSearchText(item && item.citation_url);
+        if (!citationUrl) {
+          const sourceRef = safeSearchText(item && item.source_ref);
+          if (sourceRef) {
+            citationUrl = `/r/doc?ref=${encodeURIComponent(sourceRef)}`;
+          }
+        }
+        if (!citationUrl) return "";
+
+        try {
+          const parsed = new URL(citationUrl, window.location.origin);
+          const page = searchPrimaryPage(item);
+          const pageStart = Number.parseInt(safeSearchText(item && item.page_start), 10);
+          const pageEnd = Number.parseInt(safeSearchText(item && item.page_end), 10);
+          const highlight = searchHighlightText(item);
+          if (Number.isFinite(pageStart) && pageStart > 0 && !parsed.searchParams.has("page_start")) {
+            parsed.searchParams.set("page_start", String(pageStart));
+          }
+          if (Number.isFinite(pageEnd) && pageEnd > 0 && !parsed.searchParams.has("page_end")) {
+            parsed.searchParams.set("page_end", String(pageEnd));
+          }
+          if (page && !parsed.searchParams.has("page_start") && !parsed.searchParams.has("page_end")) {
+            parsed.searchParams.set("page", String(page));
+          }
+          if (highlight && !parsed.searchParams.has("highlight")) {
+            parsed.searchParams.set("highlight", highlight);
+          }
+          return parsed.toString();
+        } catch (_error) {
+          return citationUrl;
+        }
+      }
+
+      function setSearchResultDetail(pointId, kind, payload) {
+        const key = safeSearchText(pointId);
+        const current = state.search.details[key] || {};
+        state.search.details[key] = { ...current, [kind]: payload };
+      }
+
+      function searchDetailTitle(kind, payload) {
+        if (!payload || payload.found === false) return `${kind} not found`;
+        if (kind === "chunk") {
+          return `Chunk ${safeSearchText(payload.chunk_index) || "-"}`;
+        }
+        if (kind === "partition") {
+          const partition = payload.partition || {};
+          return `${safeSearchText(partition.label || "Partition")} | chunks ${Number(payload.count || 0)}`;
+        }
+        if (kind === "document") {
+          return `Document chunks ${Number(payload.count || 0)}`;
+        }
+        if (kind === "bibtex") {
+          return `citation_key: ${safeSearchText(payload.citation_key || "-")}`;
+        }
+        return kind;
+      }
+
+      function searchDetailBody(kind, payload) {
+        if (!payload) return "";
+        if (kind === "chunk") {
+          return searchTruncate(payload.text || "", 6000) || searchPrettyJson(payload);
+        }
+        if (kind === "bibtex") {
+          return searchTruncate(searchPrettyJson(payload.metadata || payload), 6000);
+        }
+        if (kind === "partition") {
+          const partition = payload.partition || {};
+          const header = [
+            `point_id: ${safeSearchText(payload.id || "-")}`,
+            `document_id: ${safeSearchText(payload.document_id || "-")}`,
+            `object: ${searchKeyRef(payload)}`,
+            `partition: ${safeSearchText(partition.label || "-")} (${safeSearchText(partition.page_start || "-")} - ${safeSearchText(partition.page_end || "-")})`,
+            `chunk_count: ${Number(payload.count || 0)}`,
+          ];
+          const body = searchFormatChunkTexts(payload.chunks || []);
+          if (!body) {
+            header.push("", "(No partition text found.)");
+            return searchTruncate(header.join("\n"), 6000);
+          }
+          return searchTruncate(`${header.join("\n")}\n\n${body}`, 6000);
+        }
+        if (kind === "document") {
+          const docIds = Array.isArray(payload.document_ids) ? payload.document_ids.join(", ") : "";
+          const header = [
+            `point_id: ${safeSearchText(payload.id || "-")}`,
+            `document_id: ${safeSearchText(payload.document_id || docIds || "-")}`,
+            `object: ${searchKeyRef(payload)}`,
+            `chunk_count: ${Number(payload.count || 0)}`,
+          ];
+          const body = searchFormatChunkTexts(payload.chunks || []);
+          if (!body) {
+            header.push("", "(No document text found.)");
+            return searchTruncate(header.join("\n"), 6000);
+          }
+          return searchTruncate(`${header.join("\n")}\n\n${body}`, 6000);
+        }
+        return searchTruncate(searchPrettyJson(payload), 6000);
+      }
+
+      function renderSearchDetailBox(kind, payload) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "search-fetch-box";
+
+        const label = document.createElement("div");
+        label.className = "search-fetch-label";
+        label.textContent = kind;
+
+        const title = document.createElement("div");
+        title.className = "search-fetch-title";
+        title.textContent = searchDetailTitle(kind, payload);
+
+        const text = document.createElement("pre");
+        text.className = "search-fetch-text";
+        text.textContent = searchDetailBody(kind, payload);
+
+        wrapper.append(label, title, text);
+        return wrapper;
+      }
+
+      function renderSearchDetails(pointId, card) {
+        const detail = state.search.details[safeSearchText(pointId)];
+        if (!detail) return;
+        for (const kind of ["bibtex"]) {
+          if (detail[kind] !== undefined) {
+            card.appendChild(renderSearchDetailBox(kind, detail[kind]));
+          }
+        }
+      }
+
+      async function fetchSearchResultDetail(item, kind) {
+        const pointId = safeSearchText(item && item.id);
+        if (!pointId) return;
+        const collection = state.search.activeCollection || searchSelectedCollection();
+        const query = collection ? `?collection=${encodeURIComponent(collection)}` : "";
+        const endpoint = {
+          bibtex: `/api/search/chunk/${encodeURIComponent(pointId)}/bibtex`,
+        }[kind];
+        if (!endpoint) return;
+
+        searchSetError("");
+        renderAll();
+        try {
+          const payload = await apiRequest(`${endpoint}${query}`);
+          setSearchResultDetail(pointId, kind, payload);
+        } catch (error) {
+          searchSetError(error.message || `Failed to fetch ${kind}`);
+        } finally {
+          renderAll();
+        }
+      }
+
+      function renderSearchResults() {
+        const resultsEl = document.getElementById("searchResults");
+        const emptyEl = document.getElementById("searchEmptyState");
+        if (!resultsEl || !emptyEl) return;
+        resultsEl.innerHTML = "";
+
+        const items = state.search.results || [];
+        emptyEl.hidden = items.length > 0;
+        for (const item of items) {
+          const card = document.createElement("article");
+          card.className = "search-result-card";
+
+          const head = document.createElement("div");
+          head.className = "search-result-head";
+
+          const idText = document.createElement("strong");
+          idText.className = "search-result-id";
+          idText.textContent = `id: ${safeSearchText(item.id)}`;
+
+          const score = document.createElement("span");
+          score.className = "search-score";
+          score.textContent = `score ${Number(item.score || 0).toFixed(4)}`;
+
+          head.append(idText, score);
+
+          const path = document.createElement("div");
+          path.className = "search-result-path";
+          path.textContent = searchSourcePath(item);
+
+          const citationKey = document.createElement("div");
+          citationKey.className = "search-result-path";
+          citationKey.textContent = `citation_key: ${safeSearchText(item.citation_key || "-")}`;
+
+          const snippet = document.createElement("p");
+          snippet.className = "search-result-snippet";
+          snippet.textContent = searchTruncate(item.text, 460) || "No text in payload.";
+
+          const actions = document.createElement("div");
+          actions.className = "search-actions";
+
+          const fetchBibtexBtn = document.createElement("button");
+          fetchBibtexBtn.type = "button";
+          fetchBibtexBtn.className = "bulk-btn";
+          fetchBibtexBtn.textContent = "Show BibTeX";
+          fetchBibtexBtn.addEventListener("click", () => {
+            fetchSearchResultDetail(item, "bibtex");
+          });
+          actions.append(fetchBibtexBtn);
+
+          const citationHref = searchCitationHref(item);
+          if (citationHref) {
+            const openLink = document.createElement("a");
+            openLink.className = "bulk-btn";
+            openLink.href = citationHref;
+            openLink.target = "_blank";
+            openLink.rel = "noopener noreferrer";
+            openLink.textContent = "Open Citation";
+            actions.append(openLink);
+          }
+
+          card.append(head, path, citationKey, snippet, actions);
+          renderSearchDetails(item.id, card);
+          resultsEl.append(card);
+        }
+      }
+
+      function renderSearchWorkspace() {
+        const queryInput = document.getElementById("searchQueryInput");
+        const topKInput = document.getElementById("searchTopKInput");
+        const prefetchKInput = document.getElementById("searchPrefetchKInput");
+        const prefetchField = document.getElementById("searchPrefetchField");
+        const retrievalModeInput = document.getElementById("searchRetrievalModeInput");
+        const runBtn = document.getElementById("searchRunBtn");
+        const refreshBtn = document.getElementById("searchRefreshBtn");
+        const statusLine = document.getElementById("searchStatusLine");
+        const meta = document.getElementById("searchMeta");
+        const error = document.getElementById("searchError");
+        if (
+          !queryInput ||
+          !topKInput ||
+          !prefetchKInput ||
+          !prefetchField ||
+          !retrievalModeInput ||
+          !runBtn ||
+          !refreshBtn ||
+          !statusLine ||
+          !meta ||
+          !error
+        ) {
+          return;
+        }
+
+        retrievalModeInput.value = state.search.retrievalMode === "cosine" ? "cosine" : "hybrid";
+        prefetchField.hidden = state.search.retrievalMode === "cosine";
+
+        const busy = state.search.loading;
+        const selectedCollection = searchSelectedCollection();
+        runBtn.disabled = busy || !state.search.initialized || !selectedCollection;
+        runBtn.textContent = busy ? "Searching..." : "Search";
+        refreshBtn.disabled = busy;
+        retrievalModeInput.disabled = busy;
+        topKInput.disabled = busy;
+        prefetchKInput.disabled = busy || state.search.retrievalMode === "cosine";
+        queryInput.disabled = busy;
+
+        const statusParts = [];
+        statusParts.push(state.search.statusOk ? "Connected" : "Unavailable");
+        if (state.search.qdrantUrl) {
+          statusParts.push(state.search.qdrantUrl);
+        }
+        statusParts.push(`collection: ${selectedCollection || "(select a bucket)"}`);
+        statusLine.textContent = `Status: ${statusParts.join(" | ")}`;
+        meta.textContent = state.search.meta || "Run a search to see results.";
+        error.textContent = state.search.error || "";
+
+        renderSearchResults();
       }
 
       function sortValueForFile(file, key) {
@@ -2069,6 +3499,21 @@
         }
       }
 
+      function initWorkspaceTabs() {
+        const metadataBtn = document.getElementById("workspaceTabMetadata");
+        const searchBtn = document.getElementById("workspaceTabSearch");
+        if (metadataBtn) {
+          metadataBtn.addEventListener("click", () => {
+            setWorkspaceTab("metadata");
+          });
+        }
+        if (searchBtn) {
+          searchBtn.addEventListener("click", () => {
+            setWorkspaceTab("search");
+          });
+        }
+      }
+
       function renderAutofillControls() {
         const button = document.getElementById("autofillMissingBtn");
         const status = document.getElementById("autofillStatus");
@@ -2104,12 +3549,244 @@
           `${processed}/${total} • ${percent}% • updated ${updated} • skipped ${skipped} • low confidence ${lowConfidence} • DOI conflicts ${conflicts} • errors ${failed}`;
       }
 
+      function renderBucketManagerControls() {
+        const addBtn = document.getElementById("openAddBucketModalBtn");
+        const delBtn = document.getElementById("openDeleteBucketModalBtn");
+        const status = document.getElementById("bucketManagerStatus");
+        const addConfirmBtn = document.getElementById("addBucketConfirmBtn");
+        const deleteConfirmBtn = document.getElementById("deleteBucketConfirmBtn");
+        const addCancelBtn = document.getElementById("addBucketModalCancel");
+        const deleteCancelBtn = document.getElementById("deleteBucketModalCancel");
+        const addCloseBtn = document.getElementById("addBucketModalClose");
+        const deleteCloseBtn = document.getElementById("deleteBucketModalClose");
+        if (!addBtn || !delBtn || !status) return;
+
+        const activeBucket = getActiveBucket();
+        const busy = state.bucketOps.running || state.loadingBuckets;
+        addBtn.disabled = busy;
+        delBtn.disabled = busy || !activeBucket;
+        if (addConfirmBtn) {
+          addConfirmBtn.disabled = busy;
+          addConfirmBtn.textContent = state.bucketOps.running ? "Creating..." : "Create Bucket";
+        }
+        if (deleteConfirmBtn) {
+          deleteConfirmBtn.disabled = busy;
+          deleteConfirmBtn.textContent = state.bucketOps.running ? "Deleting..." : "Delete Bucket";
+        }
+        if (addCancelBtn) addCancelBtn.disabled = busy;
+        if (deleteCancelBtn) deleteCancelBtn.disabled = busy;
+        if (addCloseBtn) addCloseBtn.disabled = busy;
+        if (deleteCloseBtn) deleteCloseBtn.disabled = busy;
+        status.textContent = state.bucketOps.message || "Ready.";
+      }
+
+      function renderUploadControls() {
+        const button = document.getElementById("openUploadModalBtn");
+        const modal = document.getElementById("uploadModal");
+        const filesInput = document.getElementById("uploadModalFilesInput");
+        const submitBtn = document.getElementById("uploadModalSubmit");
+        const cancelBtn = document.getElementById("uploadModalCancel");
+        const closeBtn = document.getElementById("uploadModalClose");
+        const status = document.getElementById("uploadStatus");
+        const progressWrap = document.getElementById("uploadProgress");
+        const progressFill = document.getElementById("uploadProgressFill");
+        const progressText = document.getElementById("uploadProgressText");
+        if (!button || !status || !progressWrap || !progressFill || !progressText) {
+          return;
+        }
+
+        const activeBucket = getActiveBucket();
+        const bucketReady = !!activeBucket && activeBucket.loaded && !activeBucket.loading;
+        const disabled = !bucketReady || state.upload.running;
+        button.disabled = disabled;
+        button.textContent = state.upload.running ? "..." : "⤴";
+        if (filesInput) filesInput.disabled = state.upload.running || !bucketReady;
+        if (submitBtn) {
+          submitBtn.disabled = state.upload.running || !bucketReady;
+          submitBtn.textContent = state.upload.running ? "Uploading..." : "Upload";
+        }
+        if (cancelBtn) cancelBtn.disabled = state.upload.running;
+        if (closeBtn) closeBtn.disabled = state.upload.running;
+        status.textContent = state.upload.message || "Use Upload PDF Files to add one or more PDFs.";
+        if (!bucketReady && modal && !modal.hidden && !state.upload.running) {
+          modal.hidden = true;
+        }
+
+        const hasProgress =
+          state.upload.running ||
+          state.upload.phase === "queued" ||
+          state.upload.phase === "completed" ||
+          state.upload.phase === "failed";
+        progressWrap.hidden = !hasProgress;
+        if (!hasProgress) {
+          progressFill.style.width = "0%";
+          progressText.textContent = "";
+          return;
+        }
+        const percent = Math.max(0, Math.min(100, Math.round(Number(state.upload.progress || 0))));
+        progressFill.style.width = `${percent}%`;
+        const phase = String(state.upload.phase || "idle");
+        const error = state.upload.error ? ` • error ${state.upload.error}` : "";
+        progressText.textContent = `${percent}% • ${phase}${error}`;
+      }
+
       function initAutofillControls() {
         const button = document.getElementById("autofillMissingBtn");
         if (!button) return;
         button.addEventListener("click", () => {
           runAutofillMissing();
         });
+      }
+
+      function initBucketManagerControls() {
+        const addBtn = document.getElementById("openAddBucketModalBtn");
+        const delBtn = document.getElementById("openDeleteBucketModalBtn");
+        const addConfirmBtn = document.getElementById("addBucketConfirmBtn");
+        const addCancelBtn = document.getElementById("addBucketModalCancel");
+        const addCloseBtn = document.getElementById("addBucketModalClose");
+        const addInput = document.getElementById("addBucketModalInput");
+        const addModal = document.getElementById("addBucketModal");
+        const deleteConfirmBtn = document.getElementById("deleteBucketConfirmBtn");
+        const deleteCancelBtn = document.getElementById("deleteBucketModalCancel");
+        const deleteCloseBtn = document.getElementById("deleteBucketModalClose");
+        const deleteModal = document.getElementById("deleteBucketModal");
+
+        if (addBtn) {
+          addBtn.addEventListener("click", () => {
+            openAddBucketModal();
+          });
+        }
+        if (delBtn) {
+          delBtn.addEventListener("click", () => {
+            openDeleteBucketModal();
+          });
+        }
+        if (addConfirmBtn) {
+          addConfirmBtn.addEventListener("click", () => {
+            confirmAddBucketFromModal();
+          });
+        }
+        if (addCancelBtn) {
+          addCancelBtn.addEventListener("click", () => {
+            closeAddBucketModal();
+          });
+        }
+        if (addCloseBtn) {
+          addCloseBtn.addEventListener("click", () => {
+            closeAddBucketModal();
+          });
+        }
+        if (addInput) {
+          addInput.addEventListener("keydown", (event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            confirmAddBucketFromModal();
+          });
+        }
+        if (addModal) {
+          addModal.addEventListener("click", (event) => {
+            if (event.target === addModal && !state.bucketOps.running) {
+              closeAddBucketModal();
+            }
+          });
+        }
+        if (deleteConfirmBtn) {
+          deleteConfirmBtn.addEventListener("click", () => {
+            confirmDeleteBucketFromModal();
+          });
+        }
+        if (deleteCancelBtn) {
+          deleteCancelBtn.addEventListener("click", () => {
+            closeDeleteBucketModal();
+          });
+        }
+        if (deleteCloseBtn) {
+          deleteCloseBtn.addEventListener("click", () => {
+            closeDeleteBucketModal();
+          });
+        }
+        if (deleteModal) {
+          deleteModal.addEventListener("click", (event) => {
+            if (event.target === deleteModal && !state.bucketOps.running) {
+              closeDeleteBucketModal();
+            }
+          });
+        }
+      }
+
+      function initUploadControls() {
+        const openBtn = document.getElementById("openUploadModalBtn");
+        const modal = document.getElementById("uploadModal");
+        const closeBtn = document.getElementById("uploadModalClose");
+        const cancelBtn = document.getElementById("uploadModalCancel");
+        const submitBtn = document.getElementById("uploadModalSubmit");
+        const filesInput = document.getElementById("uploadModalFilesInput");
+        if (openBtn) {
+          openBtn.addEventListener("click", () => {
+            openUploadModal();
+          });
+        }
+        if (closeBtn) {
+          closeBtn.addEventListener("click", () => {
+            closeUploadModal();
+          });
+        }
+        if (cancelBtn) {
+          cancelBtn.addEventListener("click", () => {
+            closeUploadModal();
+          });
+        }
+        if (submitBtn) {
+          submitBtn.addEventListener("click", () => {
+            uploadFileToActiveBucket();
+          });
+        }
+        if (filesInput) {
+          filesInput.addEventListener("keydown", (event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            uploadFileToActiveBucket();
+          });
+        }
+        if (modal) {
+          modal.addEventListener("click", (event) => {
+            if (event.target === modal && !state.upload.running) {
+              closeUploadModal();
+            }
+          });
+        }
+      }
+
+      function initSearchControls() {
+        const form = document.getElementById("searchForm");
+        const runBtn = document.getElementById("searchRunBtn");
+        const refreshBtn = document.getElementById("searchRefreshBtn");
+        const retrievalModeInput = document.getElementById("searchRetrievalModeInput");
+
+        if (form) {
+          form.addEventListener("submit", (event) => {
+            event.preventDefault();
+            runSearchQuery();
+          });
+        }
+        if (runBtn) {
+          runBtn.addEventListener("click", (event) => {
+            event.preventDefault();
+            runSearchQuery();
+          });
+        }
+        if (refreshBtn) {
+          refreshBtn.addEventListener("click", () => {
+            ensureSearchWorkspaceLoaded(true);
+          });
+        }
+        if (retrievalModeInput) {
+          retrievalModeInput.addEventListener("change", () => {
+            const mode = safeSearchText(retrievalModeInput.value || "hybrid").toLowerCase();
+            state.search.retrievalMode = mode === "cosine" ? "cosine" : "hybrid";
+            renderAll();
+          });
+        }
       }
 
       function initBulkControls() {
@@ -2709,20 +4386,45 @@
         detailBtn.classList.toggle("active", state.viewMode === "detail");
       }
 
+      function renderWorkspaceTabs() {
+        const metadataBtn = document.getElementById("workspaceTabMetadata");
+        const searchBtn = document.getElementById("workspaceTabSearch");
+        if (!metadataBtn || !searchBtn) return;
+        metadataBtn.classList.toggle("active", state.workspaceTab === "metadata");
+        searchBtn.classList.toggle("active", state.workspaceTab === "search");
+      }
+
       function renderLayoutMode() {
         const appShell = document.getElementById("appShell");
         const bulkView = document.getElementById("bulkView");
         const detailView = document.getElementById("detailView");
+        const searchView = document.getElementById("searchView");
+        const metadataHeaderTools = document.getElementById("metadataHeaderTools");
+        const subtitle = document.getElementById("mainPaneSubtitle");
+        const inSearchTab = state.workspaceTab === "search";
+        const inBulkMode = !inSearchTab && state.viewMode === "bulk";
         if (appShell) {
-          appShell.classList.toggle("bulk-mode", state.viewMode === "bulk");
+          appShell.classList.toggle("bulk-mode", inBulkMode);
+          appShell.classList.toggle("search-mode", inSearchTab);
         }
         if (bulkView) {
-          bulkView.hidden = state.viewMode !== "bulk";
+          bulkView.hidden = inSearchTab || state.viewMode !== "bulk";
         }
         if (detailView) {
-          detailView.hidden = state.viewMode !== "detail";
+          detailView.hidden = inSearchTab || state.viewMode !== "detail";
         }
-        if (state.viewMode !== "bulk") {
+        if (searchView) {
+          searchView.hidden = !inSearchTab;
+        }
+        if (metadataHeaderTools) {
+          metadataHeaderTools.hidden = inSearchTab;
+        }
+        if (subtitle) {
+          subtitle.textContent = inSearchTab
+            ? "Run hybrid or cosine search in Qdrant and inspect chunk/partition/document payloads."
+            : "Table shows title, year, authors, and journal/book context, plus PDF and text links. If title is empty, filename is used.";
+        }
+        if (inSearchTab || state.viewMode !== "bulk") {
           destroyBulkHot();
           state.bulk.rowFileIds = [];
         }
@@ -2908,6 +4610,19 @@
           });
           actions.append(textBtn);
 
+          const deleteBtn = document.createElement("button");
+          deleteBtn.type = "button";
+          deleteBtn.className = "file-link icon-btn";
+          deleteBtn.title = "Delete file and ingested data";
+          deleteBtn.setAttribute("aria-label", "Delete file and ingested data");
+          deleteBtn.innerHTML =
+            '<span class="file-action-chip file-action-chip-del" aria-hidden="true">DEL</span>';
+          deleteBtn.addEventListener("click", (event) => {
+            event.stopPropagation();
+            deleteFileFromBucket(file);
+          });
+          actions.append(deleteBtn);
+
           if (actions.childElementCount > 0) {
             linkCell.append(actions);
           } else {
@@ -2991,6 +4706,7 @@
         });
         const titleInput = document.createElement("input");
         titleInput.className = "editor-input";
+        titleInput.setAttribute("data-focus-key", "title");
         titleInput.value = file.title || "";
         titleInput.addEventListener("input", () => {
           file.title = titleInput.value;
@@ -3014,6 +4730,7 @@
         });
         const yearInput = document.createElement("input");
         yearInput.className = "editor-input";
+        yearInput.setAttribute("data-focus-key", "year");
         yearInput.value = file.year || "";
         yearInput.addEventListener("input", () => {
           file.year = yearInput.value;
@@ -3046,12 +4763,13 @@
         authorsWrap.append(authorsList);
 
         const authors = coerceAuthors(file);
-        for (const author of authors) {
+        for (const [authorIndex, author] of authors.entries()) {
           const row = document.createElement("div");
           row.className = "author-row";
 
           const firstNameInput = document.createElement("input");
           firstNameInput.className = "editor-input";
+          firstNameInput.setAttribute("data-focus-key", `authors.${authorIndex}.firstName`);
           firstNameInput.placeholder = "First name";
           firstNameInput.value = author.firstName || "";
           firstNameInput.addEventListener("input", () => {
@@ -3066,6 +4784,7 @@
 
           const lastNameInput = document.createElement("input");
           lastNameInput.className = "editor-input";
+          lastNameInput.setAttribute("data-focus-key", `authors.${authorIndex}.lastName`);
           lastNameInput.placeholder = "Last name";
           lastNameInput.value = author.lastName || "";
           lastNameInput.addEventListener("input", () => {
@@ -3130,6 +4849,7 @@
           if (field.type === "textarea") {
             const textarea = document.createElement("textarea");
             textarea.className = "editor-textarea";
+            textarea.setAttribute("data-focus-key", field.key);
             textarea.value = file[field.key] || "";
             textarea.addEventListener("input", () => {
               file[field.key] = textarea.value;
@@ -3139,6 +4859,7 @@
           } else if (field.type === "select") {
             const select = document.createElement("select");
             select.className = "editor-select";
+            select.setAttribute("data-focus-key", field.key);
             for (const optionValue of field.options) {
               const option = document.createElement("option");
               option.value = optionValue;
@@ -3161,6 +4882,7 @@
           } else {
             const input = document.createElement("input");
             input.className = "editor-input";
+            input.setAttribute("data-focus-key", field.key);
             input.value = file[field.key] || "";
             input.addEventListener("input", () => {
               file[field.key] = input.value;
@@ -3220,23 +4942,88 @@
         pane.append(grid);
       }
 
+      function captureEditorFocusSnapshot() {
+        const pane = document.getElementById("editorPane");
+        const active = document.activeElement;
+        if (!pane || !active || !pane.contains(active)) return null;
+
+        const focusKey = String(active.getAttribute("data-focus-key") || "").trim();
+        if (!focusKey) return null;
+
+        let selectionStart = null;
+        let selectionEnd = null;
+        if (active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement) {
+          if (typeof active.selectionStart === "number" && typeof active.selectionEnd === "number") {
+            selectionStart = active.selectionStart;
+            selectionEnd = active.selectionEnd;
+          }
+        }
+
+        return {
+          focusKey,
+          selectionStart,
+          selectionEnd,
+        };
+      }
+
+      function restoreEditorFocusSnapshot(snapshot) {
+        if (!snapshot || !snapshot.focusKey) return;
+        const pane = document.getElementById("editorPane");
+        if (!pane) return;
+
+        const target = pane.querySelector(`[data-focus-key="${snapshot.focusKey}"]`);
+        if (!(target instanceof HTMLElement)) return;
+        target.focus({ preventScroll: true });
+
+        if (
+          (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) &&
+          typeof snapshot.selectionStart === "number" &&
+          typeof snapshot.selectionEnd === "number"
+        ) {
+          const length = target.value.length;
+          const start = Math.max(0, Math.min(snapshot.selectionStart, length));
+          const end = Math.max(start, Math.min(snapshot.selectionEnd, length));
+          target.setSelectionRange(start, end);
+        }
+      }
+
       function renderAll() {
+        const editorFocusSnapshot =
+          state.workspaceTab === "metadata" && state.viewMode === "detail"
+            ? captureEditorFocusSnapshot()
+            : null;
         renderBuckets();
+        renderBucketManagerControls();
+        renderWorkspaceTabs();
         renderViewToggle();
         renderLayoutMode();
-        renderAutofillControls();
-        if (state.viewMode === "bulk") {
-          renderBulkView();
+        if (state.workspaceTab === "search") {
+          const title = document.getElementById("tableTitle");
+          if (title) title.textContent = "Qdrant Search";
+          renderSearchWorkspace();
         } else {
-          renderTable();
-          renderEditor();
+          renderAutofillControls();
+          renderUploadControls();
+          if (state.viewMode === "bulk") {
+            renderBulkView();
+          } else {
+            renderTable();
+            renderEditor();
+          }
         }
         renderModal();
+        if (editorFocusSnapshot) {
+          restoreEditorFocusSnapshot(editorFocusSnapshot);
+        }
       }
 
       initSortControls();
+      initWorkspaceTabs();
       initViewToggleControls();
       initAutofillControls();
+      initBucketManagerControls();
+      initUploadControls();
+      initSearchControls();
       initBulkControls();
       initModalControls();
       loadBuckets();

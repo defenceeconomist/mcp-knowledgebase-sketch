@@ -3,8 +3,8 @@ from __future__ import annotations
 import logging
 import os
 from typing import Any, Dict, List, Optional, Tuple
-from urllib.parse import quote
 
+from mcp_research.citation_utils import build_citation_url, build_source_ref
 from mcp_research.runtime_utils import decode_redis_value as _decode_redis_value, load_dotenv
 from mcp_research.schema_v2 import read_v2_source_doc_hash
 
@@ -519,14 +519,6 @@ def fetch_partition_chunks(
     }
 
 
-def _build_source_ref(bucket: str, key: str, version_id: str | None = None) -> str:
-    safe_key = quote(key.lstrip("/"), safe="/")
-    source_ref = f"doc://{bucket}/{safe_key}"
-    if version_id:
-        source_ref = f"{source_ref}?version_id={quote(version_id, safe='')}"
-    return source_ref
-
-
 def _build_original_file_url(entry: Dict[str, Any]) -> Optional[str]:
     source_ref = entry.get("source_ref")
     bucket = entry.get("bucket")
@@ -539,18 +531,9 @@ def _build_original_file_url(entry: Dict[str, Any]) -> Optional[str]:
             key = key or source_key
         if not (bucket and key):
             return None
-        source_ref = _build_source_ref(bucket, key, entry.get("version_id"))
+        source_ref = build_source_ref(bucket=bucket, key=key, version_id=entry.get("version_id"))
 
-    base = (
-        os.getenv("CITATION_BASE_URL")
-        or os.getenv("DOCS_BASE_URL")
-        or os.getenv("LINK_RESOLVER_BASE_URL")
-        or "http://localhost:8080"
-    ).rstrip("/")
-    ref_path = os.getenv("CITATION_REF_PATH", "/r/doc")
-    if not ref_path.startswith("/"):
-        ref_path = f"/{ref_path}"
-    return f"{base}{ref_path}?ref={quote(source_ref, safe='')}"
+    return build_citation_url(source_ref=source_ref)
 
 
 def attach_original_file_links(files: List[Dict[str, Any]]) -> None:

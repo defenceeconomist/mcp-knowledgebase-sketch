@@ -10,7 +10,7 @@ from unstructured_client import UnstructuredClient
 from unstructured_client.models import operations, shared
 from unstructured_client.models.errors import SDKError
 
-from mcp_research.link_resolver import build_source_ref
+from mcp_research.citation_utils import build_source_ref
 from mcp_research.runtime_utils import load_dotenv, load_env_bool
 from mcp_research.schema_v2 import (
     SourceDescriptor,

@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 from typing import Any, Dict, List, Optional, Tuple
 
 from fastmcp import FastMCP
@@ -8,7 +9,8 @@ from fastembed import SparseTextEmbedding, TextEmbedding
 from qdrant_client import QdrantClient
 
 from mcp_research import hybrid_search
-from mcp_research.link_resolver import build_citation_url, build_source_ref, resolve_link
+from mcp_research.citation_utils import build_citation_url, build_source_ref
+from mcp_research.link_resolver import resolve_link
 from mcp_research.runtime_utils import decode_redis_value as _decode_redis_value, load_dotenv
 from mcp_research.schema_v2 import (
     read_v2_doc_chunks,
@@ -308,6 +310,20 @@ def _extract_chunk_text(payload: Dict[str, Any]) -> str:
         if isinstance(value, str):
             return value
     return ""
+
+
+def _highlight_query_from_text(text: str, max_words: int = 8) -> str:
+    """Build a short, search-friendly highlight query from chunk text."""
+    raw = str(text or "").strip().lower()
+    if not raw:
+        return ""
+    normalized = re.sub(r"[^0-9a-z]+", " ", raw)
+    words = [word for word in normalized.split() if len(word) >= 3]
+    if not words:
+        words = [word for word in normalized.split() if word]
+    if not words:
+        return ""
+    return " ".join(words[:max_words]).strip()
 
 
 def _source_and_doc_identity(payload: Dict[str, Any]) -> tuple[str | None, str | None, str | None]:
@@ -760,6 +776,14 @@ def search(
     bundle_cache: Dict[str, Dict[str, Any]] = {}
     for point in response.points:
         payload = point.payload or {}
+        page_start, page_end = _payload_page_range(payload)
+        chunk_text = _extract_chunk_text(payload)
+        pages = _sorted_pages(payload)
+        if not pages and page_start is not None:
+            if page_end is None or page_end == page_start:
+                pages = [page_start]
+            else:
+                pages = list(range(page_start, page_end + 1))
         doc_hash, source_id_value, bucket, key, source, version_id = _payload_identity_fields(
             payload,
             resolve_source_meta=True,
@@ -775,12 +799,12 @@ def search(
         citation_url_match = None
         if source_ref and search_link_mode() == "dual":
             citation_url_doc_start = resolve_link(source_ref=source_ref, page=1).get("url")
-            page_start, page_end = _payload_page_range(payload)
+            highlight_query = _highlight_query_from_text(chunk_text)
             citation_url_match = resolve_link(
                 source_ref=source_ref,
                 page_start=page_start,
                 page_end=page_end,
-                highlight=_extract_chunk_text(payload)[:240],
+                highlight=highlight_query,
             ).get("url")
 
         partition_data = None
@@ -819,10 +843,10 @@ def search(
                 "key": key,
                 "version_id": version_id,
                 "chunk_index": _coerce_int(payload.get("chunk_index")),
-                "pages": payload.get("pages", []),
-                "page_start": payload.get("page_start"),
-                "page_end": payload.get("page_end"),
-                "text": payload.get("text", ""),
+                "pages": pages,
+                "page_start": page_start,
+                "page_end": page_end,
+                "text": chunk_text,
                 "partition": partition_data,
                 "document": document_data,
                 "citation_url_doc_start": citation_url_doc_start,

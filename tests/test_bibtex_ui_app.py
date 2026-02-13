@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import unittest
+from types import SimpleNamespace
 from unittest import mock
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -10,7 +11,14 @@ if SRC_ROOT not in sys.path:
     sys.path.insert(0, SRC_ROOT)
 
 from mcp_research import bibtex_ui_app
-from mcp_research.schema_v2 import source_id
+from mcp_research.schema_v2 import (
+    redis_v2_chunk_key,
+    redis_v2_doc_chunk_hashes_key,
+    redis_v2_doc_partition_hashes_key,
+    redis_v2_partition_key,
+    redis_v2_source_doc_key,
+    source_id,
+)
 
 try:
     from fastapi.testclient import TestClient
@@ -36,6 +44,7 @@ class _FakeRedis:
         self.values = {}
         self.sets = {}
         self.hashes = {}
+        self.sorted_sets = {}
 
     def get(self, key):
         return self.values.get(key)
@@ -55,6 +64,21 @@ class _FakeRedis:
     def smembers(self, key):
         return self.sets.get(key, set())
 
+    def zadd(self, key, mapping):
+        store = self.sorted_sets.setdefault(key, {})
+        for member, score in (mapping or {}).items():
+            store[member] = score
+
+    def zrange(self, key, start, end):
+        entries = self.sorted_sets.get(key, {})
+        ordered = [member for member, _score in sorted(entries.items(), key=lambda item: item[1])]
+        if end == -1:
+            return ordered[start:]
+        return ordered[start : end + 1]
+
+    def mget(self, keys):
+        return [self.get(key) for key in keys]
+
 
 class _FakeBucket:
     def __init__(self, name):
@@ -67,19 +91,134 @@ class _FakeObject:
         self.is_dir = False
 
 
+class _FakeSearchTools:
+    QDRANT_URL = "http://qdrant.local:6333"
+    QDRANT_COLLECTION = "default_col"
+    REDIS_URL = "redis://redis:6379/0"
+
+    def __init__(self):
+        self.default_collection = "default_col"
+        self.last_search = None
+        self.last_fetch = None
+        self.last_fetch_chunk_document = None
+        self.last_fetch_chunk_partition = None
+        self.last_fetch_chunk_bibtex = None
+
+    def ping(self):
+        return "pong"
+
+    def _get_default_collection(self):
+        return self.default_collection
+
+    def list_collections(self):
+        return {"collections": ["default_col", "research_2026"]}
+
+    def set_default_collection(self, name):
+        self.default_collection = name
+        return {"default_collection": name}
+
+    def search(
+        self,
+        query,
+        top_k=5,
+        prefetch_k=40,
+        collection=None,
+        retrieval_mode="hybrid",
+        include_partition=False,
+        include_document=False,
+    ):
+        self.last_search = {
+            "query": query,
+            "top_k": top_k,
+            "prefetch_k": prefetch_k,
+            "collection": collection,
+            "retrieval_mode": retrieval_mode,
+            "include_partition": include_partition,
+            "include_document": include_document,
+        }
+        return {
+            "retrieval_mode": retrieval_mode,
+            "include_partition": include_partition,
+            "include_document": include_document,
+            "results": [
+                {
+                    "id": "42",
+                    "score": 0.9,
+                    "text": "result text",
+                    "bucket": "bucket-a",
+                    "key": "paper.pdf",
+                    "citation_key": "doe2026paper",
+                }
+            ],
+        }
+
+    def fetch(self, id, collection=None):
+        self.last_fetch = {"id": id, "collection": collection}
+        return {"id": id, "found": True, "text": "full chunk"}
+
+    def fetch_chunk_document(self, id, collection=None):
+        self.last_fetch_chunk_document = {"id": id, "collection": collection}
+        return {"id": id, "found": True, "count": 2, "chunks": [{"text": "first"}, {"text": "second"}]}
+
+    def fetch_chunk_partition(self, id, collection=None):
+        self.last_fetch_chunk_partition = {"id": id, "collection": collection}
+        return {
+            "id": id,
+            "found": True,
+            "count": 1,
+            "partition": {"label": "Page 1", "page_start": 1, "page_end": 1},
+            "chunks": [{"text": "partition chunk"}],
+        }
+
+    def fetch_chunk_bibtex(self, id, collection=None):
+        self.last_fetch_chunk_bibtex = {"id": id, "collection": collection}
+        return {"id": id, "found": True, "citation_key": "doe2026paper", "metadata": {"title": "Paper"}}
+
+
 class _FakeMinio:
     def __init__(self, buckets):
-        self._buckets = buckets
+        self._buckets = {name: list(objects) for name, objects in buckets.items()}
+        self.removed_buckets = []
+        self.removed_objects = []
+        self.uploaded_objects = []
 
     def list_buckets(self):
         return [_FakeBucket(name) for name in self._buckets.keys()]
 
-    def list_objects(self, bucket, prefix="", recursive=True):
+    def list_objects(self, bucket, prefix="", recursive=True, **_kwargs):
         del recursive
         for object_name in self._buckets.get(bucket, []):
             if prefix and not object_name.startswith(prefix):
                 continue
             yield _FakeObject(object_name)
+
+    def bucket_exists(self, bucket):
+        return bucket in self._buckets
+
+    def make_bucket(self, bucket):
+        self._buckets.setdefault(bucket, [])
+
+    def remove_object(self, bucket, object_name, version_id=None):
+        del version_id
+        entries = self._buckets.get(bucket, [])
+        if object_name in entries:
+            entries.remove(object_name)
+        self.removed_objects.append((bucket, object_name))
+
+    def remove_bucket(self, bucket):
+        entries = self._buckets.get(bucket, [])
+        if entries:
+            raise RuntimeError(f"BucketNotEmpty: {bucket}")
+        self._buckets.pop(bucket, None)
+        self.removed_buckets.append(bucket)
+
+    def put_object(self, bucket_name, object_name, data, length, content_type=None):
+        del data, length, content_type
+        self._buckets.setdefault(bucket_name, [])
+        if object_name not in self._buckets[bucket_name]:
+            self._buckets[bucket_name].append(object_name)
+        self.uploaded_objects.append((bucket_name, object_name))
+        return SimpleNamespace(version_id="v1")
 
 
 @unittest.skipIf(bibtex_ui_app.app is None or TestClient is None, "FastAPI test client unavailable")
@@ -100,6 +239,52 @@ class BibtexUiAppTests(unittest.TestCase):
         self.assertIn("BibTeX Metadata Workspace", response.text)
         self.assertIn("Buckets", response.text)
         self.assertIn("BibTeX Fields", response.text)
+        self.assertIn("Qdrant Search", response.text)
+
+    def test_api_search_status_reports_qdrant_default_collection(self):
+        fake_search = _FakeSearchTools()
+        with mock.patch.object(bibtex_ui_app, "mcp_search_tools", fake_search):
+            response = self.client.get("/api/search/status")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["qdrant_url"], "http://qdrant.local:6333")
+        self.assertEqual(payload["default_collection"], "default_col")
+
+    def test_api_search_uses_requested_parameters(self):
+        fake_search = _FakeSearchTools()
+        with mock.patch.object(bibtex_ui_app, "mcp_search_tools", fake_search):
+            response = self.client.post(
+                "/api/search",
+                json={
+                    "query": "hybrid ranking",
+                    "topK": 11,
+                    "prefetchK": 120,
+                    "collection": "research_2026",
+                    "retrievalMode": "cosine",
+                },
+            )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(fake_search.last_search["query"], "hybrid ranking")
+        self.assertEqual(fake_search.last_search["top_k"], 11)
+        self.assertEqual(fake_search.last_search["prefetch_k"], 120)
+        self.assertEqual(fake_search.last_search["collection"], "research_2026")
+        self.assertEqual(fake_search.last_search["retrieval_mode"], "cosine")
+        self.assertEqual(payload["collection"], "research_2026")
+        self.assertEqual(payload["retrieval_mode"], "cosine")
+        self.assertEqual(len(payload["results"]), 1)
+
+    def test_api_search_fetch_uses_point_id_and_collection(self):
+        fake_search = _FakeSearchTools()
+        with mock.patch.object(bibtex_ui_app, "mcp_search_tools", fake_search):
+            response = self.client.get("/api/search/fetch/42?collection=research_2026")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["found"])
+        self.assertEqual(fake_search.last_fetch, {"id": "42", "collection": "research_2026"})
 
     def test_api_buckets_lists_minio_buckets(self):
         fake_minio = _FakeMinio({"bucket-a": [], "bucket-b": []})
@@ -144,6 +329,100 @@ class BibtexUiAppTests(unittest.TestCase):
         self.assertEqual(alpha["citationKey"], "alpha2024paper")
         self.assertEqual(alpha["authors"][0]["lastName"], "Lovelace")
         self.assertIn("/r/doc?ref=", alpha["originalFileUrl"])
+
+    def test_api_add_bucket_creates_bucket(self):
+        fake_minio = _FakeMinio({"bucket-a": []})
+        with mock.patch.object(bibtex_ui_app, "_get_minio_client", return_value=(fake_minio, None)):
+            response = self.client.post("/api/buckets", json={"bucket": "bucket-b"})
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertTrue(payload["created"])
+        self.assertIn("bucket-b", fake_minio._buckets)
+
+    def test_api_delete_bucket_force_removes_objects_and_cleans_ingested_data(self):
+        fake_minio = _FakeMinio({"bucket-a": ["alpha.pdf", "beta.pdf"]})
+        with mock.patch.object(bibtex_ui_app, "_get_minio_client", return_value=(fake_minio, None)):
+            with mock.patch.object(bibtex_ui_app, "_delete_ingested_object_from_env") as cleanup:
+                response = self.client.delete("/api/buckets/bucket-a?force=true&delete_ingested=true")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["removed_objects"], 2)
+        self.assertIn("bucket-a", fake_minio.removed_buckets)
+        self.assertEqual(cleanup.call_count, 2)
+
+    def test_api_delete_file_removes_object_and_ingested_data(self):
+        fake_minio = _FakeMinio({"bucket-a": ["folder/alpha.pdf"]})
+        with mock.patch.object(bibtex_ui_app, "_get_minio_client", return_value=(fake_minio, None)):
+            with mock.patch.object(bibtex_ui_app, "_delete_ingested_object_from_env") as cleanup:
+                response = self.client.delete(
+                    "/api/buckets/bucket-a/files/folder/alpha.pdf?delete_ingested=true"
+                )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["deleted"], True)
+        self.assertNotIn("folder/alpha.pdf", fake_minio._buckets["bucket-a"])
+        cleanup.assert_called_once_with(bucket="bucket-a", object_name="folder/alpha.pdf", version_id=None)
+
+    def test_api_upload_file_forces_ingest_job_even_when_flag_is_false(self):
+        fake_minio = _FakeMinio({"bucket-a": []})
+        with mock.patch.object(bibtex_ui_app, "_get_minio_client", return_value=(fake_minio, None)):
+            with mock.patch.object(bibtex_ui_app, "_start_ingest_job", return_value="job-123"):
+                response = self.client.post(
+                    "/api/buckets/bucket-a/files/upload",
+                    data={"ingest": "false", "create_bucket": "false"},
+                    files={"file": ("paper.pdf", b"%PDF-1.4", "application/pdf")},
+                )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["bucket"], "bucket-a")
+        self.assertEqual(payload["object_name"], "paper.pdf")
+        self.assertEqual(payload["job_id"], "job-123")
+
+    def test_api_upload_multiple_files_queues_celery_ingest_tasks(self):
+        fake_minio = _FakeMinio({"bucket-a": []})
+        with mock.patch.object(bibtex_ui_app, "_get_minio_client", return_value=(fake_minio, None)):
+            with mock.patch.object(
+                bibtex_ui_app,
+                "_queue_ingest_task_celery",
+                side_effect=["task-1", "task-2"],
+            ) as queue_task:
+                with mock.patch.object(bibtex_ui_app, "_start_ingest_job") as start_job:
+                    response = self.client.post(
+                        "/api/buckets/bucket-a/files/upload",
+                        data={"ingest": "true", "create_bucket": "false"},
+                        files=[
+                            ("files", ("paper-a.pdf", b"%PDF-1.4", "application/pdf")),
+                            ("files", ("paper-b.pdf", b"%PDF-1.4", "application/pdf")),
+                        ],
+                    )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["mode"], "batch")
+        self.assertEqual(payload["uploaded_count"], 2)
+        self.assertEqual(payload["queued_count"], 2)
+        self.assertEqual(len(payload["queue_task_ids"]), 2)
+        self.assertEqual(payload["queue_errors"], [])
+        self.assertIsNone(payload["job_id"])
+        self.assertEqual(queue_task.call_count, 2)
+        start_job.assert_not_called()
+        self.assertIn("paper-a.pdf", fake_minio._buckets["bucket-a"])
+        self.assertIn("paper-b.pdf", fake_minio._buckets["bucket-a"])
+
+    def test_api_upload_rejects_non_pdf_file(self):
+        fake_minio = _FakeMinio({"bucket-a": []})
+        with mock.patch.object(bibtex_ui_app, "_get_minio_client", return_value=(fake_minio, None)):
+            response = self.client.post(
+                "/api/buckets/bucket-a/files/upload",
+                data={"ingest": "false", "create_bucket": "false"},
+                files={"file": ("notes.md", b"# hello", "text/markdown")},
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Only PDF files are supported", response.json().get("detail", ""))
 
     def test_api_save_file_bibtex_persists_to_redis_prefix(self):
         fake_redis = _FakeRedis()
@@ -213,6 +492,28 @@ class BibtexUiAppTests(unittest.TestCase):
         self.assertEqual(payload["total_available"], 3)
         self.assertTrue(payload["truncated"])
         self.assertIn("chunk one", payload["items"][0]["text"])
+
+    def test_api_file_redis_summary_reads_v2_schema(self):
+        fake_redis = _FakeRedis()
+        sid = source_id("bucket-a", "folder/alpha.pdf", None)
+        fake_redis.set(redis_v2_source_doc_key("unstructured", sid), "doc-v2")
+        fake_redis.zadd(redis_v2_doc_partition_hashes_key("unstructured", "doc-v2"), {"p1": 1, "p2": 2})
+        fake_redis.zadd(redis_v2_doc_chunk_hashes_key("unstructured", "doc-v2"), {"c1": 1, "c2": 2, "c3": 3})
+        fake_redis.set(redis_v2_partition_key("unstructured", "p1"), json.dumps({"text": "part one"}))
+        fake_redis.set(redis_v2_partition_key("unstructured", "p2"), json.dumps({"text": "part two"}))
+        fake_redis.set(redis_v2_chunk_key("unstructured", "c1"), json.dumps({"text": "chunk one"}))
+        fake_redis.set(redis_v2_chunk_key("unstructured", "c2"), json.dumps({"text": "chunk two"}))
+        fake_redis.set(redis_v2_chunk_key("unstructured", "c3"), json.dumps({"text": "chunk three"}))
+
+        with mock.patch.object(bibtex_ui_app, "_get_redis_client", return_value=(fake_redis, None)):
+            with mock.patch.dict(os.environ, {"REDIS_PREFIX": "unstructured"}, clear=False):
+                response = self.client.get("/api/buckets/bucket-a/files/folder%2Falpha.pdf/redis-summary")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["doc_ids"], ["doc-v2"])
+        self.assertEqual(payload["partition_count"], 2)
+        self.assertEqual(payload["chunk_count"], 3)
 
     def test_api_bucket_autofill_missing_processes_in_batches(self):
         if bibtex_ui_app.bibtex_autofill is None:

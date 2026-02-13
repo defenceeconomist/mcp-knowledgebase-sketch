@@ -1,21 +1,28 @@
 from __future__ import annotations
 
+import io
 import json
 import os
 import re
+import threading
+import time
+import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
-from urllib.parse import quote, urlencode
 
 from mcp_research.schema_v2 import (
     bibtex_schema_read_mode,
     bibtex_schema_write_mode,
     bibtex_v2_doc_key,
     bibtex_v2_source_doc_key,
+    read_v2_doc_chunks,
+    read_v2_doc_partitions,
+    read_v2_source_doc_hash,
     should_fallback_v1,
     should_read_v2,
     should_write_v1,
     should_write_v2,
+    split_source_path,
     source_id,
 )
 from mcp_research.runtime_utils import (
@@ -26,11 +33,13 @@ from mcp_research.runtime_utils import (
 )
 
 try:
-    from fastapi import FastAPI, HTTPException, Query
+    from fastapi import FastAPI, HTTPException, Query, Request, UploadFile
     from fastapi.responses import HTMLResponse
 except ImportError:  # pragma: no cover - keep importable without FastAPI
     FastAPI = None  # type: ignore[assignment]
     HTTPException = RuntimeError  # type: ignore[assignment]
+    Request = Any  # type: ignore[assignment]
+    UploadFile = Any  # type: ignore[assignment]
 
     def Query(default, **_kwargs):  # type: ignore[override]
         return default
@@ -55,52 +64,11 @@ except Exception:  # pragma: no cover - optional dependency chain
     bibtex_autofill = None  # type: ignore[assignment]
 
 try:
-    from mcp_research.link_resolver import build_citation_url, build_source_ref
-except Exception:  # pragma: no cover - fallback when optional deps are unavailable
+    from mcp_research import mcp_app as mcp_search_tools
+except Exception:  # pragma: no cover - optional runtime dependency chain
+    mcp_search_tools = None  # type: ignore[assignment]
 
-    def build_source_ref(
-        bucket: str,
-        key: str,
-        page_start: int | None = None,
-        page_end: int | None = None,
-        version_id: str | None = None,
-    ) -> str:
-        if not bucket:
-            raise ValueError("bucket is required to build source_ref")
-        if not key:
-            raise ValueError("key is required to build source_ref")
-        safe_key = quote(key.lstrip("/"), safe="/")
-        fragment = ""
-        if page_start is not None:
-            if page_end is not None and page_end != page_start:
-                fragment = f"page={page_start}-{page_end}"
-            else:
-                fragment = f"page={page_start}"
-        query = urlencode({"version_id": version_id}) if version_id else ""
-        ref = f"doc://{bucket}/{safe_key}"
-        if query:
-            ref = f"{ref}?{query}"
-        if fragment:
-            ref = f"{ref}#{fragment}"
-        return ref
-
-    def build_citation_url(
-        source_ref: str,
-        base_url: str | None = None,
-        ref_path: str | None = None,
-    ) -> str | None:
-        base = (
-            base_url
-            or os.getenv("CITATION_BASE_URL")
-            or os.getenv("DOCS_BASE_URL")
-            or "http://localhost:8080"
-        )
-        path = ref_path or os.getenv("CITATION_REF_PATH", "/r/doc")
-        base = base.rstrip("/")
-        if not path.startswith("/"):
-            path = "/" + path
-        encoded_ref = quote(source_ref, safe="")
-        return f"{base}{path}?ref={encoded_ref}"
+from mcp_research.citation_utils import build_citation_url, build_source_ref
 
 
 ALLOWED_ENTRY_TYPES = {
@@ -120,6 +88,11 @@ ALLOWED_ENTRY_TYPES = {
     "unpublished",
 }
 
+_BUCKET_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9.-]{1,61}[a-z0-9]$")
+_INGEST_JOB_LOCK = threading.Lock()
+_INGEST_JOBS: Dict[str, Dict[str, Any]] = {}
+_INGEST_JOB_TTL_SECONDS = 3600
+
 def _load_ui_html() -> str:
     try:
         from importlib.resources import files as pkg_files  # Python 3.9+
@@ -129,6 +102,28 @@ def _load_ui_html() -> str:
         )
     except Exception:  # pragma: no cover
         return "<html><body><h1>BibTeX UI assets missing</h1></body></html>"
+
+
+def _require_search_tools():
+    if mcp_search_tools is None:
+        raise RuntimeError("mcp_app is unavailable")
+    return mcp_search_tools
+
+
+def _safe_search_default_collection(tools: Any) -> str:
+    try:
+        return tools._get_default_collection() or tools.QDRANT_COLLECTION
+    except Exception:
+        return tools.QDRANT_COLLECTION
+
+
+def _invoke_search_tool(tool: Any, **kwargs: Any) -> Any:
+    if callable(tool):
+        return tool(**kwargs)
+    wrapped_fn = getattr(tool, "fn", None)
+    if callable(wrapped_fn):
+        return wrapped_fn(**kwargs)
+    raise TypeError(f"Unsupported tool object type: {type(tool).__name__}")
 
 def _get_redis_client() -> Tuple[Any | None, str | None]:
     redis_url = os.getenv("BIBTEX_REDIS_URL") or os.getenv("REDIS_URL", "")
@@ -203,6 +198,160 @@ def _list_minio_objects(
     return sorted(object_names)
 
 
+def _normalize_bucket_name(raw_value: Any) -> str:
+    name = str(raw_value or "").strip()
+    if not _BUCKET_NAME_RE.match(name):
+        raise ValueError(
+            "Bucket name must be 3-63 chars with lowercase letters, numbers, dots, or hyphens."
+        )
+    return name
+
+
+def _normalize_object_name(raw_value: Any) -> str:
+    object_name = str(raw_value or "").strip().lstrip("/")
+    if not object_name:
+        raise ValueError("object_name is required")
+    return object_name
+
+
+def _iter_bucket_objects(minio_client: Any, bucket: str):
+    try:
+        return minio_client.list_objects(bucket, recursive=True, include_version=True)
+    except TypeError:
+        return minio_client.list_objects(bucket, recursive=True)
+
+
+def _ingest_object_from_env(bucket: str, object_name: str, version_id: str | None = None) -> None:
+    from mcp_research.minio_ingest import process_object_from_env
+
+    process_object_from_env(bucket=bucket, object_name=object_name, version_id=version_id)
+
+
+def _delete_ingested_object_from_env(
+    bucket: str,
+    object_name: str,
+    version_id: str | None = None,
+) -> None:
+    from mcp_research.minio_ingest import delete_object_from_env
+
+    delete_object_from_env(bucket=bucket, object_name=object_name, version_id=version_id)
+
+
+def _cleanup_ingest_jobs_locked(now: float) -> None:
+    stale_ids: List[str] = []
+    for job_id, payload in _INGEST_JOBS.items():
+        updated_at = float(payload.get("updated_at", now))
+        if now - updated_at > _INGEST_JOB_TTL_SECONDS:
+            stale_ids.append(job_id)
+    for job_id in stale_ids:
+        _INGEST_JOBS.pop(job_id, None)
+
+
+def _create_ingest_job(bucket: str, object_name: str, version_id: str | None = None) -> str:
+    job_id = uuid.uuid4().hex
+    now = time.time()
+    payload = {
+        "job_id": job_id,
+        "bucket": bucket,
+        "object_name": object_name,
+        "version_id": version_id,
+        "status": "queued",
+        "progress": 55,
+        "message": "Queued for Unstructured ingest.",
+        "error": "",
+        "created_at": now,
+        "updated_at": now,
+    }
+    with _INGEST_JOB_LOCK:
+        _cleanup_ingest_jobs_locked(now)
+        _INGEST_JOBS[job_id] = payload
+    return job_id
+
+
+def _update_ingest_job(job_id: str, **updates: Any) -> None:
+    now = time.time()
+    with _INGEST_JOB_LOCK:
+        payload = _INGEST_JOBS.get(job_id)
+        if not payload:
+            return
+        payload.update(updates)
+        payload["updated_at"] = now
+
+
+def _get_ingest_job(job_id: str) -> Dict[str, Any] | None:
+    now = time.time()
+    with _INGEST_JOB_LOCK:
+        _cleanup_ingest_jobs_locked(now)
+        payload = _INGEST_JOBS.get(job_id)
+        if not payload:
+            return None
+        return dict(payload)
+
+
+def _run_ingest_job(
+    *,
+    job_id: str,
+    bucket: str,
+    object_name: str,
+    version_id: str | None = None,
+) -> None:
+    _update_ingest_job(
+        job_id,
+        status="running",
+        progress=70,
+        message="Running Unstructured ingest...",
+        error="",
+    )
+    try:
+        _ingest_object_from_env(bucket=bucket, object_name=object_name, version_id=version_id)
+    except Exception as exc:  # pragma: no cover - runtime safety
+        _update_ingest_job(
+            job_id,
+            status="failed",
+            progress=100,
+            message="Ingest failed.",
+            error=str(exc),
+        )
+        return
+    _update_ingest_job(
+        job_id,
+        status="completed",
+        progress=100,
+        message="Ingest completed.",
+        error="",
+    )
+
+
+def _start_ingest_job(bucket: str, object_name: str, version_id: str | None = None) -> str:
+    job_id = _create_ingest_job(bucket=bucket, object_name=object_name, version_id=version_id)
+    thread = threading.Thread(
+        target=_run_ingest_job,
+        kwargs={
+            "job_id": job_id,
+            "bucket": bucket,
+            "object_name": object_name,
+            "version_id": version_id,
+        },
+        daemon=True,
+    )
+    thread.start()
+    return job_id
+
+
+def _queue_ingest_task_celery(
+    bucket: str,
+    object_name: str,
+    version_id: str | None = None,
+) -> str:
+    from mcp_research.celery_app import celery_app
+
+    task = celery_app.send_task(
+        "mcp_research.ingest_minio_object",
+        args=[bucket, object_name, version_id],
+    )
+    return str(task.id)
+
+
 def _bibtex_prefix() -> str:
     raw = os.getenv("BIBTEX_REDIS_PREFIX", "bibtex").strip()
     return raw or "bibtex"
@@ -222,8 +371,20 @@ def _source_key(prefix: str, source: str) -> str:
 
 
 def _source_doc_ids(redis_client: Any, prefix: str, source: str) -> List[str]:
-    source_key = _source_key(prefix, source)
     values: List[str] = []
+    bucket, key = split_source_path(source)
+    if bucket and key:
+        v2_doc_hash = read_v2_source_doc_hash(
+            redis_client=redis_client,
+            prefix=prefix,
+            bucket=bucket,
+            key=key,
+            version_id=None,
+        )
+        if v2_doc_hash:
+            values.append(str(v2_doc_hash))
+
+    source_key = _source_key(prefix, source)
     if hasattr(redis_client, "smembers"):
         raw_members = redis_client.smembers(source_key)
         for entry in raw_members or []:
@@ -261,6 +422,11 @@ def _doc_partition_chunks(
     prefix: str,
     doc_id: str,
 ) -> Tuple[List[Any], List[Any]]:
+    v2_partitions = read_v2_doc_partitions(redis_client, prefix, doc_id)
+    v2_chunks = read_v2_doc_chunks(redis_client, prefix, doc_id)
+    if v2_partitions or v2_chunks:
+        return v2_partitions, v2_chunks
+
     meta = _doc_meta(redis_client, prefix, doc_id)
     partitions_key = meta.get("partitions_key") or f"{prefix}:pdf:{doc_id}:partitions"
     chunks_key = meta.get("chunks_key") or f"{prefix}:pdf:{doc_id}:chunks"
@@ -1016,6 +1182,147 @@ if app is not None:
             "buckets": bucket_names,
         }
 
+    @app.get("/api/search/status")
+    def api_search_status() -> Dict[str, Any]:
+        try:
+            tools = _require_search_tools()
+            ping = _invoke_search_tool(tools.ping)
+            default_collection = _safe_search_default_collection(tools)
+            return {
+                "ok": ping == "pong",
+                "ping": ping,
+                "qdrant_url": tools.QDRANT_URL,
+                "default_collection": default_collection,
+                "redis_configured": bool(tools.REDIS_URL),
+            }
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail=f"MCP search tools unavailable: {exc}") from exc
+
+    @app.get("/api/search/collections")
+    def api_search_collections() -> Dict[str, Any]:
+        try:
+            tools = _require_search_tools()
+            payload = _invoke_search_tool(tools.list_collections)
+            default_collection = _safe_search_default_collection(tools)
+            return {
+                "collections": payload.get("collections", []),
+                "default_collection": default_collection,
+            }
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail=f"Failed to list search collections: {exc}") from exc
+
+    @app.post("/api/search/default-collection")
+    def api_search_set_default_collection(payload: Dict[str, Any] | None = None) -> Dict[str, Any]:
+        collection = _normalize_text((payload or {}).get("collection"))
+        if not collection:
+            raise HTTPException(status_code=400, detail="collection is required")
+        try:
+            tools = _require_search_tools()
+            result = _invoke_search_tool(tools.set_default_collection, name=collection)
+            return {
+                "default_collection": result.get("default_collection"),
+            }
+        except ValueError as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except RuntimeError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"Failed to set default collection: {exc}") from exc
+
+    @app.post("/api/search")
+    def api_search(payload: Dict[str, Any] | None = None) -> Dict[str, Any]:
+        body = payload or {}
+        query = _normalize_text(body.get("query"))
+        if not query:
+            raise HTTPException(status_code=400, detail="query is required")
+
+        top_k = _payload_int(body, "topK", 8, 1, 50)
+        prefetch_k = _payload_int(body, "prefetchK", 60, 1, 500)
+        collection = _normalize_text(body.get("collection")) or None
+        retrieval_mode = _normalize_text(body.get("retrievalMode")) or "hybrid"
+        include_partition = _payload_bool(body, "includePartition", False)
+        include_document = _payload_bool(body, "includeDocument", False)
+
+        try:
+            tools = _require_search_tools()
+            start = time.perf_counter()
+            result = _invoke_search_tool(
+                tools.search,
+                query=query,
+                top_k=top_k,
+                prefetch_k=prefetch_k,
+                collection=collection,
+                retrieval_mode=retrieval_mode,
+                include_partition=include_partition,
+                include_document=include_document,
+            )
+            latency_ms = int((time.perf_counter() - start) * 1000)
+            active_collection = collection or _safe_search_default_collection(tools)
+            active_mode = _normalize_text(result.get("retrieval_mode")) or retrieval_mode
+            return {
+                "query": query,
+                "collection": active_collection,
+                "top_k": top_k,
+                "prefetch_k": prefetch_k,
+                "retrieval_mode": active_mode,
+                "include_partition": bool(result.get("include_partition")),
+                "include_document": bool(result.get("include_document")),
+                "latency_ms": latency_ms,
+                "results": result.get("results", []),
+            }
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"Search failed: {exc}") from exc
+
+    @app.get("/api/search/fetch/{point_id}")
+    def api_search_fetch(point_id: str, collection: str | None = None) -> Dict[str, Any]:
+        clean_id = _normalize_text(point_id)
+        clean_collection = _normalize_text(collection) if collection else None
+        if not clean_id:
+            raise HTTPException(status_code=400, detail="point_id is required")
+        try:
+            tools = _require_search_tools()
+            return _invoke_search_tool(tools.fetch, id=clean_id, collection=clean_collection)
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"Fetch failed: {exc}") from exc
+
+    @app.get("/api/search/chunk/{point_id}/document")
+    def api_search_chunk_document(point_id: str, collection: str | None = None) -> Dict[str, Any]:
+        clean_id = _normalize_text(point_id)
+        clean_collection = _normalize_text(collection) if collection else None
+        if not clean_id:
+            raise HTTPException(status_code=400, detail="point_id is required")
+        try:
+            tools = _require_search_tools()
+            return _invoke_search_tool(tools.fetch_chunk_document, id=clean_id, collection=clean_collection)
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"Fetch document failed: {exc}") from exc
+
+    @app.get("/api/search/chunk/{point_id}/partition")
+    def api_search_chunk_partition(point_id: str, collection: str | None = None) -> Dict[str, Any]:
+        clean_id = _normalize_text(point_id)
+        clean_collection = _normalize_text(collection) if collection else None
+        if not clean_id:
+            raise HTTPException(status_code=400, detail="point_id is required")
+        try:
+            tools = _require_search_tools()
+            return _invoke_search_tool(tools.fetch_chunk_partition, id=clean_id, collection=clean_collection)
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"Fetch partition failed: {exc}") from exc
+
+    @app.get("/api/search/chunk/{point_id}/bibtex")
+    def api_search_chunk_bibtex(point_id: str, collection: str | None = None) -> Dict[str, Any]:
+        clean_id = _normalize_text(point_id)
+        clean_collection = _normalize_text(collection) if collection else None
+        if not clean_id:
+            raise HTTPException(status_code=400, detail="point_id is required")
+        try:
+            tools = _require_search_tools()
+            return _invoke_search_tool(tools.fetch_chunk_bibtex, id=clean_id, collection=clean_collection)
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"Fetch BibTeX failed: {exc}") from exc
+
     @app.get("/api/buckets")
     def api_buckets() -> Dict[str, Any]:
         minio_client, minio_error = _get_minio_client()
@@ -1025,6 +1332,235 @@ if app is not None:
         if bucket_error:
             raise HTTPException(status_code=400, detail=bucket_error)
         return {"buckets": bucket_names}
+
+    @app.post("/api/buckets")
+    def api_add_bucket(payload: Dict[str, Any]) -> Dict[str, Any]:
+        minio_client, minio_error = _get_minio_client()
+        if minio_error or not minio_client:
+            raise HTTPException(status_code=503, detail=minio_error or "MinIO is not configured")
+        try:
+            bucket = _normalize_bucket_name(payload.get("bucket"))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        created = False
+        try:
+            if not minio_client.bucket_exists(bucket):
+                minio_client.make_bucket(bucket)
+                created = True
+        except S3Error as exc:
+            raise HTTPException(status_code=500, detail=f"Failed to create bucket {bucket}: {exc}") from exc
+        return {"bucket": bucket, "created": created}
+
+    @app.delete("/api/buckets/{bucket}")
+    def api_delete_bucket(
+        bucket: str,
+        force: bool = Query(False),
+        delete_ingested: bool = Query(True),
+    ) -> Dict[str, Any]:
+        minio_client, minio_error = _get_minio_client()
+        if minio_error or not minio_client:
+            raise HTTPException(status_code=503, detail=minio_error or "MinIO is not configured")
+        try:
+            bucket_name = _normalize_bucket_name(bucket)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        try:
+            if not minio_client.bucket_exists(bucket_name):
+                raise HTTPException(status_code=404, detail=f"MinIO bucket not found: {bucket_name}")
+        except S3Error as exc:
+            raise HTTPException(status_code=500, detail=f"Failed to check bucket {bucket_name}: {exc}") from exc
+
+        removed_objects = 0
+        cleanup_errors: List[str] = []
+        if force:
+            try:
+                for entry in list(_iter_bucket_objects(minio_client, bucket_name)):
+                    if getattr(entry, "is_dir", False):
+                        continue
+                    object_name = _normalize_object_name(getattr(entry, "object_name", ""))
+                    version_id = getattr(entry, "version_id", None)
+                    minio_client.remove_object(bucket_name, object_name, version_id=version_id)
+                    removed_objects += 1
+                    if delete_ingested:
+                        try:
+                            _delete_ingested_object_from_env(bucket_name, object_name, version_id=version_id)
+                        except Exception as cleanup_exc:  # pragma: no cover - runtime safety
+                            cleanup_errors.append(f"{object_name}: {cleanup_exc}")
+            except S3Error as exc:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed deleting objects from bucket {bucket_name}: {exc}",
+                ) from exc
+
+        try:
+            minio_client.remove_bucket(bucket_name)
+        except Exception as exc:
+            detail = str(exc)
+            if "BucketNotEmpty" in detail:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"Bucket is not empty: {bucket_name}. Use force=true to remove objects first.",
+                ) from exc
+            raise HTTPException(status_code=500, detail=f"Failed to delete bucket {bucket_name}: {exc}") from exc
+
+        return {
+            "bucket": bucket_name,
+            "deleted": True,
+            "force": force,
+            "removed_objects": removed_objects,
+            "cleanup_errors": cleanup_errors,
+        }
+
+    @app.post("/api/buckets/{bucket}/files/upload")
+    async def api_upload_bucket_file(
+        bucket: str,
+        request: Request,
+    ) -> Dict[str, Any]:
+        minio_client, minio_error = _get_minio_client()
+        if minio_error or not minio_client:
+            raise HTTPException(status_code=503, detail=minio_error or "MinIO is not configured")
+        try:
+            bucket_name = _normalize_bucket_name(bucket)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        form = await request.form()
+        ingest = True
+        create_bucket = _payload_bool({"create_bucket": form.get("create_bucket")}, "create_bucket", False)
+        object_name_override = _normalize_text(form.get("object_name"))
+        object_prefix = _normalize_text(form.get("object_prefix")).strip().strip("/")
+
+        uploads: List[UploadFile] = []
+        for field_name in ("files", "file"):
+            for entry in form.getlist(field_name):
+                if hasattr(entry, "filename"):
+                    uploads.append(entry)
+        if not uploads:
+            raise HTTPException(status_code=400, detail="At least one file is required")
+        if object_name_override and len(uploads) != 1:
+            raise HTTPException(status_code=400, detail="object_name is only supported when uploading one file")
+
+        try:
+            if not minio_client.bucket_exists(bucket_name):
+                if not create_bucket:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"MinIO bucket not found: {bucket_name}. Set create_bucket=true to create it.",
+                    )
+                minio_client.make_bucket(bucket_name)
+        except S3Error as exc:
+            raise HTTPException(status_code=500, detail=f"Failed to prepare bucket {bucket_name}: {exc}") from exc
+
+        uploaded: List[Dict[str, Any]] = []
+        for upload in uploads:
+            raw_name = Path(str(upload.filename or "")).name
+            if not raw_name:
+                raise HTTPException(status_code=400, detail="Each uploaded file must have a filename")
+            if not raw_name.lower().endswith(".pdf"):
+                raise HTTPException(status_code=400, detail=f"Only PDF files are supported: {raw_name}")
+
+            target_name = object_name_override or raw_name
+            if object_prefix:
+                target_name = f"{object_prefix}/{target_name}"
+            try:
+                target_object_name = _normalize_object_name(target_name)
+            except ValueError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+            file_bytes = await upload.read()
+            if not file_bytes:
+                raise HTTPException(status_code=400, detail=f"Uploaded file is empty: {raw_name}")
+
+            try:
+                result = minio_client.put_object(
+                    bucket_name=bucket_name,
+                    object_name=target_object_name,
+                    data=io.BytesIO(file_bytes),
+                    length=len(file_bytes),
+                    content_type=(upload.content_type or "application/pdf"),
+                )
+            except S3Error as exc:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to upload file to s3://{bucket_name}/{target_object_name}: {exc}",
+                ) from exc
+            finally:
+                close_fn = getattr(upload, "close", None)
+                if callable(close_fn):
+                    maybe_awaitable = close_fn()
+                    if hasattr(maybe_awaitable, "__await__"):
+                        await maybe_awaitable
+
+            uploaded.append(
+                {
+                    "file_name": raw_name,
+                    "object_name": target_object_name,
+                    "version_id": getattr(result, "version_id", None),
+                }
+            )
+
+        multiple_upload = len(uploaded) > 1
+        job_id = None
+        queued_count = 0
+        queue_task_ids: List[Dict[str, str]] = []
+        queue_errors: List[str] = []
+        if ingest:
+            if multiple_upload:
+                for entry in uploaded:
+                    object_name = str(entry["object_name"])
+                    version_id = (
+                        str(entry["version_id"])
+                        if entry.get("version_id") is not None
+                        else None
+                    )
+                    try:
+                        task_id = _queue_ingest_task_celery(
+                            bucket=bucket_name,
+                            object_name=object_name,
+                            version_id=version_id,
+                        )
+                        queued_count += 1
+                        queue_task_ids.append({"object_name": object_name, "task_id": task_id})
+                    except Exception as exc:  # pragma: no cover - runtime queue safety
+                        queue_errors.append(f"{object_name}: {exc}")
+                if queued_count == 0 and queue_errors:
+                    raise HTTPException(
+                        status_code=503,
+                        detail=f"Failed to enqueue Celery ingest tasks: {queue_errors[0]}",
+                    )
+            else:
+                only = uploaded[0]
+                version_id = str(only["version_id"]) if only.get("version_id") is not None else None
+                job_id = _start_ingest_job(
+                    bucket_name,
+                    str(only["object_name"]),
+                    version_id=version_id,
+                )
+
+        primary = uploaded[0]
+        payload: Dict[str, Any] = {
+            "bucket": bucket_name,
+            "object_name": str(primary["object_name"]),
+            "version_id": primary.get("version_id"),
+            "ingest": ingest,
+            "job_id": job_id,
+            "mode": "batch" if multiple_upload else "single",
+            "uploaded_count": len(uploaded),
+            "uploaded": uploaded,
+            "queued_count": queued_count,
+            "queue_task_ids": queue_task_ids,
+            "queue_errors": queue_errors,
+        }
+        return payload
+
+    @app.get("/api/ingest-jobs/{job_id}")
+    def api_ingest_job(job_id: str) -> Dict[str, Any]:
+        payload = _get_ingest_job(job_id)
+        if not payload:
+            raise HTTPException(status_code=404, detail=f"Ingest job not found: {job_id}")
+        return payload
 
     @app.get("/api/buckets/{bucket}/files")
     def api_bucket_files(
@@ -1056,6 +1592,52 @@ if app is not None:
                 raise HTTPException(status_code=404, detail=f"MinIO bucket not found: {bucket}") from exc
             raise HTTPException(status_code=500, detail=f"Failed to list objects for bucket {bucket}: {exc}") from exc
         return {"bucket": bucket, "count": len(files), "files": files}
+
+    @app.delete("/api/buckets/{bucket}/files/{object_name:path}")
+    def api_delete_bucket_file(
+        bucket: str,
+        object_name: str,
+        version_id: str | None = Query(default=None),
+        delete_ingested: bool = Query(default=True),
+    ) -> Dict[str, Any]:
+        minio_client, minio_error = _get_minio_client()
+        if minio_error or not minio_client:
+            raise HTTPException(status_code=503, detail=minio_error or "MinIO is not configured")
+        try:
+            bucket_name = _normalize_bucket_name(bucket)
+            normalized_object_name = _normalize_object_name(object_name)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+        try:
+            if not minio_client.bucket_exists(bucket_name):
+                raise HTTPException(status_code=404, detail=f"MinIO bucket not found: {bucket_name}")
+            minio_client.remove_object(bucket_name, normalized_object_name, version_id=version_id)
+        except S3Error as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to remove s3://{bucket_name}/{normalized_object_name}: {exc}",
+            ) from exc
+
+        cleanup_error = ""
+        if delete_ingested:
+            try:
+                _delete_ingested_object_from_env(
+                    bucket=bucket_name,
+                    object_name=normalized_object_name,
+                    version_id=version_id,
+                )
+            except Exception as exc:  # pragma: no cover - runtime safety
+                cleanup_error = str(exc)
+
+        return {
+            "bucket": bucket_name,
+            "object_name": normalized_object_name,
+            "version_id": version_id,
+            "deleted": True,
+            "delete_ingested": delete_ingested,
+            "cleanup_error": cleanup_error,
+        }
 
     @app.get("/api/buckets/{bucket}/files/{object_name:path}/bibtex")
     def api_file_bibtex(bucket: str, object_name: str) -> Dict[str, Any]:

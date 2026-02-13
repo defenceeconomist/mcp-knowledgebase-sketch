@@ -1,13 +1,16 @@
 import json
 import os
+import urllib.error
+import urllib.request
 from html import escape
 from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import parse_qsl, quote, urlparse, urlunparse
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import RedirectResponse, JSONResponse, HTMLResponse
+from fastapi.responses import RedirectResponse, JSONResponse, HTMLResponse, Response
 from qdrant_client import QdrantClient, models
 
-from mcp_research.link_resolver import resolve_link
+from mcp_research.link_resolver import parse_source_ref, resolve_link
 from mcp_research.runtime_utils import (
     decode_redis_value as _decode_redis_value,
     load_env_bool as _load_env_bool,
@@ -418,6 +421,262 @@ def _render_qdrant_dashboard(entries: List[dict], errors: List[str]) -> str:
         content=content,
         active_tab="qdrant",
     )
+
+
+def _with_pdf_fragment_params(url: str, params: Dict[str, str]) -> str:
+    """Merge PDF fragment params into a URL without dropping existing entries."""
+    parsed = urlparse(url)
+    existing = parse_qsl(parsed.fragment or "", keep_blank_values=True)
+    merged: Dict[str, str] = {}
+    for key, value in existing:
+        if key and key not in merged:
+            merged[key] = value
+    for key, value in (params or {}).items():
+        if not key or key in merged or value is None:
+            continue
+        merged[key] = str(value)
+    fragment = "&".join(f"{quote(key, safe='')}={quote(value, safe='')}" for key, value in merged.items())
+    return urlunparse(parsed._replace(fragment=fragment))
+
+
+def _strip_url_fragment(url: str) -> str:
+    """Return a URL without a fragment section."""
+    parsed = urlparse(url)
+    return urlunparse(parsed._replace(fragment=""))
+
+
+def _render_pdf_embed_page(url: str, page: int, highlight: str, source_ref: str | None = None) -> str:
+    """Render a PDF.js-based citation viewer with deterministic highlight behavior."""
+    clean_url = _strip_url_fragment(url)
+    if source_ref:
+        proxy_url = f"/r/pdf-proxy?ref={quote(source_ref, safe='')}"
+    else:
+        proxy_url = f"/r/pdf-proxy?url={quote(clean_url, safe='')}"
+    safe_direct_url = escape(url, quote=True)
+    payload = json.dumps(
+        {
+            "pdfUrl": proxy_url,
+            "page": int(page or 1),
+            "highlight": str(highlight or ""),
+        },
+        ensure_ascii=True,
+    )
+    return f"""<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Citation Viewer</title>
+  <style>
+    html, body {{
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #f4f4f4;
+      color: #1f2328;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }}
+    .shell {{
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+    }}
+    .bar {{
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 12px;
+      min-height: 40px;
+      font-size: 12px;
+      border-bottom: 1px solid #d6d9de;
+      background: #ffffff;
+    }}
+    .bar a {{
+      color: #0b5cab;
+      text-decoration: none;
+      font-weight: 600;
+    }}
+    .status {{
+      color: #52606d;
+      margin-left: auto;
+      font-size: 11px;
+    }}
+    .viewer {{
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      background: #eceff3;
+      padding: 16px;
+    }}
+    .page-wrap {{
+      position: relative;
+      margin: 0 auto;
+      width: fit-content;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+      background: #fff;
+    }}
+    #pdfCanvas {{
+      display: block;
+      max-width: 100%;
+      height: auto;
+    }}
+    .textLayer {{
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      line-height: 1;
+      -webkit-text-size-adjust: none;
+      text-size-adjust: none;
+    }}
+    .textLayer span {{
+      color: transparent;
+      position: absolute;
+      white-space: pre;
+      transform-origin: 0 0;
+    }}
+    .textLayer .hl {{
+      background: rgba(255, 228, 92, 0.7);
+      border-radius: 2px;
+      animation: fade-hl 4.2s ease forwards;
+    }}
+    @keyframes fade-hl {{
+      0% {{ background: rgba(255, 228, 92, 0.9); }}
+      100% {{ background: rgba(255, 228, 92, 0.18); }}
+    }}
+    .fallback-frame {{
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: none;
+    }}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="bar">
+      <span>Citation Viewer</span>
+      <a href="{safe_direct_url}" target="_blank" rel="noopener noreferrer">Open direct PDF</a>
+      <span class="status" id="viewerStatus">Loading PDF...</span>
+    </div>
+    <div class="viewer" id="viewerRoot">
+      <div class="page-wrap" id="pageWrap">
+        <canvas id="pdfCanvas"></canvas>
+        <div class="textLayer" id="textLayer"></div>
+      </div>
+      <iframe class="fallback-frame" id="fallbackFrame" src="{safe_direct_url}" title="Citation PDF fallback"></iframe>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script>
+    (function () {{
+      const cfg = {payload};
+      const statusEl = document.getElementById("viewerStatus");
+      const canvas = document.getElementById("pdfCanvas");
+      const textLayer = document.getElementById("textLayer");
+      const pageWrap = document.getElementById("pageWrap");
+      const fallback = document.getElementById("fallbackFrame");
+      const viewerRoot = document.getElementById("viewerRoot");
+
+      function setStatus(msg) {{
+        if (statusEl) statusEl.textContent = msg;
+      }}
+
+      function normalizeText(value) {{
+        return String(value || "")
+          .toLowerCase()
+          .replace(/[^0-9a-z]+/g, " ")
+          .replace(/\\s+/g, " ")
+          .trim();
+      }}
+
+      function markHighlights(term) {{
+        const needle = normalizeText(term);
+        if (!needle) return 0;
+        const spans = textLayer.querySelectorAll("span");
+        let count = 0;
+        for (const span of spans) {{
+          const hay = normalizeText(span.textContent || "");
+          if (!hay) continue;
+          if (hay.includes(needle) || needle.includes(hay)) {{
+            span.classList.add("hl");
+            count += 1;
+          }}
+        }}
+        return count;
+      }}
+
+      function showFallback(reason) {{
+        console.warn("PDF.js fallback:", reason);
+        if (pageWrap) pageWrap.style.display = "none";
+        if (fallback) fallback.style.display = "block";
+        setStatus("Loaded with browser PDF fallback.");
+      }}
+
+      async function render() {{
+        if (!window.pdfjsLib) {{
+          showFallback("pdfjs unavailable");
+          return;
+        }}
+        const workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+        try {{
+          const loadingTask = window.pdfjsLib.getDocument({{ url: cfg.pdfUrl }});
+          const pdf = await loadingTask.promise;
+          const targetPage = Math.max(1, Math.min(pdf.numPages, Number(cfg.page || 1)));
+          const page = await pdf.getPage(targetPage);
+
+          const unscaled = page.getViewport({{ scale: 1 }});
+          const rootWidth = Math.max(400, Math.floor((viewerRoot && viewerRoot.clientWidth) ? viewerRoot.clientWidth - 32 : 1000));
+          const fitScale = Math.max(1.15, rootWidth / unscaled.width);
+          const viewport = page.getViewport({{ scale: fitScale }});
+
+          const dpr = window.devicePixelRatio || 1;
+          canvas.width = Math.floor(viewport.width * dpr);
+          canvas.height = Math.floor(viewport.height * dpr);
+          canvas.style.width = `${{Math.floor(viewport.width)}}px`;
+          canvas.style.height = `${{Math.floor(viewport.height)}}px`;
+          textLayer.style.width = `${{Math.floor(viewport.width)}}px`;
+          textLayer.style.height = `${{Math.floor(viewport.height)}}px`;
+
+          const ctx = canvas.getContext("2d", {{ alpha: false }});
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+          await page.render({{ canvasContext: ctx, viewport }}).promise;
+
+          const textContent = await page.getTextContent();
+          textLayer.innerHTML = "";
+          const textDivs = [];
+          const task = window.pdfjsLib.renderTextLayer({{
+            textContentSource: textContent,
+            container: textLayer,
+            viewport,
+            textDivs,
+          }});
+          if (task && task.promise) {{
+            await task.promise;
+          }} else if (task && typeof task.then === "function") {{
+            await task;
+          }}
+
+          const marked = markHighlights(cfg.highlight);
+          if (marked > 0) {{
+            setStatus(`Page ${{targetPage}} loaded. Highlighted ${{marked}} match(es).`);
+          }} else if (cfg.highlight) {{
+            setStatus(`Page ${{targetPage}} loaded. No text-layer match for "${{cfg.highlight}}".`);
+          }} else {{
+            setStatus(`Page ${{targetPage}} loaded.`);
+          }}
+        }} catch (err) {{
+          showFallback(err && err.message ? err.message : String(err));
+        }}
+      }}
+
+      render();
+    }})();
+  </script>
+</body>
+</html>"""
 
 
 def _load_redis_inventory() -> Tuple[List[dict], List[str]]:
@@ -879,7 +1138,72 @@ def resolve_doc(
         )
     except (ValueError, RuntimeError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    focus_requested = any(
+        value is not None and str(value).strip() != ""
+        for value in (page, page_start, page_end, highlight)
+    )
+    if result.get("mode") == "presign" and focus_requested:
+        target_page = page if page is not None else page_start if page_start is not None else page_end if page_end is not None else 1
+        return HTMLResponse(
+            content=_render_pdf_embed_page(
+                result["url"],
+                page=int(target_page or 1),
+                highlight=str(highlight or ""),
+                source_ref=result.get("source_ref"),
+            ),
+            status_code=200,
+        )
     return RedirectResponse(url=result["url"], status_code=302)
+
+
+@app.get("/r/pdf-proxy")
+def resolve_pdf_proxy(
+    ref: Optional[str] = Query(default=None, description="doc:// source reference"),
+    url: Optional[str] = Query(default=None, description="Absolute URL to proxy"),
+):
+    """Proxy PDF bytes same-origin for deterministic in-browser rendering."""
+    if ref:
+        try:
+            parsed_ref = parse_source_ref(ref)
+        except Exception as exc:
+            raise HTTPException(status_code=400, detail=f"Invalid ref: {exc}") from exc
+        bucket = parsed_ref.get("bucket")
+        key = parsed_ref.get("key")
+        version_id = parsed_ref.get("version_id")
+        if not bucket or not key:
+            raise HTTPException(status_code=400, detail="ref must include bucket and key")
+        minio_client, minio_error = _get_minio_client()
+        if minio_error or not minio_client:
+            raise HTTPException(status_code=503, detail=minio_error or "MinIO client unavailable")
+        try:
+            response = minio_client.get_object(bucket, key, version_id=version_id)
+            try:
+                payload = response.read()
+            finally:
+                response.close()
+                response.release_conn()
+        except Exception as exc:
+            raise HTTPException(status_code=502, detail=f"Failed to fetch object from MinIO: {exc}") from exc
+        headers = {"Cache-Control": "no-store"}
+        return Response(content=payload, media_type="application/pdf", headers=headers)
+
+    if not url:
+        raise HTTPException(status_code=400, detail="Either ref or url is required")
+
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"}:
+        raise HTTPException(status_code=400, detail="Only http/https URLs are supported")
+    try:
+        request = urllib.request.Request(url, headers={"User-Agent": "mcp-research-resolver/1.0"})
+        with urllib.request.urlopen(request, timeout=90) as upstream:
+            payload = upstream.read()
+            content_type = upstream.headers.get("Content-Type") or "application/pdf"
+    except urllib.error.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f"Upstream PDF fetch failed: HTTP {exc.code}") from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Upstream PDF fetch failed: {exc}") from exc
+    headers = {"Cache-Control": "no-store"}
+    return Response(content=payload, media_type=content_type, headers=headers)
 
 
 @app.get("/r/doc.json")
