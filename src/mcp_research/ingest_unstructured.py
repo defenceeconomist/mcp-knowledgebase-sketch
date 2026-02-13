@@ -10,6 +10,14 @@ from unstructured_client.models import operations, shared
 from unstructured_client.models.errors import SDKError
 
 from mcp_research.link_resolver import build_source_ref
+from mcp_research.schema_v2 import (
+    SourceDescriptor,
+    redis_schema_write_mode,
+    should_write_v1,
+    should_write_v2,
+    split_source_path,
+    write_v2_document_payloads,
+)
 try:
     import redis
 except ImportError:  # pragma: no cover - optional dependency
@@ -133,6 +141,7 @@ def upload_to_redis(
     collection: str | None = None,
 ) -> dict:
     """Store partition + chunk payloads and metadata for a PDF in Redis."""
+    mode = redis_schema_write_mode()
     meta_key = _redis_key(prefix, doc_id, "meta")
     partitions_key = _redis_key(prefix, doc_id, "partitions")
     chunks_key = _redis_key(prefix, doc_id, "chunks")
@@ -140,29 +149,53 @@ def upload_to_redis(
     if not redis_client:
         raise ValueError("redis_client is required to upload data to Redis")
 
-    redis_client.set(partitions_key, json.dumps(partitions_payload, ensure_ascii=True))
-    redis_client.set(chunks_key, json.dumps(chunks_payload, ensure_ascii=True))
-    redis_client.hset(
-        meta_key,
-        mapping={
-            "document_id": doc_id,
-            "source": source,
-            "chunks": str(len(chunks_payload)),
-            "partitions_key": partitions_key,
-            "chunks_key": chunks_key,
-            "collections_key": collections_key,
-        },
-    )
-    redis_client.sadd(f"{prefix}:pdf:hashes", doc_id)
-    redis_client.sadd(_source_key(prefix, source), doc_id)
-    if collection:
-        redis_client.sadd(collections_key, collection)
-    return {
-        "meta_key": meta_key,
-        "partitions_key": partitions_key,
-        "chunks_key": chunks_key,
-        "collections_key": collections_key,
-    }
+    result = {}
+    if should_write_v1(mode):
+        redis_client.set(partitions_key, json.dumps(partitions_payload, ensure_ascii=True))
+        redis_client.set(chunks_key, json.dumps(chunks_payload, ensure_ascii=True))
+        redis_client.hset(
+            meta_key,
+            mapping={
+                "document_id": doc_id,
+                "source": source,
+                "chunks": str(len(chunks_payload)),
+                "partitions_key": partitions_key,
+                "chunks_key": chunks_key,
+                "collections_key": collections_key,
+            },
+        )
+        redis_client.sadd(f"{prefix}:pdf:hashes", doc_id)
+        redis_client.sadd(_source_key(prefix, source), doc_id)
+        if collection:
+            redis_client.sadd(collections_key, collection)
+        result.update(
+            {
+                "meta_key": meta_key,
+                "partitions_key": partitions_key,
+                "chunks_key": chunks_key,
+                "collections_key": collections_key,
+            }
+        )
+
+    if should_write_v2(mode):
+        bucket, key = split_source_path(source)
+        if not bucket or not key:
+            bucket = os.getenv("SOURCE_BUCKET", "local")
+            key = source
+        source_desc = SourceDescriptor(bucket=bucket, key=key, version_id=None)
+        result.update(
+            write_v2_document_payloads(
+                redis_client=redis_client,
+                prefix=prefix,
+                doc_hash=doc_id,
+                source=source_desc,
+                partitions_payload=partitions_payload if isinstance(partitions_payload, list) else [],
+                chunks_payload=chunks_payload if isinstance(chunks_payload, list) else [],
+                collection=collection,
+            )
+        )
+
+    return result
 
 
 def upload_json_files_to_redis(

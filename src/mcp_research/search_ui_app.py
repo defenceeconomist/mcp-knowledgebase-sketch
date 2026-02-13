@@ -61,6 +61,15 @@ def _payload_text(payload: Dict[str, Any], key: str, default: str = "") -> str:
     return str(value).strip() if value is not None else default
 
 
+def _payload_bool(payload: Dict[str, Any], key: str, default: bool = False) -> bool:
+    value = payload.get(key)
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
 def _invoke_tool(tool: Any, **kwargs: Any) -> Any:
     """Call either a plain function tool or a FastMCP FunctionTool wrapper."""
     if callable(tool):
@@ -142,6 +151,8 @@ if app is not None:
         prefetch_k = _payload_int(body, "prefetchK", 60, 1, 500)
         collection = _payload_text(body, "collection") or None
         retrieval_mode = _payload_text(body, "retrievalMode", "hybrid") or "hybrid"
+        include_partition = _payload_bool(body, "includePartition", False)
+        include_document = _payload_bool(body, "includeDocument", False)
 
         try:
             tools = _require_tools()
@@ -153,6 +164,8 @@ if app is not None:
                 prefetch_k=prefetch_k,
                 collection=collection,
                 retrieval_mode=retrieval_mode,
+                include_partition=include_partition,
+                include_document=include_document,
             )
             latency_ms = int((time.perf_counter() - start) * 1000)
             active_collection = collection or _safe_default_collection(tools)
@@ -163,6 +176,8 @@ if app is not None:
                 "top_k": top_k,
                 "prefetch_k": prefetch_k,
                 "retrieval_mode": active_mode,
+                "include_partition": bool(result.get("include_partition")),
+                "include_document": bool(result.get("include_document")),
                 "latency_ms": latency_ms,
                 "results": result.get("results", []),
             }

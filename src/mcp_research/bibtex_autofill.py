@@ -13,6 +13,18 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
+from mcp_research.schema_v2 import (
+    bibtex_schema_read_mode,
+    bibtex_schema_write_mode,
+    bibtex_v2_doc_key,
+    bibtex_v2_source_doc_key,
+    should_fallback_v1,
+    should_read_v2,
+    should_write_v1,
+    should_write_v2,
+    source_id,
+)
+
 try:
     from minio import Minio
     from minio.error import S3Error
@@ -1031,6 +1043,24 @@ def _merge_metadata(existing: Dict[str, Any], candidate: Dict[str, Any], overwri
 
 
 def _load_existing_file_metadata(redis_client: Any, bibtex_prefix: str, bucket: str, object_name: str) -> Dict[str, Any]:
+    source_prefix = os.getenv("BIBTEX_SOURCE_REDIS_PREFIX", os.getenv("REDIS_PREFIX", "unstructured")).strip() or "unstructured"
+    read_mode = bibtex_schema_read_mode()
+    if should_read_v2(read_mode):
+        source = f"{bucket}/{object_name}"
+        doc_ids = _source_doc_ids(redis_client, source_prefix, source)
+        if doc_ids:
+            v2_raw = _safe_json_loads(redis_client.get(bibtex_v2_doc_key(bibtex_prefix, doc_ids[0])), {})
+            if isinstance(v2_raw, dict) and v2_raw:
+                return _normalize_bibtex_metadata(object_name, v2_raw)
+        sid = source_id(bucket, object_name, None)
+        sid_doc = _normalize_text(_decode_redis_value(redis_client.get(bibtex_v2_source_doc_key(bibtex_prefix, sid))))
+        if sid_doc:
+            v2_raw = _safe_json_loads(redis_client.get(bibtex_v2_doc_key(bibtex_prefix, sid_doc)), {})
+            if isinstance(v2_raw, dict) and v2_raw:
+                return _normalize_bibtex_metadata(object_name, v2_raw)
+        if not should_fallback_v1(read_mode):
+            return _normalize_bibtex_metadata(object_name, {})
+
     key = _bibtex_file_key(bibtex_prefix, bucket, object_name)
     payload = _safe_json_loads(redis_client.get(key), {})
     if not payload and hasattr(redis_client, "hgetall"):
@@ -1042,9 +1072,20 @@ def _load_existing_file_metadata(redis_client: Any, bibtex_prefix: str, bucket: 
 
 
 def _save_file_metadata(redis_client: Any, bibtex_prefix: str, bucket: str, object_name: str, metadata: Dict[str, Any]) -> str:
+    mode = bibtex_schema_write_mode()
     key = _bibtex_file_key(bibtex_prefix, bucket, object_name)
-    redis_client.set(key, json.dumps(metadata, ensure_ascii=True))
-    redis_client.sadd(f"{bibtex_prefix}:files", f"{bucket}/{object_name}")
+    if should_write_v1(mode):
+        redis_client.set(key, json.dumps(metadata, ensure_ascii=True))
+        redis_client.sadd(f"{bibtex_prefix}:files", f"{bucket}/{object_name}")
+
+    if should_write_v2(mode):
+        source_prefix = os.getenv("BIBTEX_SOURCE_REDIS_PREFIX", os.getenv("REDIS_PREFIX", "unstructured")).strip() or "unstructured"
+        source = f"{bucket}/{object_name}"
+        doc_ids = _source_doc_ids(redis_client, source_prefix, source)
+        if doc_ids:
+            redis_client.set(bibtex_v2_doc_key(bibtex_prefix, doc_ids[0]), json.dumps(metadata, ensure_ascii=True))
+            sid = source_id(bucket, object_name, None)
+            redis_client.set(bibtex_v2_source_doc_key(bibtex_prefix, sid), doc_ids[0])
     return key
 
 

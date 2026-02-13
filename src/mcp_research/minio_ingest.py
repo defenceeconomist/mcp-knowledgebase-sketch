@@ -28,6 +28,14 @@ from mcp_research.ingest_unstructured import (
     upload_to_redis,
 )
 from mcp_research.link_resolver import build_source_ref
+from mcp_research.schema_v2 import (
+    chunk_hash,
+    partition_hash,
+    read_v2_doc_chunks,
+    redis_schema_read_mode,
+    should_fallback_v1,
+    should_read_v2,
+)
 from mcp_research.upsert_chunks import ensure_collection, upsert_items
 
 
@@ -326,6 +334,13 @@ class MinioIngestor:
         """Load previously processed chunks from Redis for a document id."""
         if not self.redis_client:
             return None
+        read_mode = redis_schema_read_mode()
+        if should_read_v2(read_mode):
+            v2_chunks = read_v2_doc_chunks(self.redis_client, self.redis_prefix, doc_id)
+            if v2_chunks:
+                return v2_chunks
+            if not should_fallback_v1(read_mode):
+                return []
         chunks_key = _redis_key(self.redis_prefix, doc_id, "chunks")
         raw = self.redis_client.get(chunks_key)
         raw = _decode_redis_value(raw)
@@ -395,7 +410,7 @@ class MinioIngestor:
             self.redis_client.sadd(_source_key(self.redis_prefix, source), doc_id)
 
         chunk_items = self._load_chunks_from_redis(doc_id)
-        if self.skip_existing and self._collection_mapping_exists(doc_id, bucket) and not chunk_items:
+        if self.skip_existing and self._collection_mapping_exists(doc_id, bucket):
             logger.info("Skipping %s (already mapped to %s)", source, bucket)
             return
         if not chunk_items:
@@ -430,6 +445,11 @@ class MinioIngestor:
                         "text": chunk,
                     }
                 )
+            for entry in chunk_items:
+                if not isinstance(entry, dict):
+                    continue
+                entry["partition_hash"] = partition_hash(doc_id, entry)
+                entry["chunk_hash"] = chunk_hash(doc_id, entry)
             if self.redis_client:
                 upload_to_redis(
                     redis_client=self.redis_client,
@@ -443,8 +463,6 @@ class MinioIngestor:
         else:
             for entry in chunk_items:
                 if not isinstance(entry, dict):
-                    continue
-                if entry.get("source_ref"):
                     continue
                 page_list = entry.get("pages") or []
                 page_start = min(page_list) if page_list else None
@@ -466,6 +484,8 @@ class MinioIngestor:
                         "page_end": page_end,
                     }
                 )
+                entry["partition_hash"] = str(entry.get("partition_hash") or partition_hash(doc_id, entry))
+                entry["chunk_hash"] = str(entry.get("chunk_hash") or chunk_hash(doc_id, entry))
 
         with self._lock:
             self._ensure_collection(bucket)

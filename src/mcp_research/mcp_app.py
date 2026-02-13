@@ -9,6 +9,16 @@ from qdrant_client import QdrantClient
 
 from mcp_research import hybrid_search
 from mcp_research.link_resolver import build_citation_url, build_source_ref, resolve_link
+from mcp_research.schema_v2 import (
+    read_v2_doc_chunks,
+    read_v2_doc_partitions,
+    read_v2_source_doc_hash,
+    redis_schema_read_mode,
+    search_link_mode,
+    search_redis_enrichment_mode,
+    should_fallback_v1,
+    should_read_v2,
+)
 
 try:
     import redis
@@ -332,6 +342,20 @@ def _resolve_doc_ids(
         raise ValueError("document_id or bucket/key is required")
 
     source = f"{bucket}/{key}"
+    read_mode = redis_schema_read_mode()
+    if should_read_v2(read_mode):
+        v2_doc = read_v2_source_doc_hash(
+            redis_client=redis_client,
+            prefix=REDIS_PREFIX,
+            bucket=bucket,
+            key=key,
+            version_id=None,
+        )
+        if v2_doc:
+            return [v2_doc], source
+        if not should_fallback_v1(read_mode):
+            return [], source
+
     source_key = _source_key(REDIS_PREFIX, source)
     doc_ids: List[str] = []
 
@@ -360,8 +384,28 @@ def _load_document_payloads(
     partitions: List[Dict[str, Any]] = []
     chunks_keys: List[str] = []
     partitions_keys: List[str] = []
+    read_mode = redis_schema_read_mode()
 
     for doc_id in doc_ids:
+        used_v2 = False
+        if should_read_v2(read_mode):
+            v2_chunks = read_v2_doc_chunks(redis_client, REDIS_PREFIX, doc_id)
+            v2_partitions = read_v2_doc_partitions(redis_client, REDIS_PREFIX, doc_id)
+            if v2_chunks or v2_partitions:
+                used_v2 = True
+                for entry in v2_partitions:
+                    if isinstance(entry, dict):
+                        partitions.append(dict(entry))
+                for entry in v2_chunks:
+                    if isinstance(entry, dict):
+                        chunks.append(dict(entry))
+                if v2_chunks:
+                    chunks_keys.append(f"{REDIS_PREFIX}:v2:doc:{doc_id}:chunk_hashes")
+                if v2_partitions:
+                    partitions_keys.append(f"{REDIS_PREFIX}:v2:doc:{doc_id}:partition_hashes")
+        if used_v2 and not should_fallback_v1(read_mode):
+            continue
+
         meta = _doc_meta(redis_client, REDIS_PREFIX, doc_id)
         partitions_key = str(meta.get("partitions_key") or _redis_key(REDIS_PREFIX, doc_id, "partitions"))
         chunks_key = str(meta.get("chunks_key") or _redis_key(REDIS_PREFIX, doc_id, "chunks"))
@@ -540,6 +584,49 @@ def _chunk_summary(payload: Dict[str, Any], point_id: str | None = None) -> Dict
     return summary
 
 
+def _partition_details_from_bundle(
+    payload: Dict[str, Any],
+    bundle: Dict[str, Any],
+) -> Dict[str, Any] | None:
+    """Build a partition summary for one payload against a loaded document bundle."""
+    target_start, target_end = _payload_page_range(payload)
+    target_chunk_index = _coerce_int(payload.get("chunk_index"))
+    matching_chunks: List[Dict[str, Any]] = []
+    for chunk in bundle.get("chunks", []):
+        if not isinstance(chunk, dict):
+            continue
+        entry = dict(chunk)
+        start, end = _payload_page_range(entry)
+        if target_start is not None or target_end is not None:
+            if (start, end) == (target_start, target_end):
+                matching_chunks.append(entry)
+        elif target_chunk_index is not None:
+            chunk_index = _coerce_int(entry.get("chunk_index"))
+            if chunk_index == target_chunk_index:
+                matching_chunks.append(entry)
+
+    matching_partitions: List[Dict[str, Any]] = []
+    for partition in bundle.get("partitions", []):
+        if not isinstance(partition, dict):
+            continue
+        entry = dict(partition)
+        start, end = _payload_page_range(entry)
+        if target_start is not None or target_end is not None:
+            if (start, end) == (target_start, target_end):
+                matching_partitions.append(entry)
+
+    selected_partition = matching_partitions[0] if matching_partitions else None
+    if not matching_chunks and not selected_partition:
+        return None
+    return {
+        "label": _partition_label(target_start, target_end),
+        "page_start": target_start,
+        "page_end": target_end,
+        "chunk_count": len(matching_chunks),
+        "partition_payload": selected_partition,
+    }
+
+
 def _retrieve_chunk_payload(id: str, collection: str | None = None) -> tuple[str, Dict[str, Any] | None]:
     """Retrieve chunk payload from Qdrant by id and collection selection."""
     client = _get_qdrant_client()
@@ -684,6 +771,8 @@ def search(
     prefetch_k: int = 40,
     collection: str | None = None,
     retrieval_mode: str = "hybrid",
+    include_partition: bool | None = None,
+    include_document: bool | None = None,
 ) -> Dict[str, Any]:
     """
     Search indexed chunks via hybrid (dense+sparse) retrieval
@@ -695,6 +784,17 @@ def search(
     dense_model = _get_dense_model()
 
     collection_name = collection or _get_default_collection() or QDRANT_COLLECTION
+    enrichment_mode = search_redis_enrichment_mode()
+    include_partition = (
+        include_partition
+        if include_partition is not None
+        else enrichment_mode in {"partition", "both"}
+    )
+    include_document = (
+        include_document
+        if include_document is not None
+        else enrichment_mode in {"document", "both"}
+    )
     if mode == "cosine":
         response = _cosine_search(
             client=client,
@@ -716,6 +816,8 @@ def search(
         )
 
     results: List[Dict[str, Any]] = []
+    redis_client = _get_redis_client()
+    bundle_cache: Dict[str, Dict[str, Any]] = {}
     for point in response.points:
         payload = point.payload or {}
         source_ref = _source_ref_from_payload(payload)
@@ -725,6 +827,39 @@ def search(
             else None
         )
         citation_key = _citation_key_from_payload(payload)
+        citation_url_doc_start = None
+        citation_url_match = None
+        if source_ref and search_link_mode() == "dual":
+            citation_url_doc_start = resolve_link(source_ref=source_ref, page=1).get("url")
+            page_start, page_end = _payload_page_range(payload)
+            citation_url_match = resolve_link(
+                source_ref=source_ref,
+                page_start=page_start,
+                page_end=page_end,
+                highlight=_extract_chunk_text(payload)[:240],
+            ).get("url")
+
+        partition_data = None
+        document_data = None
+        if redis_client and (include_partition or include_document):
+            document_id, bucket, key = _source_and_doc_identity(payload)
+            cache_key = f"{document_id or ''}|{bucket or ''}|{key or ''}"
+            if cache_key not in bundle_cache:
+                bundle_cache[cache_key] = _fetch_document_bundle(
+                    redis_client=redis_client,
+                    document_id=document_id,
+                    bucket=bucket,
+                    key=key,
+                )
+            bundle = bundle_cache[cache_key]
+            if include_partition:
+                partition_data = _partition_details_from_bundle(payload, bundle)
+            if include_document:
+                document_data = {
+                    "document_ids": bundle.get("document_ids", []),
+                    "count": bundle.get("count", 0),
+                }
+
         results.append(
             {
                 "id": str(point.id),
@@ -742,11 +877,17 @@ def search(
                 "page_start": payload.get("page_start"),
                 "page_end": payload.get("page_end"),
                 "text": payload.get("text", ""),
+                "partition": partition_data,
+                "document": document_data,
+                "citation_url_doc_start": citation_url_doc_start,
+                "citation_url_match": citation_url_match,
             }
         )
 
     return {
         "retrieval_mode": mode,
+        "include_partition": include_partition,
+        "include_document": include_document,
         "results": results,
     }
 
@@ -1004,6 +1145,26 @@ def fetch_chunk_bibtex(id: str, collection: str | None = None) -> Dict[str, Any]
         "citation_key": citation_key,
         "metadata": metadata or {},
     }
+
+
+# FastMCP decorators may replace function objects with tool wrappers.
+# Keep module-level callables for unit tests and internal direct invocation.
+for _tool_name in (
+    "list_collections",
+    "set_default_collection",
+    "list_collection_files",
+    "search",
+    "fetch",
+    "resolve_citation",
+    "fetch_document_chunks",
+    "fetch_chunk_document",
+    "fetch_chunk_partition",
+    "fetch_chunk_bibtex",
+):
+    _tool_obj = globals().get(_tool_name)
+    if _tool_obj is not None and hasattr(_tool_obj, "fn"):
+        globals()[_tool_name] = _tool_obj.fn
+
 
 def main() -> None:
     """Run the FastMCP server with HTTP transport."""

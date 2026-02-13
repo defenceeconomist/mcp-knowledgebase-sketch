@@ -10,6 +10,14 @@ from fastembed import SparseTextEmbedding, TextEmbedding
 from qdrant_client import QdrantClient, models
 
 from mcp_research.ingest_unstructured import record_collection_mapping
+from mcp_research.schema_v2 import (
+    chunk_hash,
+    partition_hash,
+    qdrant_payload_schema_mode,
+    qdrant_point_id_mode,
+    should_write_v1,
+    should_write_v2,
+)
 
 try:
     import redis
@@ -160,26 +168,61 @@ def upsert_items(
 
         points = []
         for item, dense_vec, sparse_vec in zip(batch, dense_embs, sparse_embs):
-            payload = {
-                "document_id": item.get("document_id"),
-                "source": item.get("source"),
-                "chunk_index": item.get("chunk_index"),
-                "pages": item.get("pages") or [],
-                "text": item.get("text") or "",
-            }
-            for key in (
-                "source_ref",
-                "bucket",
-                "key",
-                "version_id",
-                "page_start",
-                "page_end",
-            ):
-                if key in item and item.get(key) is not None:
-                    payload[key] = item.get(key)
+            payload_mode = qdrant_payload_schema_mode()
+            point_mode = qdrant_point_id_mode()
+            doc_hash = str(item.get("doc_hash") or item.get("document_id") or "")
+            p_hash = str(item.get("partition_hash") or partition_hash(doc_hash, item))
+            c_hash = str(item.get("chunk_hash") or chunk_hash(doc_hash, item))
+
+            payload = {}
+            if should_write_v1(payload_mode):
+                payload.update(
+                    {
+                        "document_id": item.get("document_id"),
+                        "source": item.get("source"),
+                        "chunk_index": item.get("chunk_index"),
+                        "pages": item.get("pages") or [],
+                        "text": item.get("text") or "",
+                    }
+                )
+                for key in (
+                    "source_ref",
+                    "bucket",
+                    "key",
+                    "version_id",
+                    "page_start",
+                    "page_end",
+                ):
+                    if key in item and item.get(key) is not None:
+                        payload[key] = item.get(key)
+
+            if should_write_v2(payload_mode):
+                payload.update(
+                    {
+                        "doc_hash": doc_hash,
+                        "partition_hash": p_hash,
+                        "chunk_hash": c_hash,
+                    }
+                )
+                source_id = item.get("source_id")
+                if source_id:
+                    payload["source_id"] = source_id
+                if not payload.get("text"):
+                    payload["text"] = item.get("text") or ""
+                if "chunk_index" not in payload:
+                    payload["chunk_index"] = item.get("chunk_index")
+                if "page_start" not in payload and item.get("page_start") is not None:
+                    payload["page_start"] = item.get("page_start")
+                if "page_end" not in payload and item.get("page_end") is not None:
+                    payload["page_end"] = item.get("page_end")
+
+            point_id = str(uuid.uuid4())
+            if point_mode == "deterministic":
+                base = f"{collection}|{doc_hash}|{c_hash}"
+                point_id = str(uuid.uuid5(uuid.NAMESPACE_URL, base))
             points.append(
                 models.PointStruct(
-                    id=str(uuid.uuid4()),
+                    id=point_id,
                     vector={
                         "dense": _to_list(dense_vec),
                         "sparse": models.SparseVector(

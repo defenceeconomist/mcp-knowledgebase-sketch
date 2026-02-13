@@ -7,6 +7,18 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 from urllib.parse import quote, urlencode
 
+from mcp_research.schema_v2 import (
+    bibtex_schema_read_mode,
+    bibtex_schema_write_mode,
+    bibtex_v2_doc_key,
+    bibtex_v2_source_doc_key,
+    should_fallback_v1,
+    should_read_v2,
+    should_write_v1,
+    should_write_v2,
+    source_id,
+)
+
 try:
     from fastapi import FastAPI, HTTPException, Query
     from fastapi.responses import HTMLResponse
@@ -573,6 +585,26 @@ def _get_file_metadata(
     if not redis_client:
         return _default_metadata(bucket, object_name)
 
+    source_prefix = _source_redis_prefix()
+    read_mode = bibtex_schema_read_mode()
+    if should_read_v2(read_mode):
+        source = f"{bucket}/{object_name}"
+        doc_ids = _source_doc_ids(redis_client, source_prefix, source)
+        if doc_ids:
+            v2_raw = _decode_redis_value(redis_client.get(bibtex_v2_doc_key(prefix, doc_ids[0])))
+            payload = _load_json_metadata(v2_raw)
+            if payload:
+                return _normalize_metadata(bucket, object_name, payload)
+        sid = source_id(bucket, object_name, None)
+        sid_doc = _decode_redis_value(redis_client.get(bibtex_v2_source_doc_key(prefix, sid)))
+        if sid_doc:
+            v2_raw = _decode_redis_value(redis_client.get(bibtex_v2_doc_key(prefix, str(sid_doc))))
+            payload = _load_json_metadata(v2_raw)
+            if payload:
+                return _normalize_metadata(bucket, object_name, payload)
+        if not should_fallback_v1(read_mode):
+            return _default_metadata(bucket, object_name)
+
     key = _bibtex_file_key(prefix, bucket, object_name)
     raw = _decode_redis_value(redis_client.get(key))
     payload = _load_json_metadata(raw)
@@ -669,10 +701,19 @@ def _save_file_metadata(
     payload: Dict[str, Any] | None,
 ) -> Dict[str, Any]:
     prefix = _bibtex_prefix()
+    mode = bibtex_schema_write_mode()
     metadata = _normalize_metadata(bucket, object_name, payload)
     key = _bibtex_file_key(prefix, bucket, object_name)
-    redis_client.set(key, json.dumps(metadata, ensure_ascii=True))
-    redis_client.sadd(f"{prefix}:files", f"{bucket}/{object_name}")
+    if should_write_v1(mode):
+        redis_client.set(key, json.dumps(metadata, ensure_ascii=True))
+        redis_client.sadd(f"{prefix}:files", f"{bucket}/{object_name}")
+    if should_write_v2(mode):
+        source = f"{bucket}/{object_name}"
+        doc_ids = _source_doc_ids(redis_client, _source_redis_prefix(), source)
+        if doc_ids:
+            redis_client.set(bibtex_v2_doc_key(prefix, doc_ids[0]), json.dumps(metadata, ensure_ascii=True))
+            sid = source_id(bucket, object_name, None)
+            redis_client.set(bibtex_v2_source_doc_key(prefix, sid), doc_ids[0])
     return metadata
 
 
