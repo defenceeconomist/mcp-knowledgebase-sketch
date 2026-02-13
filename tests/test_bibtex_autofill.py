@@ -114,6 +114,15 @@ class _LowConfidenceClient:
 
 
 class BibtexAutofillTests(unittest.TestCase):
+    def setUp(self):
+        self._env_backup = os.environ.copy()
+        os.environ["BIBTEX_SCHEMA_WRITE_MODE"] = "dual"
+        os.environ["BIBTEX_SCHEMA_READ_MODE"] = "prefer_v2"
+
+    def tearDown(self):
+        os.environ.clear()
+        os.environ.update(self._env_backup)
+
     def test_extract_candidate_signals_prefers_minio_metadata(self):
         metadata = {
             "x-amz-meta-title": "Paper From Metadata",
@@ -322,6 +331,38 @@ class BibtexAutofillTests(unittest.TestCase):
         )
         self.assertEqual(normalized[0], {"firstName": "Ada", "lastName": "Lovelace"})
         self.assertEqual(normalized[1], {"firstName": "OpenAI", "lastName": "Research"})
+
+    def test_save_file_metadata_writes_v2_keys_in_v2_mode(self):
+        redis_client = _FakeRedis()
+        redis_client.sets["unstructured:pdf:source:bucket-a/paper.pdf"] = {"doc-paper"}
+        metadata = {
+            "citationKey": "paper2026",
+            "entryType": "article",
+            "title": "Paper",
+            "authors": [{"firstName": "Ada", "lastName": "Lovelace"}],
+            "year": "2026",
+            "doi": "10.1000/paper",
+        }
+        with mock.patch.dict(
+            os.environ,
+            {
+                "BIBTEX_SCHEMA_WRITE_MODE": "v2",
+                "BIBTEX_SOURCE_REDIS_PREFIX": "unstructured",
+            },
+            clear=False,
+        ):
+            bibtex_autofill._save_file_metadata(
+                redis_client=redis_client,
+                bibtex_prefix="bibtex",
+                bucket="bucket-a",
+                object_name="paper.pdf",
+                metadata=metadata,
+            )
+
+        self.assertNotIn("bibtex:file:bucket-a/paper.pdf", redis_client.values)
+        self.assertIn("bibtex:v2:doc:doc-paper", redis_client.values)
+        sid = bibtex_autofill.source_id("bucket-a", "paper.pdf", None)
+        self.assertEqual(redis_client.values.get(f"bibtex:v2:source:{sid}:doc"), "doc-paper")
 
 
 if __name__ == "__main__":

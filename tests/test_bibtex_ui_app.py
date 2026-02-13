@@ -10,6 +10,7 @@ if SRC_ROOT not in sys.path:
     sys.path.insert(0, SRC_ROOT)
 
 from mcp_research import bibtex_ui_app
+from mcp_research.schema_v2 import source_id
 
 try:
     from fastapi.testclient import TestClient
@@ -84,7 +85,14 @@ class _FakeMinio:
 @unittest.skipIf(bibtex_ui_app.app is None or TestClient is None, "FastAPI test client unavailable")
 class BibtexUiAppTests(unittest.TestCase):
     def setUp(self):
+        self._env_backup = os.environ.copy()
+        os.environ["BIBTEX_SCHEMA_WRITE_MODE"] = "dual"
+        os.environ["BIBTEX_SCHEMA_READ_MODE"] = "prefer_v2"
         self.client = TestClient(bibtex_ui_app.app)
+
+    def tearDown(self):
+        os.environ.clear()
+        os.environ.update(self._env_backup)
 
     def test_index_serves_bibtex_workspace_shell(self):
         response = self.client.get("/")
@@ -483,6 +491,36 @@ class BibtexUiAppTests(unittest.TestCase):
         payload = response.json()
         self.assertEqual(payload["file"]["authors"][0]["firstName"], "OpenAI")
         self.assertEqual(payload["file"]["authors"][0]["lastName"], "Research")
+
+    def test_api_save_file_bibtex_writes_v2_keys_in_v2_mode(self):
+        fake_redis = _FakeRedis()
+        fake_redis.sets["unstructured:pdf:source:bucket-a/folder/alpha.pdf"] = {"doc-alpha"}
+        with mock.patch.object(bibtex_ui_app, "_get_redis_client", return_value=(fake_redis, None)):
+            with mock.patch.dict(
+                os.environ,
+                {
+                    "BIBTEX_REDIS_PREFIX": "bibtex",
+                    "BIBTEX_SCHEMA_WRITE_MODE": "v2",
+                    "BIBTEX_SOURCE_REDIS_PREFIX": "unstructured",
+                },
+                clear=False,
+            ):
+                response = self.client.put(
+                    "/api/buckets/bucket-a/files/folder%2Falpha.pdf/bibtex",
+                    json={
+                        "title": "Updated Alpha",
+                        "year": "2025",
+                        "citationKey": "alpha2025updated",
+                        "entryType": "article",
+                        "authors": [{"firstName": "Ada", "lastName": "Lovelace"}],
+                    },
+                )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("bibtex:file:bucket-a/folder/alpha.pdf", fake_redis.values)
+        self.assertIn("bibtex:v2:doc:doc-alpha", fake_redis.values)
+        sid = source_id("bucket-a", "folder/alpha.pdf", None)
+        self.assertEqual(fake_redis.values.get(f"bibtex:v2:source:{sid}:doc"), "doc-alpha")
 
 
 if __name__ == "__main__":

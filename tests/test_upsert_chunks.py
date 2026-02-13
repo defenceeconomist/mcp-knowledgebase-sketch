@@ -59,6 +59,15 @@ class _FakeRedis:
 
 
 class UpsertChunksTests(unittest.TestCase):
+    def setUp(self):
+        self._env_backup = os.environ.copy()
+        os.environ["QDRANT_PAYLOAD_SCHEMA"] = "dual"
+        os.environ["QDRANT_POINT_ID_MODE"] = "uuid"
+
+    def tearDown(self):
+        os.environ.clear()
+        os.environ.update(self._env_backup)
+
     def test_batched_splits_items(self):
         items = [{"id": i} for i in range(5)]
         batches = list(upsert_chunks.batched(items, batch_size=2))
@@ -126,6 +135,55 @@ class UpsertChunksTests(unittest.TestCase):
         self.assertEqual(collection_name, "demo")
         self.assertIsInstance(points[0], models.PointStruct)
         self.assertEqual(points[0].payload["document_id"], "doc")
+
+    def test_upsert_items_v2_payload_and_deterministic_id(self):
+        client = _Client()
+        dense_model = _DenseModel([[0.1, 0.2]])
+        sparse_model = _SparseModel([([1, 2], [0.6, 0.4])])
+        items = [
+            {
+                "text": "chunk",
+                "document_id": "doc-v2",
+                "source": "bucket/file.pdf",
+                "chunk_index": 0,
+                "page_start": 1,
+                "page_end": 1,
+                "pages": [1],
+            }
+        ]
+
+        with unittest.mock.patch.dict(
+            os.environ,
+            {"QDRANT_PAYLOAD_SCHEMA": "v2", "QDRANT_POINT_ID_MODE": "deterministic"},
+            clear=False,
+        ):
+            first_total = upsert_chunks.upsert_items(
+                client=client,
+                collection="demo",
+                items=items,
+                dense_model=dense_model,
+                sparse_model=sparse_model,
+                batch_size=10,
+            )
+            second_total = upsert_chunks.upsert_items(
+                client=client,
+                collection="demo",
+                items=items,
+                dense_model=dense_model,
+                sparse_model=sparse_model,
+                batch_size=10,
+            )
+
+        self.assertEqual(first_total, 1)
+        self.assertEqual(second_total, 1)
+        self.assertEqual(len(client.upsert_calls), 2)
+        first_point = client.upsert_calls[0][1][0]
+        second_point = client.upsert_calls[1][1][0]
+        self.assertEqual(first_point.id, second_point.id)
+        self.assertIn("doc_hash", first_point.payload)
+        self.assertIn("partition_hash", first_point.payload)
+        self.assertIn("chunk_hash", first_point.payload)
+        self.assertNotIn("document_id", first_point.payload)
 
 
 if __name__ == "__main__":
