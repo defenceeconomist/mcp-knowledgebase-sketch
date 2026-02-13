@@ -38,7 +38,6 @@ def build_arg_parser() -> argparse.ArgumentParser:
         "command",
         choices=(
             "mcp-app",
-            "ingest-unstructured",
             "upsert-chunks",
             "minio-ingest",
             "ingest-missing-minio",
@@ -64,7 +63,6 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     modules = {
         "mcp-app": "mcp_research.mcp_app",
-        "ingest-unstructured": "mcp_research.ingest_unstructured",
         "upsert-chunks": "mcp_research.upsert_chunks",
         "minio-ingest": "mcp_research.minio_ingest",
         "ingest-missing-minio": "mcp_research.ingest_missing_minio",

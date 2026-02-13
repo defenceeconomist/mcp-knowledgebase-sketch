@@ -12,25 +12,6 @@ from mcp_research import ingestion_tasks
 
 
 class IngestionTasksTests(unittest.TestCase):
-    def test_ingest_unstructured_task_updates_progress(self):
-        task = ingestion_tasks.ingest_unstructured_task
-        calls = []
-
-        def fake_update_state(state, meta):
-            calls.append((state, meta))
-
-        def fake_run_from_env(pdf_path_override, data_dir_override, on_progress):
-            on_progress({"step": "started"})
-            return ["result"]
-
-        with mock.patch("mcp_research.ingestion_tasks.run_from_env", side_effect=fake_run_from_env):
-            task.update_state = fake_update_state
-            result = task.run(pdf_path="file.pdf", data_dir="/tmp")
-
-        self.assertEqual(result["count"], 1)
-        self.assertEqual(calls[0][0], "PROGRESS")
-        self.assertEqual(calls[0][1]["progress"], {"step": "started"})
-
     def test_ingest_minio_object_task_calls_processor(self):
         task = ingestion_tasks.ingest_minio_object_task
         with mock.patch("mcp_research.minio_ingest.process_object_from_env") as mocked:

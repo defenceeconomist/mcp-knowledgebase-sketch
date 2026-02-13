@@ -33,16 +33,11 @@ services:
     build: .
     restart: unless-stopped
     environment:
-      - DATA_DIR=/app/data
-      - PDF_PATH=${PDF_PATH:-}
       - QDRANT_HOST=qdrant
       - QDRANT_PORT=6333
       - QDRANT_COLLECTION=${QDRANT_COLLECTION:-pdf_chunks}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - REDIS_PREFIX=${REDIS_PREFIX:-unstructured}
-      - REDIS_SKIP_PROCESSED=${REDIS_SKIP_PROCESSED:-1}
-      - STORE_PARTITIONS_DISK=${STORE_PARTITIONS_DISK:-1}
-      - STORE_CHUNKS_DISK=${STORE_CHUNKS_DISK:-1}
       - EMBEDDING_MODEL=${EMBEDDING_MODEL:-all-MiniLM-L6-v2}
       - DENSE_MODEL=${DENSE_MODEL:-BAAI/bge-small-en-v1.5}
       - SPARSE_MODEL=${SPARSE_MODEL:-Qdrant/bm25}
@@ -199,8 +194,6 @@ services:
       - CELERY_BROKER_URL=${REDIS_URL:-redis://redis:6379/0}
       - CELERY_RESULT_BACKEND=${REDIS_URL:-redis://redis:6379/0}
       - CELERY_VISIBILITY_TIMEOUT=${CELERY_VISIBILITY_TIMEOUT:-3600}
-      - DATA_DIR=/app/data
-      - PDF_PATH=${PDF_PATH:-}
       - MINIO_ENDPOINT=minio:9000
       - MINIO_ACCESS_KEY=${MINIO_ROOT_USER:-minioadmin}
       - MINIO_SECRET_KEY=${MINIO_ROOT_PASSWORD:-minioadmin}
@@ -208,9 +201,6 @@ services:
       - QDRANT_URL=http://qdrant:6333
       - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - REDIS_PREFIX=${REDIS_PREFIX:-unstructured}
-      - REDIS_SKIP_PROCESSED=${REDIS_SKIP_PROCESSED:-1}
-      - STORE_PARTITIONS_DISK=${STORE_PARTITIONS_DISK:-1}
-      - STORE_CHUNKS_DISK=${STORE_CHUNKS_DISK:-1}
       - DENSE_MODEL=${DENSE_MODEL:-BAAI/bge-small-en-v1.5}
       - SPARSE_MODEL=${SPARSE_MODEL:-Qdrant/bm25}
       - UNSTRUCTURED_API_KEY=${UNSTRUCTURED_API_KEY:-}

@@ -18,14 +18,11 @@ docker compose up -d --build
 3. Ingest data:
 
 ```bash
-# Local PDFs -> Unstructured -> Redis (optional disk output)
-python mcp_cli.py ingest-unstructured
-
-# Chunk payloads -> Qdrant
-python mcp_cli.py upsert-chunks --source redis --redis-url redis://localhost:6379/0
+# MinIO event-driven ingest (already part of docker-compose stack)
+# Upload PDFs to watched MinIO bucket(s); minio_ingest will process and upsert automatically.
+docker compose logs -f minio_ingest
 ```
 
-For MinIO-driven ingest, run the `minio_ingest` service (already included in `docker-compose.yml`).
 
 ## MCP Server
 

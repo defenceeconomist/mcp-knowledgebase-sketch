@@ -7,35 +7,7 @@ This document focuses on:
 
 ## 1) Data Ingest Process
 
-### A. Local PDF ingest (batch/manual)
-
-Main modules:
-- `src/mcp_research/ingest_unstructured.py`
-- `src/mcp_research/upsert_chunks.py`
-
-Flow:
-1. Read PDF(s) from `PDF_PATH` or `DATA_DIR`.
-2. Call Unstructured API (`UNSTRUCTURED_API_KEY` required) to partition/chunk.
-3. Build chunk payloads with:
-   - `doc_hash` (SHA-256 of PDF bytes)
-   - page metadata (`page_start`, `page_end`)
-   - source metadata (`source_id`, `bucket`, `key`, `source_ref`)
-4. Optionally write partitions/chunks JSON to disk (`STORE_PARTITIONS_DISK`, `STORE_CHUNKS_DISK`).
-5. Write metadata/chunks to Redis v2 via `upload_to_redis()`.
-6. Upsert chunk vectors into Qdrant via `mcp_cli.py upsert-chunks` (dense + sparse vectors).
-
-Typical commands:
-
-```bash
-python mcp_cli.py ingest-unstructured
-python mcp_cli.py upsert-chunks --source redis --redis-url redis://localhost:6379/0
-```
-
-Notes:
-- `ingest-unstructured` does not write to Qdrant directly.
-- Qdrant indexing happens in `upsert-chunks`.
-
-### B. MinIO event-driven ingest
+### A. MinIO event-driven ingest
 
 Main module:
 - `src/mcp_research/minio_ingest.py`
@@ -58,7 +30,7 @@ Celery mode:
   - `mcp_research.delete_minio_object`
 - Worker implementation: `src/mcp_research/ingestion_tasks.py`
 
-### C. Backfill and recovery utilities
+### B. Backfill and recovery utilities
 
 - `src/mcp_research/upload_data_to_redis.py`:
   upload partition/chunk JSON payloads into Redis.
