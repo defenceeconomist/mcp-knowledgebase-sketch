@@ -125,7 +125,9 @@ services:
     image: nginx:1.27-alpine
     restart: unless-stopped
     volumes:
-      - ./docs:/usr/share/nginx/html:ro
+      - ./docs/index.html:/usr/share/nginx/html/index.html:ro
+      - ./docs/tool-documentation.md:/usr/share/nginx/html/tool-documentation.md:ro
+      - ./README.md:/usr/share/nginx/html/README.md:ro
   reverse_proxy:
     image: nginx:1.27-alpine
     restart: unless-stopped
