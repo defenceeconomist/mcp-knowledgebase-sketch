@@ -344,6 +344,14 @@
         display: none !important;
       }
 
+      .metadata-header-tools {
+        margin-top: 8px;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px 10px;
+      }
+
       .table-wrap {
         padding: 10px;
         overflow: auto;
@@ -597,9 +605,8 @@
       }
 
       .main-tools {
-        margin-top: 8px;
-        display: grid;
-        grid-template-columns: auto 1fr;
+        margin-top: 0;
+        display: inline-flex;
         gap: 10px;
         align-items: center;
       }
@@ -624,7 +631,7 @@
       }
 
       .view-toggle {
-        margin-top: 8px;
+        margin-top: 0;
         display: inline-flex;
         border: 1px solid var(--line);
         border-radius: 10px;
@@ -692,6 +699,11 @@
 
       .autofill-progress {
         margin-top: 8px;
+      }
+
+      .metadata-header-tools > .autofill-progress {
+        flex: 1 0 100%;
+        margin-top: 0;
       }
 
       .autofill-progress[hidden] {
@@ -808,6 +820,10 @@
         display: grid;
         grid-template-columns: 1fr 120px auto auto;
         gap: 8px;
+      }
+
+      .browser-upload-tools {
+        margin-top: 10px;
       }
 
       .browser-input {
@@ -1320,7 +1336,7 @@
 
       .field-label {
         display: block;
-        font-size: 11px;
+        font-size: 13px;
         letter-spacing: 0.06em;
         text-transform: uppercase;
         color: var(--muted);
@@ -1335,6 +1351,7 @@
         border-radius: 9px;
         padding: 8px 9px;
         font: inherit;
+        font-size: 13px;
         background: var(--panel);
         color: var(--ink);
       }
@@ -1346,7 +1363,7 @@
 
       .field-hint {
         margin-top: 4px;
-        font-size: 11px;
+        font-size: 13px;
         color: var(--muted);
       }
 
@@ -1387,7 +1404,7 @@
         border: 1px solid var(--line);
         border-radius: 10px;
         padding: 8px 9px;
-        font-size: 12px;
+        font-size: 13px;
         color: color-mix(in oklab, var(--ink) 88%, var(--muted));
         background: color-mix(in oklab, var(--panel-alt) 78%, white 22%);
       }
@@ -1844,25 +1861,6 @@
               </div>
               <div class="autofill-progress-text" id="autofillProgressText"></div>
             </div>
-            <div class="upload-tools">
-              <button
-                type="button"
-                id="openUploadModalBtn"
-                class="main-action-btn upload-icon-btn"
-                title="Upload PDF files"
-                aria-label="Upload PDF files"
-              >
-                ⤴
-              </button>
-              <div class="autofill-status">Upload PDFs (multi-file supported).</div>
-            </div>
-            <div id="uploadStatus" class="autofill-status">Use Upload PDF Files to add one or more PDFs.</div>
-            <div class="autofill-progress" id="uploadProgress" hidden>
-              <div class="autofill-progress-track">
-                <div class="autofill-progress-fill" id="uploadProgressFill"></div>
-              </div>
-              <div class="autofill-progress-text" id="uploadProgressText"></div>
-            </div>
           </div>
         </div>
         <div class="main-pane-body">
@@ -1883,6 +1881,25 @@
                 <input class="browser-input" id="browserLimit" type="number" min="1" max="2000" value="200" />
                 <button class="bulk-btn" id="browserReload" type="button">Load</button>
                 <button class="bulk-btn" id="browserLoadMore" type="button" disabled>Load more</button>
+              </div>
+              <div class="upload-tools browser-upload-tools">
+                <button
+                  type="button"
+                  id="openUploadModalBtn"
+                  class="main-action-btn upload-icon-btn"
+                  title="Upload PDF files"
+                  aria-label="Upload PDF files"
+                >
+                  ⤴
+                </button>
+                <div class="autofill-status">Upload PDFs (multi-file supported).</div>
+              </div>
+              <div id="uploadStatus" class="autofill-status">Use Upload PDF Files to add one or more PDFs.</div>
+              <div class="autofill-progress" id="uploadProgress" hidden>
+                <div class="autofill-progress-track">
+                  <div class="autofill-progress-fill" id="uploadProgressFill"></div>
+                </div>
+                <div class="autofill-progress-text" id="uploadProgressText"></div>
               </div>
             </div>
 
@@ -6074,6 +6091,7 @@
         if (state.workspaceTab === "browser") {
           if (title) title.textContent = "Browser";
           browserRenderWorkspace();
+          renderUploadControls();
         } else if (state.workspaceTab === "search") {
           if (title) title.textContent = "Semantic Search";
           renderSearchWorkspace();
