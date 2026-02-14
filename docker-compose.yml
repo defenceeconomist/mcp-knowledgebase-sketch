@@ -83,23 +83,7 @@ services:
       - QDRANT_COLLECTION=${QDRANT_COLLECTION:-pdf_chunks}
     command: -m mcp_research.resolver_app
 
-  dashboard:
-    build: .
-    restart: unless-stopped
-    depends_on:
-      - redis
-      - qdrant
-    environment:
-      - PYTHONPATH=/app/src
-      - DASHBOARD_HOST=0.0.0.0
-      - DASHBOARD_PORT=8002
-      - QDRANT_URL=${QDRANT_URL:-http://qdrant:6333}
-      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
-      - REDIS_PREFIX=${REDIS_PREFIX:-unstructured}
-      - CITATION_BASE_URL=${CITATION_BASE_URL:-http://localhost:8080}
-      - CITATION_REF_PATH=${CITATION_REF_PATH:-/r/doc}
-    command: -m mcp_research.dashboard_app
-  bibtex_ui:
+  frontend:
     build: .
     restart: unless-stopped
     depends_on:
@@ -135,8 +119,7 @@ services:
     depends_on:
       - mcp
       - resolver
-      - dashboard
-      - bibtex_ui
+      - frontend
       - docs
       - redisinsight
       - minio

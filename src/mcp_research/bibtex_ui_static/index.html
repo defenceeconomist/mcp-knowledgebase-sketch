@@ -273,6 +273,10 @@
         color: var(--muted);
       }
 
+      .bucket-manager-status:empty {
+        display: none;
+      }
+
       .bucket-btn {
         border: 1px solid var(--line);
         background: var(--panel-alt);
@@ -708,6 +712,10 @@
         color: var(--muted);
       }
 
+      .autofill-status:empty {
+        display: none;
+      }
+
       .autofill-progress {
         margin-top: 8px;
       }
@@ -840,8 +848,20 @@
         min-width: 220px;
       }
 
-      .browser-limit-input {
-        width: 120px;
+      .browser-actions-row {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: nowrap;
+        flex: 0 0 auto;
+      }
+
+      .browser-actions-row .browser-input.browser-limit-input {
+        width: 6ch;
+        min-width: 6ch;
+        max-width: 6ch;
+        flex: 0 0 6ch;
+        text-align: right;
       }
 
       .browser-upload-btn {
@@ -1767,18 +1787,24 @@
         }
 
         .browser-topbar {
-          flex-direction: column;
-          align-items: stretch;
+          align-items: center;
         }
 
         .browser-toolbar-heading {
           width: 100%;
           justify-content: space-between;
           min-width: 0;
+          flex: 1 1 100%;
         }
 
-        .browser-limit-input {
-          width: 100%;
+        .browser-search-input {
+          flex: 1 1 100%;
+          min-width: 0;
+        }
+
+        .browser-actions-row {
+          justify-content: flex-start;
+          flex: 0 0 auto;
         }
 
         .browser-header-subtitle {
@@ -1822,8 +1848,7 @@
       <div class="top-nav-left">
         <div class="top-nav-title">MCP Research Tool</div>
         <div class="top-nav-workspaces" id="workspaceTabs" aria-label="Workspace Sections">
-          <button type="button" class="workspace-tab-btn active" id="workspaceTabBrowser">Browser</button>
-          <button type="button" class="workspace-tab-btn" id="workspaceTabBibtex">BibTeX</button>
+          <button type="button" class="workspace-tab-btn active" id="workspaceTabMeta">Meta</button>
           <button type="button" class="workspace-tab-btn" id="workspaceTabSearch">Semantic Search</button>
         </div>
       </div>
@@ -1878,36 +1903,30 @@
           <div class="pane-subtitle">Choose a collection of files</div>
         </div>
         <div class="left-pane-content" id="bucketList"></div>
-        <div class="bucket-manager-status" id="bucketManagerStatus">Ready.</div>
+        <div class="bucket-manager-status" id="bucketManagerStatus"></div>
       </aside>
 
       <main class="pane main-pane">
         <div class="pane-header" id="mainPaneHeader">
           <h2 class="pane-title" id="tableTitle">Files</h2>
           <div class="pane-subtitle" id="mainPaneSubtitle">Browse Qdrant files with Redis/Qdrant metadata and chunk partitions.</div>
-          <div class="browser-header-tools" id="browserHeaderTools" hidden>
-            <div class="browser-topbar">
-              <div class="browser-toolbar-heading">
-                <h3 class="browser-toolbar-title" id="browserTitle">Select a bucket</h3>
-                <div class="browser-status">
-                  <span class="browser-dot" id="browserRedisDot"></span>
-                  <span id="browserRedisStatus">Redis: unknown</span>
-                </div>
-              </div>
-              <input class="browser-input browser-search-input" id="browserSearch" placeholder="Search key/source/document id..." />
-              <input class="browser-input browser-limit-input" id="browserLimit" type="number" min="1" max="2000" value="200" />
-              <button class="bulk-btn" id="browserReload" type="button">Load</button>
-              <button class="bulk-btn" id="browserLoadMore" type="button" disabled>Load more</button>
-              <button
-                type="button"
-                id="openUploadModalBtn"
-                class="main-action-btn browser-upload-btn"
-                title="Upload PDF files"
-                aria-label="Upload PDF files"
-              >
-                Upload PDF
-              </button>
-              <div class="browser-header-subtitle" id="browserSubtitle">Choose a shared bucket to inspect Qdrant metadata.</div>
+          <div class="metadata-header-tools" id="metadataHeaderTools">
+            <button
+              type="button"
+              id="openUploadModalBtn"
+              class="main-action-btn browser-upload-btn"
+              title="Upload PDF files"
+              aria-label="Upload PDF files"
+            >
+              Upload Files
+            </button>
+            <div class="view-toggle" id="viewToggle">
+              <button type="button" class="view-toggle-btn" id="viewToggleBulk">Bulk Edit</button>
+              <button type="button" class="view-toggle-btn" id="viewToggleDetail">Detail Edit</button>
+            </div>
+            <div class="main-tools">
+              <button type="button" id="autofillMissingBtn" class="main-action-btn">Autofill Missing Metadata</button>
+              <div id="autofillStatus" class="autofill-status"></div>
             </div>
             <div id="uploadStatus" class="autofill-status" hidden></div>
             <div class="autofill-progress" id="uploadProgress" hidden>
@@ -1915,16 +1934,6 @@
                 <div class="autofill-progress-fill" id="uploadProgressFill"></div>
               </div>
               <div class="autofill-progress-text" id="uploadProgressText"></div>
-            </div>
-          </div>
-          <div class="metadata-header-tools" id="metadataHeaderTools">
-            <div class="view-toggle" id="viewToggle">
-              <button type="button" class="view-toggle-btn" id="viewToggleBulk">Bulk Edit</button>
-              <button type="button" class="view-toggle-btn" id="viewToggleDetail">Detail Edit</button>
-            </div>
-            <div class="main-tools">
-              <button type="button" id="autofillMissingBtn" class="main-action-btn">Autofill Missing Metadata</button>
-              <div id="autofillStatus" class="autofill-status">Ready.</div>
             </div>
             <div class="autofill-progress" id="autofillProgress" hidden>
               <div class="autofill-progress-track">
@@ -2451,7 +2460,7 @@
       let bulkHot = null;
 
       const state = {
-        workspaceTab: "browser",
+        workspaceTab: "bibtex",
         viewMode: "detail",
         buckets: [],
         activeBucketId: null,
@@ -2477,7 +2486,7 @@
           total: 0,
           processed: 0,
           counts: {},
-          message: "Ready.",
+          message: "",
           error: "",
         },
         modal: {
@@ -2496,7 +2505,7 @@
         },
         bucketOps: {
           running: false,
-          message: "Ready.",
+          message: "",
           error: "",
         },
         upload: {
@@ -2793,7 +2802,7 @@
       }
 
       function setWorkspaceTab(tab) {
-        if (tab !== "browser" && tab !== "bibtex" && tab !== "search") return;
+        if (tab !== "bibtex" && tab !== "search") return;
         if (state.workspaceTab === tab) return;
         if (tab !== "bibtex" && state.viewMode === "bulk") {
           finalizeBulkEditing();
@@ -2802,11 +2811,6 @@
         renderAll();
         if (tab === "search") {
           ensureSearchWorkspaceLoaded();
-        }
-        if (tab === "browser") {
-          if (state.activeBucketId) {
-            browserLoadFiles({ reset: true });
-          }
         }
       }
 
@@ -3047,7 +3051,7 @@
         return names;
       }
 
-      function resetAutofillState(message = "Ready.") {
+      function resetAutofillState(message = "") {
         state.autofill.running = false;
         state.autofill.bucketId = null;
         state.autofill.total = 0;
@@ -4576,16 +4580,10 @@
       }
 
       function initWorkspaceTabs() {
-        const browserBtn = document.getElementById("workspaceTabBrowser");
-        const bibtexBtn = document.getElementById("workspaceTabBibtex");
+        const metaBtn = document.getElementById("workspaceTabMeta");
         const searchBtn = document.getElementById("workspaceTabSearch");
-        if (browserBtn) {
-          browserBtn.addEventListener("click", () => {
-            setWorkspaceTab("browser");
-          });
-        }
-        if (bibtexBtn) {
-          bibtexBtn.addEventListener("click", () => {
+        if (metaBtn) {
+          metaBtn.addEventListener("click", () => {
             setWorkspaceTab("bibtex");
           });
         }
@@ -4608,7 +4606,8 @@
         const ready = !!activeBucket && activeBucket.loaded && !activeBucket.loading;
         button.disabled = !ready || state.autofill.running;
         button.textContent = state.autofill.running ? "Autofilling..." : "Autofill Missing Metadata";
-        status.textContent = state.autofill.message || "Ready.";
+        status.textContent = state.autofill.message || "";
+        status.hidden = !state.autofill.message;
 
         const total = Number(state.autofill.total || 0);
         const processed = Number(state.autofill.processed || 0);
@@ -4659,7 +4658,8 @@
         if (deleteCancelBtn) deleteCancelBtn.disabled = busy;
         if (addCloseBtn) addCloseBtn.disabled = busy;
         if (deleteCloseBtn) deleteCloseBtn.disabled = busy;
-        status.textContent = state.bucketOps.message || "Ready.";
+        status.textContent = state.bucketOps.message || "";
+        status.hidden = !state.bucketOps.message;
       }
 
       function renderUploadControls() {
@@ -5499,13 +5499,14 @@
       }
 
       function renderWorkspaceTabs() {
-        const browserBtn = document.getElementById("workspaceTabBrowser");
-        const bibtexBtn = document.getElementById("workspaceTabBibtex");
+        const metaBtn = document.getElementById("workspaceTabMeta");
         const searchBtn = document.getElementById("workspaceTabSearch");
-        if (!browserBtn || !bibtexBtn || !searchBtn) return;
-        browserBtn.classList.toggle("active", state.workspaceTab === "browser");
-        bibtexBtn.classList.toggle("active", state.workspaceTab === "bibtex");
-        searchBtn.classList.toggle("active", state.workspaceTab === "search");
+        if (metaBtn) {
+          metaBtn.classList.toggle("active", state.workspaceTab === "bibtex");
+        }
+        if (searchBtn) {
+          searchBtn.classList.toggle("active", state.workspaceTab === "search");
+        }
       }
 
       function renderLayoutMode() {
