@@ -68,6 +68,11 @@ try:
 except Exception:  # pragma: no cover - optional runtime dependency chain
     mcp_search_tools = None  # type: ignore[assignment]
 
+try:
+    from mcp_research import dashboard_app as qdrant_dashboard_tools
+except Exception:  # pragma: no cover - optional runtime dependency chain
+    qdrant_dashboard_tools = None  # type: ignore[assignment]
+
 from mcp_research.citation_utils import build_citation_url, build_source_ref
 
 
@@ -108,6 +113,12 @@ def _require_search_tools():
     if mcp_search_tools is None:
         raise RuntimeError("mcp_app is unavailable")
     return mcp_search_tools
+
+
+def _require_qdrant_dashboard_tools():
+    if qdrant_dashboard_tools is None:
+        raise RuntimeError("dashboard_app is unavailable")
+    return qdrant_dashboard_tools
 
 
 def _safe_search_default_collection(tools: Any) -> str:
@@ -1329,6 +1340,104 @@ if app is not None:
             return _invoke_search_tool(tools.fetch_chunk_bibtex, id=clean_id, collection=clean_collection)
         except Exception as exc:
             raise HTTPException(status_code=502, detail=f"Fetch BibTeX failed: {exc}") from exc
+
+    @app.get("/api/dashboard/buckets")
+    def api_dashboard_buckets() -> Dict[str, Any]:
+        try:
+            dashboard = _require_qdrant_dashboard_tools()
+            client = dashboard._get_qdrant_client()
+            collections = client.get_collections()
+            buckets = sorted([entry.name for entry in collections.collections])
+            return {"buckets": buckets}
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail=f"Qdrant dashboard unavailable: {exc}") from exc
+
+    @app.get("/api/dashboard/buckets/{bucket}/files")
+    def api_dashboard_bucket_files(
+        bucket: str,
+        limit: int = Query(200, ge=1, le=2000),
+        batch_size: int = Query(256, ge=1, le=2048),
+        offset: str | None = None,
+    ) -> Dict[str, Any]:
+        dashboard = _require_qdrant_dashboard_tools()
+        client = dashboard._get_qdrant_client()
+        if not client.collection_exists(bucket):
+            raise HTTPException(status_code=404, detail=f"Qdrant collection not found: {bucket}")
+
+        result = dashboard.scan_collection_files(
+            client=client,
+            collection_name=bucket,
+            limit=limit,
+            batch_size=batch_size,
+            offset=offset,
+        )
+        files = result.get("files") or []
+
+        redis_client = dashboard._get_redis_client()
+        if redis_client:
+            dashboard.enrich_files_with_redis(redis_client, dashboard.REDIS_PREFIX, bucket, files)
+        dashboard.attach_original_file_links(files)
+        result["files"] = files
+        result["bucket"] = bucket
+        return result
+
+    @app.get("/api/dashboard/buckets/{bucket}/files/partitions")
+    def api_dashboard_bucket_partitions(
+        bucket: str,
+        document_id: str | None = None,
+        source: str | None = None,
+        key: str | None = None,
+        batch_size: int = Query(256, ge=1, le=2048),
+        limit: int = Query(5000, ge=1, le=50000),
+    ) -> Dict[str, Any]:
+        dashboard = _require_qdrant_dashboard_tools()
+        client = dashboard._get_qdrant_client()
+        if not client.collection_exists(bucket):
+            raise HTTPException(status_code=404, detail=f"Qdrant collection not found: {bucket}")
+        try:
+            result = dashboard.fetch_file_partition_summaries(
+                client=client,
+                collection_name=bucket,
+                document_id=document_id,
+                source=source,
+                key=key,
+                batch_size=batch_size,
+                limit=limit,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        result["bucket"] = bucket
+        return result
+
+    @app.get("/api/dashboard/buckets/{bucket}/files/partitions/{partition_index}/chunks")
+    def api_dashboard_partition_chunks(
+        bucket: str,
+        partition_index: int,
+        document_id: str | None = None,
+        source: str | None = None,
+        key: str | None = None,
+        batch_size: int = Query(256, ge=1, le=2048),
+        limit: int = Query(5000, ge=1, le=50000),
+    ) -> Dict[str, Any]:
+        dashboard = _require_qdrant_dashboard_tools()
+        client = dashboard._get_qdrant_client()
+        if not client.collection_exists(bucket):
+            raise HTTPException(status_code=404, detail=f"Qdrant collection not found: {bucket}")
+        try:
+            result = dashboard.fetch_partition_chunks(
+                client=client,
+                collection_name=bucket,
+                document_id=document_id,
+                source=source,
+                key=key,
+                partition_index=partition_index,
+                batch_size=batch_size,
+                limit=limit,
+            )
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        result["bucket"] = bucket
+        return result
 
     @app.get("/api/buckets")
     def api_buckets() -> Dict[str, Any]:

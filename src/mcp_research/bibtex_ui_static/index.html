@@ -3,23 +3,25 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>BibTeX Metadata Workspace</title>
+    <title>MCP Research Tool</title>
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/handsontable@14.5.0/dist/handsontable.full.min.css"
     />
     <style>
       :root {
-        --bg: #f4f0e8;
-        --bg-accent: #efe4d2;
-        --panel: #fffdf8;
-        --panel-alt: #f8f3ea;
-        --ink: #2c2a24;
-        --muted: #6f6a5f;
-        --line: #d8cfbe;
-        --brand: #a8432b;
-        --brand-soft: #f6d9cf;
-        --ok: #2e7a57;
+        --bg: #0b1020;
+        --bg-accent: #070a14;
+        --panel: #101a33;
+        --panel-alt: #0f1730;
+        --ink: #e7ecff;
+        --muted: #aab3d6;
+        --line: rgba(255, 255, 255, 0.12);
+        --brand: #7aa2ff;
+        --brand-soft: rgba(122, 162, 255, 0.16);
+        --ok: #06d6a0;
+        --warn: #ffd166;
+        --bad: #ff6b6b;
         --radius: 14px;
       }
 
@@ -32,10 +34,106 @@
         min-height: 100vh;
         font-family: "Space Grotesk", "Avenir Next", "Trebuchet MS", sans-serif;
         color: var(--ink);
-        background:
-          radial-gradient(circle at 0% 0%, rgba(168, 67, 43, 0.14), transparent 40%),
-          radial-gradient(circle at 100% 100%, rgba(30, 130, 107, 0.12), transparent 44%),
-          linear-gradient(150deg, var(--bg), var(--bg-accent));
+        background: linear-gradient(180deg, var(--bg), var(--bg-accent));
+      }
+
+      .top-nav {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 10px 14px;
+        background: color-mix(in oklab, var(--panel) 84%, #08101f 16%);
+        border-bottom: 1px solid var(--line);
+        backdrop-filter: blur(8px);
+      }
+
+      .top-nav-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+      }
+
+      .top-nav-title {
+        font-family: "Fraunces", "Iowan Old Style", "Times New Roman", serif;
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+      }
+
+      .top-nav-workspaces {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .top-nav-summary {
+        border: 1px solid var(--line);
+        background: color-mix(in oklab, var(--panel-alt) 88%, #081022 12%);
+        color: var(--ink);
+        text-decoration: none;
+        border-radius: 10px;
+        padding: 7px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .top-nav-summary:hover {
+        border-color: color-mix(in oklab, var(--brand) 50%, var(--line));
+      }
+
+      .top-nav-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-left: auto;
+      }
+
+      .top-nav-dropdown {
+        position: relative;
+      }
+
+      .top-nav-dropdown > summary {
+        list-style: none;
+      }
+
+      .top-nav-dropdown > summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .top-nav-menu {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 6px);
+        min-width: 230px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: color-mix(in oklab, var(--panel) 92%, #091126 8%);
+        box-shadow: 0 12px 26px rgba(0, 0, 0, 0.35);
+        padding: 6px;
+        display: grid;
+        gap: 4px;
+      }
+
+      .top-nav-menu a {
+        color: var(--ink);
+        text-decoration: none;
+        border-radius: 8px;
+        padding: 8px 9px;
+        font-size: 12px;
+      }
+
+      .top-nav-menu a:hover {
+        background: color-mix(in oklab, var(--brand-soft) 76%, #0e1831 24%);
       }
 
       .app-shell {
@@ -43,7 +141,7 @@
         grid-template-columns: 260px 1fr 360px;
         gap: 14px;
         padding: 14px;
-        height: 100vh;
+        height: calc(100vh - 62px);
       }
 
       .app-shell.bulk-mode {
@@ -51,6 +149,14 @@
       }
 
       .app-shell.bulk-mode .right-pane {
+        display: none;
+      }
+
+      .app-shell.browser-mode {
+        grid-template-columns: 260px 1fr;
+      }
+
+      .app-shell.browser-mode .right-pane {
         display: none;
       }
 
@@ -62,19 +168,36 @@
         display: none;
       }
 
+      .app-shell.browser-mode .bulk-view,
+      .app-shell.browser-mode .detail-view,
+      .app-shell.browser-mode .search-view {
+        display: none !important;
+      }
+
+      .app-shell.search-mode .browser-view,
+      .app-shell.search-mode .bulk-view,
+      .app-shell.search-mode .detail-view {
+        display: none !important;
+      }
+
+      .app-shell.bibtex-mode .browser-view,
+      .app-shell.bibtex-mode .search-view {
+        display: none !important;
+      }
+
       .pane {
-        background: color-mix(in oklab, var(--panel) 88%, white 12%);
+        background: color-mix(in oklab, var(--panel) 92%, #091027 8%);
         border: 1px solid var(--line);
         border-radius: var(--radius);
         overflow: hidden;
         min-height: 0;
-        box-shadow: 0 10px 30px rgba(44, 42, 36, 0.07);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
       }
 
       .pane-header {
         padding: 14px 16px 10px;
         border-bottom: 1px solid var(--line);
-        background: linear-gradient(180deg, color-mix(in oklab, var(--panel-alt) 92%, white 8%), var(--panel));
+        background: linear-gradient(180deg, color-mix(in oklab, var(--panel-alt) 94%, #121e3e 6%), var(--panel));
       }
 
       .pane-title {
@@ -139,9 +262,9 @@
       }
 
       .bucket-icon-btn.danger {
-        color: color-mix(in oklab, #8d2c1b 82%, var(--ink));
-        background: color-mix(in oklab, #f6d9cf 78%, white 22%);
-        border-color: color-mix(in oklab, #b54b31 45%, var(--line));
+        color: color-mix(in oklab, var(--bad) 82%, var(--ink));
+        background: color-mix(in oklab, var(--bad) 22%, var(--panel-alt));
+        border-color: color-mix(in oklab, var(--bad) 45%, var(--line));
       }
 
       .bucket-manager-status {
@@ -196,35 +319,25 @@
         height: calc(100% - 70px);
       }
 
-      .workspace-tabs {
-        margin-top: 8px;
-        display: inline-flex;
+      .workspace-tab-btn {
         border: 1px solid var(--line);
         border-radius: 10px;
-        overflow: hidden;
-        width: fit-content;
-        background: color-mix(in oklab, var(--panel-alt) 78%, white 22%);
-      }
-
-      .workspace-tab-btn {
-        border: none;
-        border-right: 1px solid var(--line);
-        background: transparent;
+        background: color-mix(in oklab, var(--panel-alt) 88%, #081022 12%);
         color: var(--muted);
         font: inherit;
         font-size: 12px;
         font-weight: 600;
-        padding: 6px 10px;
+        padding: 7px 10px;
         cursor: pointer;
-      }
-
-      .workspace-tab-btn:last-child {
-        border-right: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
       }
 
       .workspace-tab-btn.active {
-        background: color-mix(in oklab, var(--brand-soft) 78%, white 22%);
-        color: color-mix(in oklab, var(--brand) 75%, #4c2318);
+        border-color: color-mix(in oklab, var(--brand) 50%, var(--line));
+        background: color-mix(in oklab, var(--brand-soft) 74%, #0e1831 26%);
+        color: var(--ink);
       }
 
       .metadata-header-tools[hidden] {
@@ -329,9 +442,9 @@
       }
 
       .file-action-chip-pdf {
-        background: color-mix(in oklab, #f3d2c8 74%, white 26%);
-        color: color-mix(in oklab, #8d2c1b 80%, var(--ink));
-        border-color: color-mix(in oklab, #b54b31 40%, var(--line));
+        background: color-mix(in oklab, var(--brand-soft) 78%, var(--panel));
+        color: color-mix(in oklab, var(--brand) 80%, var(--ink));
+        border-color: color-mix(in oklab, var(--brand) 42%, var(--line));
       }
 
       .file-action-chip-md {
@@ -341,9 +454,9 @@
       }
 
       .file-action-chip-del {
-        background: color-mix(in oklab, #f4d0cc 78%, white 22%);
-        color: color-mix(in oklab, #8d2c1b 82%, var(--ink));
-        border-color: color-mix(in oklab, #b54b31 48%, var(--line));
+        background: color-mix(in oklab, var(--bad) 24%, var(--panel));
+        color: color-mix(in oklab, var(--bad) 84%, var(--ink));
+        border-color: color-mix(in oklab, var(--bad) 48%, var(--line));
       }
 
       .file-actions {
@@ -538,13 +651,13 @@
 
       .view-toggle-btn.active {
         background: color-mix(in oklab, var(--brand-soft) 78%, white 22%);
-        color: color-mix(in oklab, var(--brand) 75%, #4c2318);
+        color: color-mix(in oklab, var(--brand) 75%, var(--ink));
       }
 
       .main-action-btn {
         border: 1px solid color-mix(in oklab, var(--brand) 35%, var(--line));
         background: color-mix(in oklab, var(--brand-soft) 72%, white 28%);
-        color: color-mix(in oklab, var(--brand) 78%, #4c2318);
+        color: color-mix(in oklab, var(--brand) 78%, var(--ink));
         border-radius: 9px;
         padding: 7px 10px;
         font: inherit;
@@ -596,7 +709,7 @@
       .autofill-progress-fill {
         height: 100%;
         width: 0%;
-        background: linear-gradient(90deg, #c45f43, #1d8a6e);
+        background: linear-gradient(90deg, var(--brand), var(--ok));
         transition: width 140ms ease;
       }
 
@@ -608,12 +721,14 @@
 
       .bulk-view[hidden],
       .detail-view[hidden],
+      .browser-view[hidden],
       .search-view[hidden] {
         display: none !important;
       }
 
       .bulk-view,
-      .detail-view {
+      .detail-view,
+      .browser-view {
         display: flex;
         flex-direction: column;
         height: 100%;
@@ -631,6 +746,257 @@
         flex-direction: column;
         height: 100%;
         min-height: 0;
+      }
+
+      .browser-view {
+        padding: 10px;
+        gap: 10px;
+        overflow: auto;
+      }
+
+      .browser-panel {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: color-mix(in oklab, var(--panel) 88%, #0a142a 12%);
+        padding: 10px;
+      }
+
+      .browser-header-row {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .browser-header-title {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      .browser-header-subtitle {
+        margin-top: 4px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .browser-status {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .browser-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--muted);
+        display: inline-block;
+      }
+
+      .browser-dot.good {
+        background: var(--ok);
+      }
+
+      .browser-dot.warn {
+        background: var(--warn);
+      }
+
+      .browser-topbar {
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: 1fr 120px auto auto;
+        gap: 8px;
+      }
+
+      .browser-input {
+        border: 1px solid var(--line);
+        background: color-mix(in oklab, var(--panel-alt) 84%, #050910 16%);
+        color: var(--ink);
+        padding: 8px 10px;
+        border-radius: 10px;
+        font-size: 13px;
+        outline: none;
+        width: 100%;
+      }
+
+      .browser-input:focus {
+        border-color: color-mix(in oklab, var(--brand) 55%, var(--line));
+        box-shadow: 0 0 0 3px rgba(122, 162, 255, 0.2);
+      }
+
+      .browser-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        overflow: hidden;
+      }
+
+      .browser-table th,
+      .browser-table td {
+        text-align: left;
+        padding: 10px;
+        font-size: 12.5px;
+        border-bottom: 1px solid var(--line);
+        vertical-align: top;
+      }
+
+      .browser-table th {
+        position: sticky;
+        top: 0;
+        background: color-mix(in oklab, var(--panel-alt) 92%, #0c1630 8%);
+        z-index: 2;
+        color: var(--muted);
+      }
+
+      .browser-summary-row {
+        cursor: pointer;
+      }
+
+      .browser-summary-row:hover td {
+        background: rgba(255, 255, 255, 0.04);
+      }
+
+      .browser-summary-row.open td {
+        background: rgba(122, 162, 255, 0.1);
+      }
+
+      .browser-details-row {
+        display: none;
+      }
+
+      .browser-details-row.open {
+        display: table-row;
+      }
+
+      .browser-details-cell {
+        padding: 10px;
+        background: color-mix(in oklab, var(--panel-alt) 82%, #04080f 18%);
+      }
+
+      .browser-expander {
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--ink);
+        width: 22px;
+        height: 22px;
+        border-radius: 6px;
+        cursor: pointer;
+        margin-right: 8px;
+        padding: 0;
+        line-height: 1;
+      }
+
+      .browser-right {
+        text-align: right;
+      }
+
+      .browser-nowrap {
+        white-space: nowrap;
+      }
+
+      .browser-meta-card {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .browser-meta-section {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: color-mix(in oklab, var(--panel) 90%, #0a1227 10%);
+        overflow: hidden;
+      }
+
+      .browser-meta-section > summary {
+        cursor: pointer;
+        padding: 10px 12px;
+        font-size: 12px;
+        color: var(--muted);
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        list-style: none;
+      }
+
+      .browser-meta-section > summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .browser-meta-body {
+        padding: 0 12px 12px;
+      }
+
+      .browser-json {
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-size: 12px;
+      }
+
+      .browser-partition-group {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: color-mix(in oklab, var(--panel-alt) 80%, #050a14 20%);
+        margin-top: 10px;
+        overflow: hidden;
+      }
+
+      .browser-partition-group > summary {
+        cursor: pointer;
+        padding: 10px;
+        font-size: 12px;
+        color: var(--muted);
+        list-style: none;
+      }
+
+      .browser-partition-group > summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .browser-partition-body {
+        padding: 0 10px 10px;
+      }
+
+      .browser-chunk {
+        border-top: 1px solid var(--line);
+        padding-top: 8px;
+        margin-top: 8px;
+      }
+
+      .browser-chunk:first-child {
+        border-top: none;
+        padding-top: 0;
+        margin-top: 0;
+      }
+
+      .browser-chunk-meta {
+        font-size: 12px;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+
+      .browser-chunk-text {
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 8px;
+        font-size: 12px;
+        max-height: 220px;
+        overflow: auto;
+        background: color-mix(in oklab, var(--panel-alt) 78%, #04070f 22%);
+      }
+
+      .browser-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 12px;
       }
 
       .search-controls {
@@ -709,7 +1075,7 @@
       .search-error {
         margin-top: 6px;
         font-size: 12px;
-        color: color-mix(in oklab, #b53c31 82%, var(--ink));
+        color: color-mix(in oklab, var(--bad) 82%, var(--ink));
       }
 
       .search-results {
@@ -743,7 +1109,7 @@
         border: 1px solid color-mix(in oklab, var(--brand) 35%, var(--line));
         border-radius: 999px;
         background: color-mix(in oklab, var(--brand-soft) 78%, white 22%);
-        color: color-mix(in oklab, var(--brand) 75%, #4c2318);
+        color: color-mix(in oklab, var(--brand) 75%, var(--ink));
         padding: 2px 7px;
         font-size: 11px;
       }
@@ -931,10 +1297,10 @@
       }
 
       .editor-clear-btn {
-        border: 1px solid color-mix(in oklab, #b53c31 45%, var(--line));
+        border: 1px solid color-mix(in oklab, var(--bad) 45%, var(--line));
         border-radius: 8px;
-        background: color-mix(in oklab, #f9d9d4 75%, white 25%);
-        color: color-mix(in oklab, #7f211a 82%, var(--ink));
+        background: color-mix(in oklab, var(--bad) 22%, var(--panel-alt));
+        color: color-mix(in oklab, var(--bad) 84%, var(--ink));
         font: inherit;
         font-size: 12px;
         font-weight: 600;
@@ -943,7 +1309,7 @@
       }
 
       .editor-clear-btn:hover {
-        border-color: color-mix(in oklab, #b53c31 70%, var(--line));
+        border-color: color-mix(in oklab, var(--bad) 70%, var(--line));
       }
 
       .field-grid {
@@ -985,7 +1351,7 @@
       }
 
       .field-hint.error {
-        color: color-mix(in oklab, #b53c31 82%, var(--ink));
+        color: color-mix(in oklab, var(--bad) 82%, var(--ink));
       }
 
       .editor-inline-row {
@@ -1022,7 +1388,7 @@
         border-radius: 10px;
         padding: 8px 9px;
         font-size: 12px;
-        color: var(--muted);
+        color: color-mix(in oklab, var(--ink) 88%, var(--muted));
         background: color-mix(in oklab, var(--panel-alt) 78%, white 22%);
       }
 
@@ -1033,41 +1399,46 @@
       }
 
       .field-wrap.recommended {
-        border-color: color-mix(in oklab, var(--brand) 45%, var(--line));
-        background: color-mix(in oklab, var(--brand-soft) 35%, white 65%);
+        border-color: color-mix(in oklab, var(--brand) 62%, var(--line));
+        background: color-mix(in oklab, var(--brand-soft) 70%, var(--panel));
+      }
+
+      .field-wrap.recommended .field-label {
+        color: color-mix(in oklab, var(--ink) 84%, var(--brand));
       }
 
       .field-wrap.required {
-        border-color: color-mix(in oklab, #b53c31 55%, var(--line));
-        background: color-mix(in oklab, #f6d4cd 62%, white 38%);
+        border-color: color-mix(in oklab, var(--bad) 50%, var(--line));
+        background: color-mix(in oklab, var(--bad) 15%, var(--panel-alt));
       }
 
       .required-badge {
         display: inline-flex;
         align-items: center;
-        border: 1px solid color-mix(in oklab, #b53c31 55%, var(--line));
+        border: 1px solid color-mix(in oklab, var(--bad) 50%, var(--line));
         border-radius: 999px;
         padding: 2px 7px;
         margin-left: 6px;
         font-size: 10px;
         letter-spacing: 0.04em;
         text-transform: uppercase;
-        color: color-mix(in oklab, #8a2a22 88%, var(--ink));
-        background: color-mix(in oklab, #f6d4cd 72%, white 28%);
+        color: color-mix(in oklab, var(--bad) 84%, var(--ink));
+        background: color-mix(in oklab, var(--bad) 22%, var(--panel));
       }
 
       .recommended-badge {
         display: inline-flex;
         align-items: center;
-        border: 1px solid color-mix(in oklab, var(--brand) 45%, var(--line));
+        border: 1px solid color-mix(in oklab, var(--brand) 65%, var(--line));
         border-radius: 999px;
         padding: 2px 7px;
         margin-left: 6px;
         font-size: 10px;
+        font-weight: 700;
         letter-spacing: 0.04em;
         text-transform: uppercase;
-        color: color-mix(in oklab, var(--brand) 75%, #5f2c1f);
-        background: color-mix(in oklab, var(--brand-soft) 78%, white 22%);
+        color: var(--ink);
+        background: color-mix(in oklab, var(--brand) 42%, var(--panel-alt));
       }
 
       .authors-list {
@@ -1228,13 +1599,13 @@
       .modal-action-btn.primary {
         border-color: color-mix(in oklab, var(--brand) 40%, var(--line));
         background: color-mix(in oklab, var(--brand-soft) 75%, white 25%);
-        color: color-mix(in oklab, var(--brand) 78%, #4c2318);
+        color: color-mix(in oklab, var(--brand) 78%, var(--ink));
       }
 
       .modal-action-btn.danger {
-        border-color: color-mix(in oklab, #b54b31 45%, var(--line));
-        background: color-mix(in oklab, #f6d9cf 78%, white 22%);
-        color: color-mix(in oklab, #8d2c1b 82%, var(--ink));
+        border-color: color-mix(in oklab, var(--bad) 45%, var(--line));
+        background: color-mix(in oklab, var(--bad) 22%, var(--panel-alt));
+        color: color-mix(in oklab, var(--bad) 84%, var(--ink));
       }
 
       .modal-action-btn:disabled {
@@ -1280,6 +1651,50 @@
       }
 
       @media (max-width: 860px) {
+        .top-nav {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .top-nav-left {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 10px;
+        }
+
+        .top-nav-workspaces {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+
+        .workspace-tab-btn {
+          width: 100%;
+          justify-content: center;
+        }
+
+        .top-nav-right {
+          margin-left: 0;
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 8px;
+        }
+
+        .top-nav-dropdown {
+          width: 100%;
+        }
+
+        .top-nav-summary {
+          width: 100%;
+          justify-content: center;
+        }
+
+        .top-nav-menu {
+          position: static;
+          margin-top: 6px;
+          width: 100%;
+        }
+
         .app-shell {
           grid-template-columns: 1fr;
           grid-template-rows: auto auto auto;
@@ -1310,6 +1725,10 @@
         .search-status-line {
           justify-self: start;
           text-align: left;
+        }
+
+        .browser-topbar {
+          grid-template-columns: 1fr;
         }
       }
 
@@ -1344,6 +1763,36 @@
     </style>
   </head>
   <body>
+    <header class="top-nav">
+      <div class="top-nav-left">
+        <div class="top-nav-title">MCP Research Tool</div>
+        <div class="top-nav-workspaces" id="workspaceTabs" aria-label="Workspace Sections">
+          <button type="button" class="workspace-tab-btn active" id="workspaceTabBrowser">Browser</button>
+          <button type="button" class="workspace-tab-btn" id="workspaceTabBibtex">BibTeX</button>
+          <button type="button" class="workspace-tab-btn" id="workspaceTabSearch">Semantic Search</button>
+        </div>
+      </div>
+      <nav class="top-nav-right" aria-label="Primary">
+        <details class="top-nav-dropdown">
+          <summary class="top-nav-summary">Docs ▾</summary>
+          <div class="top-nav-menu">
+            <a href="/docs/?doc=README.md">README</a>
+            <a href="/docs/?doc=tool-documentation.md">Tool Documentation</a>
+          </div>
+        </details>
+
+        <details class="top-nav-dropdown">
+          <summary class="top-nav-summary">Developer Tools ▾</summary>
+          <div class="top-nav-menu">
+            <a href="/redisinsight/" onclick="window.open(this.href, '_blank', 'noopener,noreferrer'); return false;">RedisInsight</a>
+            <a href="/minio/" onclick="window.open(this.href, '_blank', 'noopener,noreferrer'); return false;">MinIO Console</a>
+            <a href="/qdrant/" onclick="window.open(this.href, '_blank', 'noopener,noreferrer'); return false;">Qdrant Dashboard</a>
+            <a href="/flower/" onclick="window.open(this.href, '_blank', 'noopener,noreferrer'); return false;">Flower</a>
+          </div>
+        </details>
+      </nav>
+    </header>
+
     <div class="app-shell" id="appShell">
       <aside class="pane left-pane">
         <div class="pane-header">
@@ -1379,11 +1828,7 @@
       <main class="pane main-pane">
         <div class="pane-header">
           <h2 class="pane-title" id="tableTitle">Files</h2>
-          <div class="workspace-tabs" id="workspaceTabs">
-            <button type="button" class="workspace-tab-btn active" id="workspaceTabMetadata">BibTeX Manager</button>
-            <button type="button" class="workspace-tab-btn" id="workspaceTabSearch">Qdrant Search</button>
-          </div>
-          <div class="pane-subtitle" id="mainPaneSubtitle">Table shows title, year, authors, and journal/book context, plus PDF and text links. If title is empty, filename is used.</div>
+          <div class="pane-subtitle" id="mainPaneSubtitle">Browse Qdrant files with Redis/Qdrant metadata and chunk partitions.</div>
           <div class="metadata-header-tools" id="metadataHeaderTools">
             <div class="view-toggle" id="viewToggle">
               <button type="button" class="view-toggle-btn" id="viewToggleBulk">Bulk Edit</button>
@@ -1421,7 +1866,47 @@
           </div>
         </div>
         <div class="main-pane-body">
-          <div class="bulk-view" id="bulkView">
+          <div class="browser-view" id="browserView">
+            <div class="browser-panel">
+              <div class="browser-header-row">
+                <div>
+                  <h3 class="browser-header-title" id="browserTitle">Select a bucket</h3>
+                  <div class="browser-header-subtitle" id="browserSubtitle">Choose a shared bucket to inspect Qdrant metadata.</div>
+                </div>
+                <div class="browser-status">
+                  <span class="browser-dot" id="browserRedisDot"></span>
+                  <span id="browserRedisStatus">Redis: unknown</span>
+                </div>
+              </div>
+              <div class="browser-topbar">
+                <input class="browser-input" id="browserSearch" placeholder="Search key/source/document id..." />
+                <input class="browser-input" id="browserLimit" type="number" min="1" max="2000" value="200" />
+                <button class="bulk-btn" id="browserReload" type="button">Load</button>
+                <button class="bulk-btn" id="browserLoadMore" type="button" disabled>Load more</button>
+              </div>
+            </div>
+
+            <div class="browser-panel">
+              <table class="browser-table">
+                <thead>
+                  <tr>
+                    <th style="width: 62%">File</th>
+                    <th class="browser-right browser-nowrap">Partitions</th>
+                    <th class="browser-right browser-nowrap">Chunks</th>
+                  </tr>
+                </thead>
+                <tbody id="browserRows">
+                  <tr><td colspan="3">No data loaded.</td></tr>
+                </tbody>
+              </table>
+              <div class="browser-footer">
+                <div id="browserFooterLeft">-</div>
+                <div id="browserFooterRight">-</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bulk-view" id="bulkView" hidden>
             <div class="bulk-toolbar">
               <div class="bulk-toolbar-note">Paste tabular cells from Excel/Sheets. First two columns (MinIO path, Redis doc id) are read-only.</div>
               <div class="bulk-toolbar-actions">
@@ -1916,7 +2401,7 @@
       let bulkHot = null;
 
       const state = {
-        workspaceTab: "metadata",
+        workspaceTab: "browser",
         viewMode: "detail",
         buckets: [],
         activeBucketId: null,
@@ -1970,6 +2455,19 @@
           error: "",
           progress: 0,
           phase: "idle",
+        },
+        browser: {
+          loading: false,
+          files: [],
+          visibleFiles: [],
+          offset: null,
+          truncated: false,
+          chunkDetails: {},
+          partitionChunks: {},
+          openDetails: {},
+          openPartitions: {},
+          lastFetch: null,
+          error: "",
         },
         search: {
           initialized: false,
@@ -2245,15 +2743,20 @@
       }
 
       function setWorkspaceTab(tab) {
-        if (tab !== "metadata" && tab !== "search") return;
+        if (tab !== "browser" && tab !== "bibtex" && tab !== "search") return;
         if (state.workspaceTab === tab) return;
-        if (tab === "search" && state.viewMode === "bulk") {
+        if (tab !== "bibtex" && state.viewMode === "bulk") {
           finalizeBulkEditing();
         }
         state.workspaceTab = tab;
         renderAll();
         if (tab === "search") {
           ensureSearchWorkspaceLoaded();
+        }
+        if (tab === "browser") {
+          if (state.activeBucketId) {
+            browserLoadFiles({ reset: true });
+          }
         }
       }
 
@@ -2960,6 +3463,525 @@
           .join("/");
       }
 
+      function browserEsc(value) {
+        return String(value ?? "")
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;");
+      }
+
+      function browserEscAttr(value) {
+        return browserEsc(value).replaceAll('"', "&quot;").replaceAll("'", "&#39;");
+      }
+
+      function browserFmt(value) {
+        return value === null || value === undefined ? "-" : String(value);
+      }
+
+      function browserSourceLabel(file) {
+        if (file.source) return file.source;
+        if (file.bucket || file.key) {
+          return `${file.bucket || state.activeBucketId || ""}${file.key ? `/${file.key}` : ""}`;
+        }
+        return "-";
+      }
+
+      function browserFileLabel(file) {
+        if (file.key) return file.key;
+        if (file.source) return file.source;
+        if (file.document_id) return file.document_id;
+        return "-";
+      }
+
+      function browserFileIdentityKey(file) {
+        if (file.document_id) return `doc:${file.document_id}`;
+        if (file.source) return `source:${file.source}`;
+        return `object:${file.bucket || state.activeBucketId || ""}/${file.key || ""}`;
+      }
+
+      function browserDetailsCacheKey(file) {
+        return `${state.activeBucketId || ""}|${browserFileIdentityKey(file)}`;
+      }
+
+      function browserPartitionChunkCacheKey(file, partitionIndex) {
+        return `${browserDetailsCacheKey(file)}|partition:${partitionIndex}`;
+      }
+
+      function browserTopLevelChunks(file) {
+        return file.qdrant_chunks ?? file.redis_chunks ?? null;
+      }
+
+      function browserTopLevelPartitions(file) {
+        return file.qdrant_partitions ?? file.redis_partitions ?? null;
+      }
+
+      function browserMatchesSearch(file, searchText) {
+        if (!searchText) return true;
+        const haystack = [
+          file.key,
+          file.source,
+          file.document_id,
+          Array.isArray(file.redis_doc_ids) ? file.redis_doc_ids.join(",") : "",
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(searchText);
+      }
+
+      function browserCompareBySource(left, right) {
+        return browserSourceLabel(left).toLowerCase().localeCompare(browserSourceLabel(right).toLowerCase());
+      }
+
+      function browserChunkPagesLabel(chunk) {
+        if (chunk.page_start !== null && chunk.page_start !== undefined) {
+          const end = chunk.page_end !== null && chunk.page_end !== undefined ? chunk.page_end : chunk.page_start;
+          return end === chunk.page_start ? `Page ${chunk.page_start}` : `Pages ${chunk.page_start}-${end}`;
+        }
+        if (Array.isArray(chunk.pages) && chunk.pages.length > 0) {
+          const min = Math.min(...chunk.pages);
+          const max = Math.max(...chunk.pages);
+          return min === max ? `Page ${min}` : `Pages ${min}-${max}`;
+        }
+        return "Unknown pages";
+      }
+
+      function browserDetailJson(value) {
+        if (
+          !value ||
+          (typeof value === "object" && !Array.isArray(value) && Object.keys(value).length === 0)
+        ) {
+          return "No metadata available.";
+        }
+        return JSON.stringify(value, null, 2);
+      }
+
+      function browserMergedRedisMetadata(file) {
+        return file.redis_metadata || {};
+      }
+
+      function browserMergedQdrantMetadata(file) {
+        const base = {
+          qdrant_chunks: file.qdrant_chunks ?? null,
+          bucket: file.bucket || state.activeBucketId || null,
+          key: file.key || null,
+          source: file.source || null,
+          document_id: file.document_id || null,
+          version_id: file.version_id || null,
+          pages:
+            file.page_start !== undefined && file.page_start !== null
+              ? `${file.page_start}-${file.page_end ?? file.page_start}`
+              : "-",
+        };
+        return Object.assign(base, file.qdrant_metadata || {});
+      }
+
+      function browserFindFileByCacheKey(cacheKey) {
+        return (
+          state.browser.visibleFiles.find((file) => browserDetailsCacheKey(file) === cacheKey) ||
+          state.browser.files.find((file) => browserDetailsCacheKey(file) === cacheKey) ||
+          null
+        );
+      }
+
+      function browserPartitionChunksHtml(file, partitionIndex) {
+        const cache = state.browser.partitionChunks[browserPartitionChunkCacheKey(file, partitionIndex)];
+        if (!cache) return `<div class="pane-subtitle">Expand partition to load chunks.</div>`;
+        if (cache.loading) return `<div class="pane-subtitle">Loading chunks...</div>`;
+        if (cache.error) return `<div class="pane-subtitle">Failed to load chunks: ${browserEsc(cache.error)}</div>`;
+        const chunks = cache.data?.partition?.chunks || [];
+        if (!chunks.length) return `<div class="pane-subtitle">No chunks found.</div>`;
+        return chunks
+          .map(
+            (chunk) => `
+          <div class="browser-chunk">
+            <div class="browser-chunk-meta">Chunk ${browserFmt(chunk.chunk_index)} | ${browserEsc(browserChunkPagesLabel(chunk))}</div>
+            <pre class="browser-chunk-text">${browserEsc(chunk.text || "")}</pre>
+          </div>
+        `
+          )
+          .join("");
+      }
+
+      function browserChunkDetailsHtml(file) {
+        const cache = state.browser.chunkDetails[browserDetailsCacheKey(file)];
+        if (!cache) return `<div class="pane-subtitle">Expand to load chunk text grouped by partition.</div>`;
+        if (cache.loading) return `<div class="pane-subtitle">Loading chunk details...</div>`;
+        if (cache.error) {
+          return `<div class="pane-subtitle">Failed to load chunk details: ${browserEsc(cache.error)}</div>`;
+        }
+        const partitions = cache.data?.partitions || [];
+        if (!partitions.length) return `<div class="pane-subtitle">No chunk data found.</div>`;
+        const fileKey = browserDetailsCacheKey(file);
+        return partitions
+          .map((partition) => {
+            const partitionTitle = `Partition ${partition.partition_index} | ${partition.label} | ${partition.chunk_count} chunks`;
+            const partitionCacheKey = browserPartitionChunkCacheKey(file, partition.partition_index);
+            const isOpen = !!state.browser.openPartitions[partitionCacheKey];
+            return `
+            <details
+              class="browser-partition-group"
+              data-file-key="${browserEscAttr(fileKey)}"
+              data-partition-index="${partition.partition_index}"
+              ${isOpen ? "open" : ""}
+              ontoggle="browserTogglePartition(event)"
+            >
+              <summary>${browserEsc(partitionTitle)}</summary>
+              <div class="browser-partition-body" data-file-key="${browserEscAttr(fileKey)}" data-partition-index="${partition.partition_index}">
+                ${browserPartitionChunksHtml(file, partition.partition_index)}
+              </div>
+            </details>
+          `;
+          })
+          .join("");
+      }
+
+      function browserDetailSectionsHtml(file) {
+        const redisJson = browserEsc(browserDetailJson(browserMergedRedisMetadata(file)));
+        const qdrantJson = browserEsc(browserDetailJson(browserMergedQdrantMetadata(file)));
+        return `
+          <div class="browser-meta-card">
+            <details class="browser-meta-section">
+              <summary>Redis metadata</summary>
+              <div class="browser-meta-body">
+                <pre class="browser-json">${redisJson}</pre>
+              </div>
+            </details>
+            <details class="browser-meta-section">
+              <summary>Qdrant metadata</summary>
+              <div class="browser-meta-body">
+                <pre class="browser-json">${qdrantJson}</pre>
+              </div>
+            </details>
+            <details class="browser-meta-section" open>
+              <summary>Chunk text by partition</summary>
+              <div class="browser-meta-body">
+                ${browserChunkDetailsHtml(file)}
+              </div>
+            </details>
+          </div>
+        `;
+      }
+
+      function browserSetRedisStatus(files) {
+        const dot = document.getElementById("browserRedisDot");
+        const label = document.getElementById("browserRedisStatus");
+        if (!dot || !label) return;
+        if (!state.activeBucketId) {
+          dot.className = "browser-dot";
+          label.textContent = "Redis: unknown";
+          return;
+        }
+        const hasRedis = files.some(
+          (file) =>
+            file.redis_chunks !== undefined || file.redis_partitions !== undefined || file.redis_meta_key
+        );
+        if (hasRedis) {
+          dot.className = "browser-dot good";
+          label.textContent = "Redis: connected";
+        } else {
+          dot.className = "browser-dot warn";
+          label.textContent = "Redis: not configured / no matches";
+        }
+      }
+
+      function browserUpdateVisibleRowsByCacheKey(cacheKey) {
+        for (let idx = 0; idx < state.browser.visibleFiles.length; idx += 1) {
+          const file = state.browser.visibleFiles[idx];
+          if (browserDetailsCacheKey(file) !== cacheKey) continue;
+          const summaryRow = document.getElementById(`browser-summary-${idx}`);
+          const detailsRow = document.getElementById(`browser-details-${idx}`);
+          if (!summaryRow || !detailsRow) continue;
+          const cells = summaryRow.querySelectorAll("td");
+          if (cells.length >= 3) {
+            cells[1].textContent = browserFmt(browserTopLevelPartitions(file));
+            cells[2].textContent = browserFmt(browserTopLevelChunks(file));
+          }
+          const detailsCell = detailsRow.querySelector(".browser-details-cell");
+          if (detailsCell) {
+            detailsCell.innerHTML = browserDetailSectionsHtml(file);
+          }
+        }
+      }
+
+      function browserUpdatePartitionBodies(fileKey, partitionIndex) {
+        const file = browserFindFileByCacheKey(fileKey);
+        if (!file) return;
+        const html = browserPartitionChunksHtml(file, partitionIndex);
+        const nodes = document.querySelectorAll(".browser-partition-body");
+        for (const node of nodes) {
+          const nodeFileKey = node.getAttribute("data-file-key") || "";
+          const nodePartitionIndex = Number.parseInt(node.getAttribute("data-partition-index") || "", 10);
+          if (nodeFileKey === fileKey && nodePartitionIndex === partitionIndex) {
+            node.innerHTML = html;
+          }
+        }
+      }
+
+      async function browserLoadChunkDetails(file) {
+        if (!state.activeBucketId) return;
+        const cacheKey = browserDetailsCacheKey(file);
+        const cache = state.browser.chunkDetails[cacheKey];
+        if (cache && (cache.loading || cache.data || cache.error)) return;
+
+        state.browser.chunkDetails[cacheKey] = { loading: true };
+        browserUpdateVisibleRowsByCacheKey(cacheKey);
+        try {
+          const url = new URL(
+            `/api/dashboard/buckets/${encodeURIComponent(state.activeBucketId)}/files/partitions`,
+            window.location.origin
+          );
+          if (file.document_id) {
+            url.searchParams.set("document_id", file.document_id);
+          } else if (file.source) {
+            url.searchParams.set("source", file.source);
+          } else if (file.key) {
+            url.searchParams.set("key", file.key);
+          } else {
+            throw new Error("Missing file identity");
+          }
+          const data = await apiRequest(url.pathname + url.search);
+          state.browser.chunkDetails[cacheKey] = { loading: false, data };
+        } catch (error) {
+          state.browser.chunkDetails[cacheKey] = { loading: false, error: String(error.message || error) };
+        }
+        browserUpdateVisibleRowsByCacheKey(cacheKey);
+      }
+
+      async function browserLoadPartitionChunks(file, partitionIndex) {
+        if (!state.activeBucketId) return;
+        const fileKey = browserDetailsCacheKey(file);
+        const cacheKey = browserPartitionChunkCacheKey(file, partitionIndex);
+        const cache = state.browser.partitionChunks[cacheKey];
+        if (cache && (cache.loading || cache.data || cache.error)) return;
+
+        state.browser.partitionChunks[cacheKey] = { loading: true };
+        browserUpdatePartitionBodies(fileKey, partitionIndex);
+        try {
+          const url = new URL(
+            `/api/dashboard/buckets/${encodeURIComponent(state.activeBucketId)}/files/partitions/${partitionIndex}/chunks`,
+            window.location.origin
+          );
+          if (file.document_id) {
+            url.searchParams.set("document_id", file.document_id);
+          } else if (file.source) {
+            url.searchParams.set("source", file.source);
+          } else if (file.key) {
+            url.searchParams.set("key", file.key);
+          } else {
+            throw new Error("Missing file identity");
+          }
+          const data = await apiRequest(url.pathname + url.search);
+          state.browser.partitionChunks[cacheKey] = { loading: false, data };
+        } catch (error) {
+          state.browser.partitionChunks[cacheKey] = { loading: false, error: String(error.message || error) };
+        }
+        if (state.browser.openPartitions[cacheKey]) {
+          browserUpdatePartitionBodies(fileKey, partitionIndex);
+        }
+      }
+
+      function browserTogglePartition(event) {
+        const details = event.currentTarget;
+        const fileKey = details.getAttribute("data-file-key") || "";
+        const partitionIndex = Number.parseInt(details.getAttribute("data-partition-index") || "", 10);
+        if (!fileKey || !partitionIndex) return;
+        const file = browserFindFileByCacheKey(fileKey);
+        if (!file) return;
+        const partitionKey = browserPartitionChunkCacheKey(file, partitionIndex);
+        if (details.open) {
+          state.browser.openPartitions[partitionKey] = true;
+          browserLoadPartitionChunks(file, partitionIndex);
+        } else {
+          delete state.browser.openPartitions[partitionKey];
+        }
+      }
+
+      function browserToggleDetails(index) {
+        const file = state.browser.visibleFiles[index];
+        const summary = document.getElementById(`browser-summary-${index}`);
+        const details = document.getElementById(`browser-details-${index}`);
+        const toggle = document.getElementById(`browser-toggle-${index}`);
+        if (!summary || !details || !toggle || !file) return;
+        const open = !details.classList.contains("open");
+        details.classList.toggle("open", open);
+        summary.classList.toggle("open", open);
+        toggle.textContent = open ? "▾" : "▸";
+        toggle.setAttribute("aria-expanded", open ? "true" : "false");
+        const key = browserDetailsCacheKey(file);
+        if (open) {
+          state.browser.openDetails[key] = true;
+          browserLoadChunkDetails(file);
+        } else {
+          delete state.browser.openDetails[key];
+        }
+      }
+
+      function browserRenderRows() {
+        const rows = document.getElementById("browserRows");
+        const searchInput = document.getElementById("browserSearch");
+        if (!rows || !searchInput) return;
+        const query = String(searchInput.value || "").toLowerCase();
+        const shown = state.browser.files.filter((file) => browserMatchesSearch(file, query)).slice().sort(browserCompareBySource);
+        state.browser.visibleFiles = shown;
+        if (!shown.length) {
+          rows.innerHTML = `<tr><td colspan="3">No matching files.</td></tr>`;
+          return;
+        }
+
+        rows.innerHTML = shown
+          .map((file, index) => {
+            const redisMissing =
+              (file.redis_chunks === null || file.redis_chunks === undefined) &&
+              (file.redis_partitions === null || file.redis_partitions === undefined);
+            const rowStyle = redisMissing ? `style="border-left: 3px solid rgba(255, 209, 102, 0.55);"` : "";
+            const open = !!state.browser.openDetails[browserDetailsCacheKey(file)];
+            const rowClass = open ? "browser-summary-row open" : "browser-summary-row";
+            const detailClass = open ? "browser-details-row open" : "browser-details-row";
+            const chevron = open ? "▾" : "▸";
+            const expanded = open ? "true" : "false";
+            const sourceText = browserSourceLabel(file);
+            const sourceHtml = file.original_file_url
+              ? `<a class="search-result-path" href="${browserEscAttr(file.original_file_url)}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${browserEsc(sourceText)}</a>`
+              : `<span class="search-result-path">${browserEsc(sourceText)}</span>`;
+
+            return `
+            <tr id="browser-summary-${index}" class="${rowClass}" ${rowStyle} onclick="browserToggleDetails(${index})">
+              <td>
+                <button id="browser-toggle-${index}" class="browser-expander" type="button" onclick="event.stopPropagation(); browserToggleDetails(${index});" aria-expanded="${expanded}" aria-label="Toggle metadata details">${chevron}</button>
+                <span>${browserEsc(browserFileLabel(file))}</span>
+                <div>${sourceHtml}</div>
+              </td>
+              <td class="browser-right browser-nowrap">${browserFmt(browserTopLevelPartitions(file))}</td>
+              <td class="browser-right browser-nowrap">${browserFmt(browserTopLevelChunks(file))}</td>
+            </tr>
+            <tr id="browser-details-${index}" class="${detailClass}">
+              <td colspan="3" class="browser-details-cell">${browserDetailSectionsHtml(file)}</td>
+            </tr>
+          `;
+          })
+          .join("");
+      }
+
+      function browserResetState() {
+        state.browser.loading = false;
+        state.browser.files = [];
+        state.browser.visibleFiles = [];
+        state.browser.offset = null;
+        state.browser.truncated = false;
+        state.browser.chunkDetails = {};
+        state.browser.partitionChunks = {};
+        state.browser.openDetails = {};
+        state.browser.openPartitions = {};
+        state.browser.lastFetch = null;
+        state.browser.error = "";
+      }
+
+      function browserRenderControls() {
+        const title = document.getElementById("browserTitle");
+        const subtitle = document.getElementById("browserSubtitle");
+        const reloadBtn = document.getElementById("browserReload");
+        const loadMoreBtn = document.getElementById("browserLoadMore");
+        const footerLeft = document.getElementById("browserFooterLeft");
+        const footerRight = document.getElementById("browserFooterRight");
+        if (!title || !subtitle || !reloadBtn || !loadMoreBtn || !footerLeft || !footerRight) return;
+
+        if (!state.activeBucketId) {
+          title.textContent = "Select a bucket";
+          subtitle.textContent = "Choose a shared bucket to inspect Qdrant metadata.";
+          footerLeft.textContent = "-";
+          footerRight.textContent = "-";
+          loadMoreBtn.disabled = true;
+          reloadBtn.disabled = true;
+          return;
+        }
+
+        title.textContent = `Bucket: ${state.activeBucketId}`;
+        reloadBtn.disabled = state.browser.loading;
+        loadMoreBtn.disabled = state.browser.loading || !state.browser.truncated || !state.browser.offset;
+        if (state.browser.error) {
+          subtitle.textContent = `Error: ${state.browser.error}`;
+        } else if (state.browser.loading) {
+          subtitle.textContent = "Loading...";
+        } else if (state.browser.lastFetch) {
+          subtitle.textContent = `${browserFmt(state.browser.lastFetch.count)} unique files (scanned ${browserFmt(
+            state.browser.lastFetch.scanned_points
+          )} points)`;
+        } else {
+          subtitle.textContent = "Load files from Qdrant for this bucket.";
+        }
+        footerLeft.textContent = state.browser.truncated
+          ? `More available (next offset: ${state.browser.offset})`
+          : "End of list";
+        footerRight.textContent = `Showing ${state.browser.files.length} rows`;
+      }
+
+      async function browserLoadFiles({ reset }) {
+        if (!state.activeBucketId) return;
+        const limitInput = document.getElementById("browserLimit");
+        const limit = Number.parseInt(String(limitInput?.value || "200"), 10);
+        const offset = reset ? null : state.browser.offset;
+        if (reset) {
+          state.browser.offset = null;
+          state.browser.truncated = false;
+          state.browser.openDetails = {};
+          state.browser.chunkDetails = {};
+          state.browser.partitionChunks = {};
+          state.browser.openPartitions = {};
+        }
+
+        state.browser.loading = true;
+        state.browser.error = "";
+        browserRenderControls();
+        try {
+          const url = new URL(
+            `/api/dashboard/buckets/${encodeURIComponent(state.activeBucketId)}/files`,
+            window.location.origin
+          );
+          url.searchParams.set("limit", String(Number.isFinite(limit) ? limit : 200));
+          if (offset) {
+            url.searchParams.set("offset", String(offset));
+          }
+          const data = await apiRequest(url.pathname + url.search);
+          state.browser.offset = data.next_offset || null;
+          state.browser.truncated = !!data.truncated;
+          const newFiles = Array.isArray(data.files) ? data.files : [];
+          if (reset) {
+            state.browser.files = newFiles;
+          } else {
+            const merged = state.browser.files.slice();
+            const seen = new Set(merged.map((file) => browserDetailsCacheKey(file)));
+            for (const file of newFiles) {
+              const key = browserDetailsCacheKey(file);
+              if (seen.has(key)) continue;
+              merged.push(file);
+              seen.add(key);
+            }
+            state.browser.files = merged;
+          }
+          state.browser.lastFetch = data;
+          browserSetRedisStatus(state.browser.files);
+          browserRenderRows();
+        } catch (error) {
+          state.browser.error = String(error.message || error);
+          state.browser.files = [];
+          state.browser.visibleFiles = [];
+          const rows = document.getElementById("browserRows");
+          if (rows) {
+            rows.innerHTML = `<tr><td colspan="3">Failed to load files.</td></tr>`;
+          }
+        } finally {
+          state.browser.loading = false;
+          browserRenderControls();
+        }
+      }
+
+      function browserRenderWorkspace() {
+        browserRenderControls();
+        browserSetRedisStatus(state.browser.files);
+        browserRenderRows();
+      }
+
       function safeSearchText(value) {
         if (value === undefined || value === null) return "";
         return String(value);
@@ -3504,11 +4526,17 @@
       }
 
       function initWorkspaceTabs() {
-        const metadataBtn = document.getElementById("workspaceTabMetadata");
+        const browserBtn = document.getElementById("workspaceTabBrowser");
+        const bibtexBtn = document.getElementById("workspaceTabBibtex");
         const searchBtn = document.getElementById("workspaceTabSearch");
-        if (metadataBtn) {
-          metadataBtn.addEventListener("click", () => {
-            setWorkspaceTab("metadata");
+        if (browserBtn) {
+          browserBtn.addEventListener("click", () => {
+            setWorkspaceTab("browser");
+          });
+        }
+        if (bibtexBtn) {
+          bibtexBtn.addEventListener("click", () => {
+            setWorkspaceTab("bibtex");
           });
         }
         if (searchBtn) {
@@ -3793,6 +4821,27 @@
         }
       }
 
+      function initBrowserControls() {
+        const searchInput = document.getElementById("browserSearch");
+        const reloadBtn = document.getElementById("browserReload");
+        const loadMoreBtn = document.getElementById("browserLoadMore");
+        if (searchInput) {
+          searchInput.addEventListener("input", () => {
+            browserRenderRows();
+          });
+        }
+        if (reloadBtn) {
+          reloadBtn.addEventListener("click", () => {
+            browserLoadFiles({ reset: true });
+          });
+        }
+        if (loadMoreBtn) {
+          loadMoreBtn.addEventListener("click", () => {
+            browserLoadFiles({ reset: false });
+          });
+        }
+      }
+
       function initBulkControls() {
         const copyBtn = document.getElementById("bulkCopyBtn");
         const saveBtn = document.getElementById("bulkSaveBtn");
@@ -4011,10 +5060,14 @@
                 : null;
             state.activeFileId = null;
           }
+          browserResetState();
           writeSelectedBucketCookie(state.activeBucketId);
           renderAll();
           if (state.buckets.length > 0) {
             await Promise.allSettled(state.buckets.map((bucket) => ensureBucketLoaded(bucket.id)));
+          }
+          if (state.workspaceTab === "browser" && state.activeBucketId) {
+            await browserLoadFiles({ reset: true });
           }
         } catch (error) {
           state.buckets = [];
@@ -4063,6 +5116,7 @@
       function selectBucket(bucketId) {
         state.activeBucketId = bucketId;
         state.activeFileId = null;
+        browserResetState();
         writeSelectedBucketCookie(bucketId);
         if (!state.autofill.running) {
           resetAutofillState();
@@ -4070,6 +5124,9 @@
         updateBulkStatusText();
         renderAll();
         ensureBucketLoaded(bucketId);
+        if (state.workspaceTab === "browser") {
+          browserLoadFiles({ reset: true });
+        }
       }
 
       function selectFile(fileId) {
@@ -4391,44 +5448,56 @@
       }
 
       function renderWorkspaceTabs() {
-        const metadataBtn = document.getElementById("workspaceTabMetadata");
+        const browserBtn = document.getElementById("workspaceTabBrowser");
+        const bibtexBtn = document.getElementById("workspaceTabBibtex");
         const searchBtn = document.getElementById("workspaceTabSearch");
-        if (!metadataBtn || !searchBtn) return;
-        metadataBtn.classList.toggle("active", state.workspaceTab === "metadata");
+        if (!browserBtn || !bibtexBtn || !searchBtn) return;
+        browserBtn.classList.toggle("active", state.workspaceTab === "browser");
+        bibtexBtn.classList.toggle("active", state.workspaceTab === "bibtex");
         searchBtn.classList.toggle("active", state.workspaceTab === "search");
       }
 
       function renderLayoutMode() {
         const appShell = document.getElementById("appShell");
+        const browserView = document.getElementById("browserView");
         const bulkView = document.getElementById("bulkView");
         const detailView = document.getElementById("detailView");
         const searchView = document.getElementById("searchView");
         const metadataHeaderTools = document.getElementById("metadataHeaderTools");
         const subtitle = document.getElementById("mainPaneSubtitle");
+        const inBrowserTab = state.workspaceTab === "browser";
+        const inBibtexTab = state.workspaceTab === "bibtex";
         const inSearchTab = state.workspaceTab === "search";
-        const inBulkMode = !inSearchTab && state.viewMode === "bulk";
+        const inBulkMode = inBibtexTab && state.viewMode === "bulk";
         if (appShell) {
           appShell.classList.toggle("bulk-mode", inBulkMode);
+          appShell.classList.toggle("browser-mode", inBrowserTab);
+          appShell.classList.toggle("bibtex-mode", inBibtexTab);
           appShell.classList.toggle("search-mode", inSearchTab);
         }
+        if (browserView) {
+          browserView.hidden = !inBrowserTab;
+        }
         if (bulkView) {
-          bulkView.hidden = inSearchTab || state.viewMode !== "bulk";
+          bulkView.hidden = !inBibtexTab || state.viewMode !== "bulk";
         }
         if (detailView) {
-          detailView.hidden = inSearchTab || state.viewMode !== "detail";
+          detailView.hidden = !inBibtexTab || state.viewMode !== "detail";
         }
         if (searchView) {
           searchView.hidden = !inSearchTab;
         }
         if (metadataHeaderTools) {
-          metadataHeaderTools.hidden = inSearchTab;
+          metadataHeaderTools.hidden = !inBibtexTab;
         }
         if (subtitle) {
-          subtitle.textContent = inSearchTab
-            ? "Run hybrid or cosine search in Qdrant and inspect chunk/partition/document payloads."
-            : "Table shows title, year, authors, and journal/book context, plus PDF and text links. If title is empty, filename is used.";
+          subtitle.textContent = inBrowserTab
+            ? "Browse Qdrant files with Redis/Qdrant metadata and chunk partitions."
+            : inSearchTab
+              ? "Run hybrid or cosine search in Qdrant and inspect chunk/partition/document payloads."
+              : "Table shows title, year, authors, and journal/book context, plus PDF and text links. If title is empty, filename is used.";
         }
-        if (inSearchTab || state.viewMode !== "bulk") {
+        if (!inBibtexTab || state.viewMode !== "bulk") {
           destroyBulkHot();
           state.bulk.rowFileIds = [];
         }
@@ -4993,7 +6062,7 @@
 
       function renderAll() {
         const editorFocusSnapshot =
-          state.workspaceTab === "metadata" && state.viewMode === "detail"
+          state.workspaceTab === "bibtex" && state.viewMode === "detail"
             ? captureEditorFocusSnapshot()
             : null;
         renderBuckets();
@@ -5001,11 +6070,17 @@
         renderWorkspaceTabs();
         renderViewToggle();
         renderLayoutMode();
-        if (state.workspaceTab === "search") {
-          const title = document.getElementById("tableTitle");
-          if (title) title.textContent = "Qdrant Search";
+        const title = document.getElementById("tableTitle");
+        if (state.workspaceTab === "browser") {
+          if (title) title.textContent = "Browser";
+          browserRenderWorkspace();
+        } else if (state.workspaceTab === "search") {
+          if (title) title.textContent = "Semantic Search";
           renderSearchWorkspace();
         } else {
+          if (title) {
+            title.textContent = state.viewMode === "bulk" ? "Bulk Edit" : "Files";
+          }
           renderAutofillControls();
           renderUploadControls();
           if (state.viewMode === "bulk") {
@@ -5028,6 +6103,7 @@
       initBucketManagerControls();
       initUploadControls();
       initSearchControls();
+      initBrowserControls();
       initBulkControls();
       initModalControls();
       loadBuckets();

@@ -3,14 +3,18 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>MCP Research Documentation</title>
+    <title>MCP Research Tool Docs</title>
     <style>
       :root {
-        --bg: #f7f4ed;
-        --panel: #ffffff;
-        --line: #ddd2bb;
-        --ink: #201b11;
-        --muted: #685f50;
+        --bg: #0b1020;
+        --bg-accent: #070a14;
+        --panel: #101a33;
+        --panel-alt: #0f1730;
+        --line: rgba(255, 255, 255, 0.12);
+        --ink: #e7ecff;
+        --muted: #aab3d6;
+        --brand: #7aa2ff;
+        --brand-soft: rgba(122, 162, 255, 0.16);
       }
 
       * {
@@ -19,19 +23,107 @@
 
       body {
         margin: 0;
-        font-family: "Avenir Next", "Segoe UI", sans-serif;
+        min-height: 100vh;
+        font-family: "Space Grotesk", "Avenir Next", "Trebuchet MS", sans-serif;
         color: var(--ink);
-        background: var(--bg);
-        padding: 24px;
+        background: linear-gradient(180deg, var(--bg), var(--bg-accent));
+      }
+
+      .top-nav {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 10px 14px;
+        background: color-mix(in oklab, var(--panel) 84%, #08101f 16%);
+        border-bottom: 1px solid var(--line);
+        backdrop-filter: blur(8px);
+      }
+
+      .top-nav-title {
+        font-family: "Fraunces", "Iowan Old Style", "Times New Roman", serif;
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+      }
+
+      .top-nav-links {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .top-nav-link,
+      .top-nav-summary {
+        border: 1px solid var(--line);
+        background: color-mix(in oklab, var(--panel-alt) 88%, #081022 12%);
+        color: var(--ink);
+        text-decoration: none;
+        border-radius: 10px;
+        padding: 7px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .top-nav-link:hover,
+      .top-nav-summary:hover {
+        border-color: color-mix(in oklab, var(--brand) 50%, var(--line));
+      }
+
+      .top-nav-dropdown {
+        position: relative;
+      }
+
+      .top-nav-dropdown > summary {
+        list-style: none;
+      }
+
+      .top-nav-dropdown > summary::-webkit-details-marker {
+        display: none;
+      }
+
+      .top-nav-menu {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 6px);
+        min-width: 230px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: color-mix(in oklab, var(--panel) 92%, #091126 8%);
+        box-shadow: 0 12px 26px rgba(0, 0, 0, 0.35);
+        padding: 6px;
+        display: grid;
+        gap: 4px;
+      }
+
+      .top-nav-menu a {
+        color: var(--ink);
+        text-decoration: none;
+        border-radius: 8px;
+        padding: 8px 9px;
+        font-size: 12px;
+      }
+
+      .top-nav-menu a:hover {
+        background: color-mix(in oklab, var(--brand-soft) 76%, #0e1831 24%);
       }
 
       .shell {
-        max-width: 980px;
+        max-width: 1080px;
         margin: 0 auto;
+        padding: 16px;
       }
 
       h1 {
         margin: 0;
+        font-family: "Fraunces", "Iowan Old Style", "Times New Roman", serif;
       }
 
       .subtle {
@@ -43,8 +135,9 @@
         margin-top: 16px;
         border: 1px solid var(--line);
         border-radius: 12px;
-        background: var(--panel);
+        background: color-mix(in oklab, var(--panel) 92%, #091126 8%);
         padding: 16px;
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
       }
 
       pre {
@@ -57,16 +150,68 @@
       }
 
       a {
-        color: inherit;
+        color: var(--brand);
+      }
+
+      @media (max-width: 860px) {
+        .top-nav {
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .top-nav-links {
+          flex-wrap: wrap;
+        }
+
+        .top-nav-dropdown {
+          width: 100%;
+        }
+
+        .top-nav-summary,
+        .top-nav-link {
+          width: 100%;
+          justify-content: center;
+        }
+
+        .top-nav-menu {
+          position: static;
+          margin-top: 6px;
+          width: 100%;
+        }
       }
     </style>
   </head>
   <body>
+    <header class="top-nav">
+      <div class="top-nav-title">MCP Research Tool</div>
+      <nav class="top-nav-links" aria-label="Primary">
+        <a class="top-nav-link" href="/">Dashboard</a>
+
+        <details class="top-nav-dropdown">
+          <summary class="top-nav-summary">Docs ▾</summary>
+          <div class="top-nav-menu">
+            <a href="/docs/?doc=README.md">README</a>
+            <a href="/docs/?doc=tool-documentation.md">Tool Documentation</a>
+          </div>
+        </details>
+
+        <details class="top-nav-dropdown">
+          <summary class="top-nav-summary">Developer Tools ▾</summary>
+          <div class="top-nav-menu">
+            <a href="/redisinsight/" onclick="window.open(this.href, '_blank', 'noopener,noreferrer'); return false;">RedisInsight</a>
+            <a href="/minio/" onclick="window.open(this.href, '_blank', 'noopener,noreferrer'); return false;">MinIO Console</a>
+            <a href="/qdrant/" onclick="window.open(this.href, '_blank', 'noopener,noreferrer'); return false;">Qdrant Dashboard</a>
+            <a href="/flower/" onclick="window.open(this.href, '_blank', 'noopener,noreferrer'); return false;">Flower</a>
+          </div>
+        </details>
+      </nav>
+    </header>
+
     <main class="shell">
       <h1>MCP Research Documentation</h1>
       <p class="subtle">
         Source file:
-        <a id="source-link" href="/docs/tool-documentation.md">tool-documentation.md</a>
+        <a id="source-link" href="/docs/?doc=tool-documentation.md">tool-documentation.md</a>
       </p>
       <section class="panel">
         <pre id="content">Loading documentation...</pre>
@@ -85,7 +230,7 @@
       const selected = docs[requested] || "tool-documentation.md";
       const sourceLink = document.getElementById("source-link");
       if (sourceLink) {
-        sourceLink.href = "/docs/" + selected;
+        sourceLink.href = "/docs/?doc=" + encodeURIComponent(selected);
         sourceLink.textContent = selected;
       }
 
