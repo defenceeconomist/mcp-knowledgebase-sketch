@@ -317,7 +317,7 @@ class DashboardAppTests(unittest.TestCase):
 
         self.assertEqual(
             url,
-            "http://resolver.local:8080/r/doc?ref=doc%3A%2F%2Fbucket1%2Ffolder%2Ffile.pdf%3Fversion_id%3Dv1",
+            "/r/doc?ref=doc%3A%2F%2Fbucket1%2Ffolder%2Ffile.pdf%3Fversion_id%3Dv1&mode=proxy",
         )
 
     def test_attach_original_file_links_uses_source_when_bucket_key_missing(self):
@@ -329,7 +329,7 @@ class DashboardAppTests(unittest.TestCase):
         ):
             dashboard_app.attach_original_file_links(files)
 
-        self.assertEqual(files[0]["original_file_url"], "http://resolver.local:8080/r/doc?ref=doc%3A%2F%2Fbucket2%2Fnotes.pdf")
+        self.assertEqual(files[0]["original_file_url"], "/r/doc?ref=doc%3A%2F%2Fbucket2%2Fnotes.pdf&mode=proxy")
 
 
 if __name__ == "__main__":

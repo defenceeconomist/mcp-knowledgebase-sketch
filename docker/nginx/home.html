@@ -52,6 +52,18 @@
         grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       }
 
+      .section {
+        margin-top: 22px;
+      }
+
+      .section-title {
+        margin: 0;
+        font-size: 16px;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
       .card {
         display: block;
         border: 1px solid var(--line);
@@ -81,6 +93,10 @@
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         color: var(--muted);
       }
+
+      .mono a {
+        color: inherit;
+      }
     </style>
   </head>
   <body>
@@ -88,26 +104,58 @@
       <h1>MCP Research Toolkit</h1>
       <p class="subtitle">One front door for the project tools.</p>
 
-      <section class="grid">
-        <a class="card" href="/dashboard/">
-          <div class="name">Dashboard</div>
-          <div class="hint">Browse Qdrant collections and file-level metadata.</div>
-        </a>
-        <a class="card" href="/bibtex/">
-          <div class="name">BibTeX UI</div>
-          <div class="hint">Review and edit BibTeX metadata stored in Redis.</div>
-        </a>
-        <a class="card" href="/docs/">
-          <div class="name">Documentation</div>
-          <div class="hint">Read ingest flow, schema, and MCP tool documentation.</div>
-        </a>
-        <a class="card" href="/mcp">
-          <div class="name">MCP Endpoint</div>
-          <div class="hint">HTTP MCP endpoint used by MCP clients and integrations.</div>
-        </a>
+      <section class="section">
+        <h2 class="section-title">Core Tools</h2>
+        <div class="grid">
+          <a class="card" href="/dashboard/">
+            <div class="name">Dashboard</div>
+            <div class="hint">Browse Qdrant collections and file-level metadata.</div>
+          </a>
+          <a class="card" href="/bibtex/">
+            <div class="name">BibTeX UI</div>
+            <div class="hint">Review and edit BibTeX metadata stored in Redis.</div>
+          </a>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">Documentation</h2>
+        <div class="grid">
+          <a class="card" href="/docs/?doc=README.md">
+            <div class="name">README</div>
+            <div class="hint">Project overview, setup, and primary commands.</div>
+          </a>
+          <a class="card" href="/docs/?doc=tool-documentation.md">
+            <div class="name">Tool Documentation</div>
+            <div class="hint">Ingest flow, schema, and MCP tool details.</div>
+          </a>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2 class="section-title">Developer Tools</h2>
+        <div class="grid">
+          <a class="card" href="/redisinsight/">
+            <div class="name">RedisInsight</div>
+            <div class="hint">Inspect Redis keys, values, and performance metrics.</div>
+          </a>
+          <a class="card" href="/minio/">
+            <div class="name">MinIO Console</div>
+            <div class="hint">Manage object buckets and files in MinIO.</div>
+          </a>
+          <a class="card" href="/qdrant/">
+            <div class="name">Qdrant Dashboard</div>
+            <div class="hint">Open the native Qdrant UI on port 6333.</div>
+          </a>
+          <a class="card" href="/flower/">
+            <div class="name">Flower</div>
+            <div class="hint">Monitor Celery workers, tasks, and queue activity.</div>
+          </a>
+        </div>
       </section>
 
       <p class="mono">Base URL: http://localhost:8080</p>
+      <p class="mono">MCP Endpoint: <a href="/mcp">http://localhost:8080/mcp</a></p>
     </main>
   </body>
 </html>

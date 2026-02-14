@@ -121,6 +121,21 @@ class LinkResolverTests(unittest.TestCase):
             "https://resolver.example/r/pdf-proxy?ref=doc%3A%2F%2Fbucket%2Fpath%2Ffile.pdf#page=4&search=transfer%20pricing",
         )
 
+    def test_resolve_link_proxy_uses_relative_path_for_localhost_base(self):
+        os.environ["CITATION_BASE_URL"] = "http://localhost:8080"
+        os.environ["CITATION_PDF_PROXY_PATH"] = "/r/pdf-proxy"
+
+        result = link_resolver.resolve_link(
+            source_ref="doc://bucket/path/file.pdf",
+            mode="proxy",
+        )
+
+        self.assertEqual(result["mode"], "proxy")
+        self.assertEqual(
+            result["url"],
+            "/r/pdf-proxy?ref=doc%3A%2F%2Fbucket%2Fpath%2Ffile.pdf",
+        )
+
     def test_resolve_link_presign_uses_minio_client(self):
         os.environ["MINIO_PRESIGN_EXPIRY_SECONDS"] = "120"
         minio_client = mock.Mock()

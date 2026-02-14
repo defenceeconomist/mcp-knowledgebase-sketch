@@ -66,14 +66,30 @@
       <h1>MCP Research Documentation</h1>
       <p class="subtle">
         Source file:
-        <a href="/docs/tool-documentation.md">tool-documentation.md</a>
+        <a id="source-link" href="/docs/tool-documentation.md">tool-documentation.md</a>
       </p>
       <section class="panel">
         <pre id="content">Loading documentation...</pre>
       </section>
     </main>
     <script>
-      fetch("tool-documentation.md")
+      const docs = {
+        "tool-documentation.md": "tool-documentation.md",
+        "tool-documentation": "tool-documentation.md",
+        "readme.md": "README.md",
+        readme: "README.md",
+      };
+
+      const params = new URLSearchParams(window.location.search);
+      const requested = (params.get("doc") || "tool-documentation.md").trim().toLowerCase();
+      const selected = docs[requested] || "tool-documentation.md";
+      const sourceLink = document.getElementById("source-link");
+      if (sourceLink) {
+        sourceLink.href = "/docs/" + selected;
+        sourceLink.textContent = selected;
+      }
+
+      fetch(selected)
         .then((response) => {
           if (!response.ok) {
             throw new Error("HTTP " + response.status);

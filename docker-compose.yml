@@ -14,8 +14,10 @@ services:
       - redis_data:/data
   redisinsight:
     image: redis/redisinsight:latest
-    ports:
+    ports:  
       - "8001:5540"
+    environment:
+      - RI_PROXY_PATH=redisinsight
     depends_on:
       - redis
   minio:
@@ -133,6 +135,9 @@ services:
       - dashboard
       - bibtex_ui
       - docs
+      - redisinsight
+      - minio
+      - flower
     ports:
       - "8080:8080"
     volumes:
@@ -212,7 +217,7 @@ services:
       - FLOWER_BASIC_AUTH=${FLOWER_BASIC_AUTH:-}
     ports:
       - "5555:5555"
-    command: -m celery -A mcp_research.celery_app flower --port=5555
+    command: -m celery -A mcp_research.celery_app flower --port=5555 --url_prefix=flower
 
 volumes:
   qdrant_storage:

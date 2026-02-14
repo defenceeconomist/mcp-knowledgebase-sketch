@@ -133,14 +133,18 @@ def _append_url_query(url: str, params: dict[str, Optional[str]]) -> str:
 
 def _build_pdf_proxy_url(source_ref: str) -> str:
     """Build a resolver-local PDF proxy URL for a source reference."""
-    base = (
-        os.getenv("CITATION_BASE_URL")
-        or os.getenv("DOCS_BASE_URL")
-        or "http://localhost:8080"
-    ).rstrip("/")
+    base = (os.getenv("CITATION_BASE_URL") or os.getenv("DOCS_BASE_URL") or "").strip().rstrip("/")
     proxy_path = os.getenv("CITATION_PDF_PROXY_PATH", "/r/pdf-proxy")
     if not proxy_path.startswith("/"):
         proxy_path = "/" + proxy_path
+
+    # Keep proxy URLs same-origin unless an explicit non-localhost base URL is configured.
+    if not base:
+        return f"{proxy_path}?ref={quote(source_ref, safe='')}"
+    parsed = urlparse(base)
+    host = (parsed.hostname or "").lower()
+    if host in {"localhost", "127.0.0.1", "::1"}:
+        return f"{proxy_path}?ref={quote(source_ref, safe='')}"
     return f"{base}{proxy_path}?ref={quote(source_ref, safe='')}"
 
 

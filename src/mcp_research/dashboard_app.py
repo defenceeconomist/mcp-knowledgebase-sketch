@@ -3,8 +3,9 @@ from __future__ import annotations
 import logging
 import os
 from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import quote
 
-from mcp_research.citation_utils import build_citation_url, build_source_ref
+from mcp_research.citation_utils import build_source_ref
 from mcp_research.runtime_utils import decode_redis_value as _decode_redis_value, load_dotenv
 from mcp_research.schema_v2 import read_v2_source_doc_hash
 
@@ -533,7 +534,12 @@ def _build_original_file_url(entry: Dict[str, Any]) -> Optional[str]:
             return None
         source_ref = build_source_ref(bucket=bucket, key=key, version_id=entry.get("version_id"))
 
-    return build_citation_url(source_ref=source_ref)
+    # Keep links same-origin and force proxy mode so browser clients never need direct MinIO access.
+    ref_path = os.getenv("CITATION_REF_PATH", "/r/doc").strip() or "/r/doc"
+    if "://" not in ref_path and not ref_path.startswith("/"):
+        ref_path = "/" + ref_path
+    separator = "&" if "?" in ref_path else "?"
+    return f"{ref_path}{separator}ref={quote(source_ref, safe='')}&mode=proxy"
 
 
 def attach_original_file_links(files: List[Dict[str, Any]]) -> None:
