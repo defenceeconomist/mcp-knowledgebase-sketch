@@ -10,6 +10,11 @@ if SRC_ROOT not in sys.path:
 
 from mcp_research import ingestion_tasks
 
+TEST_DOC_TARGET = "mcp_research.ingestion_tasks"
+TEST_DOC_METHOD = (
+    "Patches minio_ingest processors and invokes Celery task wrappers directly to confirm argument pass-through and completion status."
+)
+
 
 class IngestionTasksTests(unittest.TestCase):
     def test_ingest_minio_object_task_calls_processor(self):

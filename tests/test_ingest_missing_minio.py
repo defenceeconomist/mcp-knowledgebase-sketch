@@ -12,6 +12,11 @@ if SRC_ROOT not in sys.path:
 
 from mcp_research import ingest_missing_minio
 
+TEST_DOC_TARGET = "mcp_research.ingest_missing_minio"
+TEST_DOC_METHOD = (
+    "Mocks discovery/enqueue helpers and captures stdout/stderr to validate CLI control flow, dry-run output, and enqueue counts."
+)
+
 
 class IngestMissingMinioTests(unittest.TestCase):
     def test_print_errors_to_stderr(self):

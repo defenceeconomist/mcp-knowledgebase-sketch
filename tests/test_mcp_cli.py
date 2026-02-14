@@ -9,6 +9,11 @@ if PROJECT_ROOT not in sys.path:
 
 import mcp_cli
 
+TEST_DOC_TARGET = "mcp_cli"
+TEST_DOC_METHOD = (
+    "Patches dynamic module imports and inspects forwarded argv values to verify command dispatch and help behavior."
+)
+
 
 class McpCliTests(unittest.TestCase):
     def test_main_help_exits_zero(self):

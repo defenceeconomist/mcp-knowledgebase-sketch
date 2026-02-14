@@ -23,6 +23,11 @@ dependencies = [
 docs = [
   "sphinx>=7.2",
 ]
+test = [
+  "fastapi>=0.110",
+  "httpx>=0.27",
+  "python-dotenv>=1.0",
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}

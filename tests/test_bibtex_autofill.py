@@ -11,6 +11,11 @@ if SRC_ROOT not in sys.path:
 
 from mcp_research import bibtex_autofill
 
+TEST_DOC_TARGET = "mcp_research.bibtex_autofill"
+TEST_DOC_METHOD = (
+    "Uses unittest with fake Redis/MinIO/Crossref collaborators and targeted patching to isolate metadata parsing and enrichment flows."
+)
+
 
 class _FakeRedis:
     def __init__(self):

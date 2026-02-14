@@ -12,6 +12,11 @@ if SRC_ROOT not in sys.path:
 
 from mcp_research import upload_data_to_redis
 
+TEST_DOC_TARGET = "mcp_research.upload_data_to_redis"
+TEST_DOC_METHOD = (
+    "Checks directory/pair upload flows with temporary JSON fixtures and mocked upload helpers, including strict-mode validation."
+)
+
 
 class UploadDataToRedisTests(unittest.TestCase):
     def test_upload_pair_calls_helper(self):

@@ -20,6 +20,11 @@ from mcp_research.schema_v2 import (
     source_id,
 )
 
+TEST_DOC_TARGET = "mcp_research.bibtex_ui_app"
+TEST_DOC_METHOD = (
+    "Exercises FastAPI routes with TestClient, fake Redis/MinIO/search backends, and mocked integrations to verify API behavior and persistence."
+)
+
 try:
     from fastapi.testclient import TestClient
 except ImportError:  # pragma: no cover
@@ -236,10 +241,11 @@ class BibtexUiAppTests(unittest.TestCase):
     def test_index_serves_bibtex_workspace_shell(self):
         response = self.client.get("/")
         self.assertEqual(response.status_code, 200)
-        self.assertIn("BibTeX Metadata Workspace", response.text)
+        self.assertIn("MCP Research Tool", response.text)
+        self.assertIn("Browser", response.text)
         self.assertIn("Buckets", response.text)
         self.assertIn("BibTeX Fields", response.text)
-        self.assertIn("Qdrant Search", response.text)
+        self.assertIn("Semantic Search", response.text)
 
     def test_api_search_status_reports_qdrant_default_collection(self):
         fake_search = _FakeSearchTools()

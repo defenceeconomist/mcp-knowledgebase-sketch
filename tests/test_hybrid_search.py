@@ -17,6 +17,11 @@ from qdrant_client.http import exceptions as qdrant_exceptions
 
 from mcp_research import hybrid_search
 
+TEST_DOC_TARGET = "mcp_research.hybrid_search"
+TEST_DOC_METHOD = (
+    "Combines fake embedding models and fake/live Qdrant clients to verify vector construction, upsert payloads, and hybrid query orchestration."
+)
+
 
 class _Sparse:
     def __init__(self, indices, values):

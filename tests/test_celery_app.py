@@ -10,6 +10,11 @@ if SRC_ROOT not in sys.path:
 from mcp_research import celery_app
 from mcp_research.runtime_utils import load_env_int
 
+TEST_DOC_TARGET = "mcp_research.celery_app"
+TEST_DOC_METHOD = (
+    "Validates environment-driven configuration by overriding env vars and asserting Celery app settings and helper defaults."
+)
+
 
 class CeleryAppTests(unittest.TestCase):
     def setUp(self):

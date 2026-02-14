@@ -13,6 +13,11 @@ if SRC_ROOT not in sys.path:
 
 from mcp_research import minio_ops
 
+TEST_DOC_TARGET = "mcp_research.minio_ops"
+TEST_DOC_METHOD = (
+    "Uses mocked MinIO clients plus temporary PDF fixtures to validate bucket/file commands and ingest cleanup flags through CLI entrypoints."
+)
+
 
 class MinioOpsTests(unittest.TestCase):
     def setUp(self):

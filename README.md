@@ -86,6 +86,13 @@ python mcp_cli.py minio-ops delete-bucket research-pdfs --force
 Focused documentation for ingest flow, schema, and MCP tools:
 
 - `docs/tool-documentation.md`
+- `docs/test-documentation.md` (generated from `tests/test_*.py`)
+
+Regenerate test documentation after adding/updating tests:
+
+```bash
+python scripts/generate_test_docs.py
+```
 
 Core shared URL/source reference helpers are centralized in:
 

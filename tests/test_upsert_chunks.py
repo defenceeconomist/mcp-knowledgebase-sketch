@@ -13,6 +13,11 @@ from qdrant_client import models
 
 from mcp_research import upsert_chunks
 
+TEST_DOC_TARGET = "mcp_research.upsert_chunks"
+TEST_DOC_METHOD = (
+    "Uses fake embedder/Qdrant/Redis fixtures and env overrides to verify chunk loading, payload schema, batching, and deterministic ID behavior."
+)
+
 
 class _Sparse:
     def __init__(self, indices, values):

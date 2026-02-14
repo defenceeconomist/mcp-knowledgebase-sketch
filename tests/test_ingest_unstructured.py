@@ -14,6 +14,11 @@ if SRC_ROOT not in sys.path:
 
 from mcp_research import ingest_unstructured
 
+TEST_DOC_TARGET = "mcp_research.ingest_unstructured"
+TEST_DOC_METHOD = (
+    "Uses temporary filesystem fixtures, fake Redis storage, and patched entrypoints to verify chunk extraction, Redis writes, and CLI argument forwarding."
+)
+
 
 class _FakeRedis:
     def __init__(self):

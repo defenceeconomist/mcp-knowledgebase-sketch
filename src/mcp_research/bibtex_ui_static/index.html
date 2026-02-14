@@ -319,6 +319,17 @@
         height: calc(100% - 70px);
       }
 
+      .browser-header-tools {
+        margin-top: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .browser-header-tools[hidden] {
+        display: none !important;
+      }
+
       .workspace-tab-btn {
         border: 1px solid var(--line);
         border-radius: 10px;
@@ -773,22 +784,24 @@
         padding: 10px;
       }
 
-      .browser-header-row {
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
+      .browser-toolbar-heading {
+        display: inline-flex;
+        align-items: center;
         gap: 10px;
+        margin-right: auto;
+        min-width: 240px;
       }
 
-      .browser-header-title {
+      .browser-toolbar-title {
         margin: 0;
-        font-size: 18px;
+        font-size: 16px;
       }
 
       .browser-header-subtitle {
-        margin-top: 4px;
         font-size: 12px;
         color: var(--muted);
+        margin: 0 0 0 6px;
+        white-space: nowrap;
       }
 
       .browser-status {
@@ -816,14 +829,23 @@
       }
 
       .browser-topbar {
-        margin-top: 10px;
-        display: grid;
-        grid-template-columns: 1fr 120px auto auto;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
         gap: 8px;
       }
 
-      .browser-upload-tools {
-        margin-top: 10px;
+      .browser-search-input {
+        flex: 1 1 260px;
+        min-width: 220px;
+      }
+
+      .browser-limit-input {
+        width: 120px;
+      }
+
+      .browser-upload-btn {
+        white-space: nowrap;
       }
 
       .browser-input {
@@ -1745,7 +1767,23 @@
         }
 
         .browser-topbar {
-          grid-template-columns: 1fr;
+          flex-direction: column;
+          align-items: stretch;
+        }
+
+        .browser-toolbar-heading {
+          width: 100%;
+          justify-content: space-between;
+          min-width: 0;
+        }
+
+        .browser-limit-input {
+          width: 100%;
+        }
+
+        .browser-header-subtitle {
+          margin-left: 0;
+          white-space: normal;
         }
       }
 
@@ -1795,6 +1833,7 @@
           <div class="top-nav-menu">
             <a href="/docs/?doc=README.md">README</a>
             <a href="/docs/?doc=tool-documentation.md">Tool Documentation</a>
+            <a href="/docs/?doc=test-documentation.md">Test Documentation</a>
           </div>
         </details>
 
@@ -1843,9 +1882,41 @@
       </aside>
 
       <main class="pane main-pane">
-        <div class="pane-header">
+        <div class="pane-header" id="mainPaneHeader">
           <h2 class="pane-title" id="tableTitle">Files</h2>
           <div class="pane-subtitle" id="mainPaneSubtitle">Browse Qdrant files with Redis/Qdrant metadata and chunk partitions.</div>
+          <div class="browser-header-tools" id="browserHeaderTools" hidden>
+            <div class="browser-topbar">
+              <div class="browser-toolbar-heading">
+                <h3 class="browser-toolbar-title" id="browserTitle">Select a bucket</h3>
+                <div class="browser-status">
+                  <span class="browser-dot" id="browserRedisDot"></span>
+                  <span id="browserRedisStatus">Redis: unknown</span>
+                </div>
+              </div>
+              <input class="browser-input browser-search-input" id="browserSearch" placeholder="Search key/source/document id..." />
+              <input class="browser-input browser-limit-input" id="browserLimit" type="number" min="1" max="2000" value="200" />
+              <button class="bulk-btn" id="browserReload" type="button">Load</button>
+              <button class="bulk-btn" id="browserLoadMore" type="button" disabled>Load more</button>
+              <button
+                type="button"
+                id="openUploadModalBtn"
+                class="main-action-btn browser-upload-btn"
+                title="Upload PDF files"
+                aria-label="Upload PDF files"
+              >
+                Upload PDF
+              </button>
+              <div class="browser-header-subtitle" id="browserSubtitle">Choose a shared bucket to inspect Qdrant metadata.</div>
+            </div>
+            <div id="uploadStatus" class="autofill-status" hidden></div>
+            <div class="autofill-progress" id="uploadProgress" hidden>
+              <div class="autofill-progress-track">
+                <div class="autofill-progress-fill" id="uploadProgressFill"></div>
+              </div>
+              <div class="autofill-progress-text" id="uploadProgressText"></div>
+            </div>
+          </div>
           <div class="metadata-header-tools" id="metadataHeaderTools">
             <div class="view-toggle" id="viewToggle">
               <button type="button" class="view-toggle-btn" id="viewToggleBulk">Bulk Edit</button>
@@ -1865,44 +1936,6 @@
         </div>
         <div class="main-pane-body">
           <div class="browser-view" id="browserView">
-            <div class="browser-panel">
-              <div class="browser-header-row">
-                <div>
-                  <h3 class="browser-header-title" id="browserTitle">Select a bucket</h3>
-                  <div class="browser-header-subtitle" id="browserSubtitle">Choose a shared bucket to inspect Qdrant metadata.</div>
-                </div>
-                <div class="browser-status">
-                  <span class="browser-dot" id="browserRedisDot"></span>
-                  <span id="browserRedisStatus">Redis: unknown</span>
-                </div>
-              </div>
-              <div class="browser-topbar">
-                <input class="browser-input" id="browserSearch" placeholder="Search key/source/document id..." />
-                <input class="browser-input" id="browserLimit" type="number" min="1" max="2000" value="200" />
-                <button class="bulk-btn" id="browserReload" type="button">Load</button>
-                <button class="bulk-btn" id="browserLoadMore" type="button" disabled>Load more</button>
-              </div>
-              <div class="upload-tools browser-upload-tools">
-                <button
-                  type="button"
-                  id="openUploadModalBtn"
-                  class="main-action-btn upload-icon-btn"
-                  title="Upload PDF files"
-                  aria-label="Upload PDF files"
-                >
-                  ⤴
-                </button>
-                <div class="autofill-status">Upload PDFs (multi-file supported).</div>
-              </div>
-              <div id="uploadStatus" class="autofill-status">Use Upload PDF Files to add one or more PDFs.</div>
-              <div class="autofill-progress" id="uploadProgress" hidden>
-                <div class="autofill-progress-track">
-                  <div class="autofill-progress-fill" id="uploadProgressFill"></div>
-                </div>
-                <div class="autofill-progress-text" id="uploadProgressText"></div>
-              </div>
-            </div>
-
             <div class="browser-panel">
               <table class="browser-table">
                 <thead>
@@ -2468,7 +2501,7 @@
         },
         upload: {
           running: false,
-          message: "Use Upload PDF Files to add one or more PDFs.",
+          message: "",
           error: "",
           progress: 0,
           phase: "idle",
@@ -4648,7 +4681,7 @@
         const bucketReady = !!activeBucket && activeBucket.loaded && !activeBucket.loading;
         const disabled = !bucketReady || state.upload.running;
         button.disabled = disabled;
-        button.textContent = state.upload.running ? "..." : "⤴";
+        button.textContent = state.upload.running ? "Uploading..." : "Upload PDF";
         if (filesInput) filesInput.disabled = state.upload.running || !bucketReady;
         if (submitBtn) {
           submitBtn.disabled = state.upload.running || !bucketReady;
@@ -4656,7 +4689,8 @@
         }
         if (cancelBtn) cancelBtn.disabled = state.upload.running;
         if (closeBtn) closeBtn.disabled = state.upload.running;
-        status.textContent = state.upload.message || "Use Upload PDF Files to add one or more PDFs.";
+        status.textContent = state.upload.message || "";
+        status.hidden = !state.upload.message;
         if (!bucketReady && modal && !modal.hidden && !state.upload.running) {
           modal.hidden = true;
         }
@@ -5476,12 +5510,14 @@
 
       function renderLayoutMode() {
         const appShell = document.getElementById("appShell");
+        const mainTitle = document.getElementById("tableTitle");
         const browserView = document.getElementById("browserView");
         const bulkView = document.getElementById("bulkView");
         const detailView = document.getElementById("detailView");
         const searchView = document.getElementById("searchView");
         const metadataHeaderTools = document.getElementById("metadataHeaderTools");
         const subtitle = document.getElementById("mainPaneSubtitle");
+        const browserHeaderTools = document.getElementById("browserHeaderTools");
         const inBrowserTab = state.workspaceTab === "browser";
         const inBibtexTab = state.workspaceTab === "bibtex";
         const inSearchTab = state.workspaceTab === "search";
@@ -5504,15 +5540,23 @@
         if (searchView) {
           searchView.hidden = !inSearchTab;
         }
+        if (mainTitle) {
+          mainTitle.hidden = inBrowserTab;
+        }
         if (metadataHeaderTools) {
           metadataHeaderTools.hidden = !inBibtexTab;
         }
+        if (browserHeaderTools) {
+          browserHeaderTools.hidden = !inBrowserTab;
+        }
         if (subtitle) {
-          subtitle.textContent = inBrowserTab
-            ? "Browse Qdrant files with Redis/Qdrant metadata and chunk partitions."
-            : inSearchTab
-              ? "Run hybrid or cosine search in Qdrant and inspect chunk/partition/document payloads."
-              : "Table shows title, year, authors, and journal/book context, plus PDF and text links. If title is empty, filename is used.";
+          subtitle.hidden = inBrowserTab;
+          if (inSearchTab) {
+            subtitle.textContent = "Run hybrid or cosine search in Qdrant and inspect chunk/partition/document payloads.";
+          } else {
+            subtitle.textContent =
+              "Table shows title, year, authors, and journal/book context, plus PDF and text links. If title is empty, filename is used.";
+          }
         }
         if (!inBibtexTab || state.viewMode !== "bulk") {
           destroyBulkHot();
@@ -6089,7 +6133,6 @@
         renderLayoutMode();
         const title = document.getElementById("tableTitle");
         if (state.workspaceTab === "browser") {
-          if (title) title.textContent = "Browser";
           browserRenderWorkspace();
           renderUploadControls();
         } else if (state.workspaceTab === "search") {

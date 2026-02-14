@@ -17,6 +17,11 @@ from fastapi.testclient import TestClient
 
 from mcp_research import link_resolver, resolver_app
 
+TEST_DOC_TARGET = "mcp_research.link_resolver and mcp_research.resolver_app"
+TEST_DOC_METHOD = (
+    "Validates URL-building and resolver endpoints by varying environment settings, mocking MinIO presign behavior, and exercising FastAPI routes with TestClient."
+)
+
 
 class LinkResolverTests(unittest.TestCase):
     def setUp(self):

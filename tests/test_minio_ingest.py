@@ -10,6 +10,11 @@ if SRC_ROOT not in sys.path:
 
 from mcp_research import minio_ingest
 
+TEST_DOC_TARGET = "mcp_research.minio_ingest"
+TEST_DOC_METHOD = (
+    "Covers ingest helpers with fake Redis/models and patched dependencies to verify event normalization, mapping cleanup, and non-PDF handling."
+)
+
 
 class _FakeRedis:
     def __init__(self):

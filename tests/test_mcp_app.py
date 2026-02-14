@@ -13,6 +13,11 @@ try:
 except ModuleNotFoundError:  # pragma: no cover - optional local deps
     mcp_app = None  # type: ignore[assignment]
 
+TEST_DOC_TARGET = "mcp_research.mcp_app"
+TEST_DOC_METHOD = (
+    "Uses fake Redis/Qdrant clients with patched helper functions to validate internal normalization helpers and MCP tool response shaping."
+)
+
 
 class _FakeRedis:
     def __init__(self, *, values=None, smembers=None, hashes=None):

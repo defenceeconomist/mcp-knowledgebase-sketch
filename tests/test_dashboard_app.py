@@ -10,6 +10,11 @@ if SRC_ROOT not in sys.path:
 
 from mcp_research import dashboard_app
 
+TEST_DOC_TARGET = "mcp_research.dashboard_app"
+TEST_DOC_METHOD = (
+    "Uses fake Qdrant/Redis fixtures and deterministic payloads to validate file aggregation, partition grouping, and dashboard enrichment helpers."
+)
+
 
 class _FakePipeline:
     def __init__(self, client):

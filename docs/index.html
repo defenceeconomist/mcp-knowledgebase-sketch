@@ -140,13 +140,69 @@
         box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
       }
 
-      pre {
-        margin: 0;
-        white-space: pre-wrap;
-        word-break: break-word;
+      .markdown-body {
+        font-size: 14px;
+        line-height: 1.6;
+      }
+
+      .markdown-body > *:first-child {
+        margin-top: 0;
+      }
+
+      .markdown-body > *:last-child {
+        margin-bottom: 0;
+      }
+
+      .markdown-body h1,
+      .markdown-body h2,
+      .markdown-body h3,
+      .markdown-body h4 {
+        font-family: "Fraunces", "Iowan Old Style", "Times New Roman", serif;
+        line-height: 1.25;
+        margin: 1.1em 0 0.45em;
+      }
+
+      .markdown-body p,
+      .markdown-body ul,
+      .markdown-body ol,
+      .markdown-body pre,
+      .markdown-body blockquote {
+        margin: 0 0 0.85em;
+      }
+
+      .markdown-body ul,
+      .markdown-body ol {
+        padding-left: 1.3em;
+      }
+
+      .markdown-body code {
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-        font-size: 13px;
-        line-height: 1.5;
+        background: color-mix(in oklab, var(--panel-alt) 82%, #0a1328 18%);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 0.1em 0.35em;
+        font-size: 12px;
+      }
+
+      .markdown-body pre {
+        background: color-mix(in oklab, var(--panel-alt) 84%, #0a1328 16%);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 11px;
+        overflow: auto;
+      }
+
+      .markdown-body pre code {
+        border: none;
+        padding: 0;
+        background: transparent;
+      }
+
+      .markdown-body blockquote {
+        border-left: 3px solid color-mix(in oklab, var(--brand) 50%, var(--line));
+        margin-left: 0;
+        padding-left: 10px;
+        color: var(--muted);
       }
 
       a {
@@ -192,6 +248,7 @@
           <div class="top-nav-menu">
             <a href="/docs/?doc=README.md">README</a>
             <a href="/docs/?doc=tool-documentation.md">Tool Documentation</a>
+            <a href="/docs/?doc=test-documentation.md">Test Documentation</a>
           </div>
         </details>
 
@@ -214,13 +271,116 @@
         <a id="source-link" href="/docs/?doc=tool-documentation.md">tool-documentation.md</a>
       </p>
       <section class="panel">
-        <pre id="content">Loading documentation...</pre>
+        <article id="content" class="markdown-body">Loading documentation...</article>
       </section>
     </main>
     <script>
+      function escapeHtml(text) {
+        return text
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      function renderInline(markdown) {
+        let text = escapeHtml(markdown);
+        text = text.replace(/`([^`]+)`/g, "<code>$1</code>");
+        text = text.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+        text = text.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+        text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+        return text;
+      }
+
+      function markdownToHtml(markdown) {
+        const lines = markdown.replace(/\r\n/g, "\n").split("\n");
+        const out = [];
+        let inCode = false;
+        let codeLines = [];
+        let listType = null;
+
+        function closeList() {
+          if (!listType) return;
+          out.push(listType === "ol" ? "</ol>" : "</ul>");
+          listType = null;
+        }
+
+        for (const line of lines) {
+          if (line.startsWith("```")) {
+            closeList();
+            if (!inCode) {
+              inCode = true;
+              codeLines = [];
+            } else {
+              out.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+              inCode = false;
+              codeLines = [];
+            }
+            continue;
+          }
+
+          if (inCode) {
+            codeLines.push(line);
+            continue;
+          }
+
+          if (!line.trim()) {
+            closeList();
+            continue;
+          }
+
+          const heading = line.match(/^(#{1,4})\s+(.+)$/);
+          if (heading) {
+            closeList();
+            const level = heading[1].length;
+            out.push(`<h${level}>${renderInline(heading[2])}</h${level}>`);
+            continue;
+          }
+
+          const blockquote = line.match(/^>\s?(.*)$/);
+          if (blockquote) {
+            closeList();
+            out.push(`<blockquote>${renderInline(blockquote[1])}</blockquote>`);
+            continue;
+          }
+
+          const ol = line.match(/^\d+\.\s+(.+)$/);
+          if (ol) {
+            if (listType !== "ol") {
+              closeList();
+              out.push("<ol>");
+              listType = "ol";
+            }
+            out.push(`<li>${renderInline(ol[1])}</li>`);
+            continue;
+          }
+
+          const ul = line.match(/^[-*]\s+(.+)$/);
+          if (ul) {
+            if (listType !== "ul") {
+              closeList();
+              out.push("<ul>");
+              listType = "ul";
+            }
+            out.push(`<li>${renderInline(ul[1])}</li>`);
+            continue;
+          }
+
+          closeList();
+          out.push(`<p>${renderInline(line)}</p>`);
+        }
+
+        closeList();
+        if (inCode) {
+          out.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+        }
+        return out.join("\n");
+      }
+
       const docs = {
         "tool-documentation.md": "tool-documentation.md",
         "tool-documentation": "tool-documentation.md",
+        "test-documentation.md": "test-documentation.md",
+        "test-documentation": "test-documentation.md",
         "readme.md": "README.md",
         readme: "README.md",
       };
@@ -243,7 +403,7 @@
         })
         .then((text) => {
           const target = document.getElementById("content");
-          if (target) target.textContent = text;
+          if (target) target.innerHTML = markdownToHtml(text);
         })
         .catch((error) => {
           const target = document.getElementById("content");

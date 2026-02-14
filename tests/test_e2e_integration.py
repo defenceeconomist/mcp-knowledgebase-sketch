@@ -4,6 +4,11 @@ import unittest
 import httpx
 from dotenv import load_dotenv
 
+TEST_DOC_TARGET = "mcp_research.resolver_app (end-to-end)"
+TEST_DOC_METHOD = (
+    "Runs environment-gated live HTTP checks against the resolver service using real network calls and asserts response contracts."
+)
+
 
 load_dotenv(".env")
 
